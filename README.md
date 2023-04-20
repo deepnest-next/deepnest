@@ -25,13 +25,12 @@ successful build.
 
 ## Support, issues and pull requests
 
-My primary goal has been to get Deepnest buildable again, though I have made a few small improvments
-(see [Code changes in this fork](#code-changes-in-this-fork)). I'm not in a position to support this
-fork (I don't know the code and don't have the time), so do not expect any assistance on
-improvements or solving problems!  It would be wonderful if somebody (or a team) wanted to bring
+The primary goal has been to get Deepnest buildable again, to prevent it to become abandonware as the original author does not seem to be activley involved. The goal of creating the fork under this organization is to create again a centralized repo where development of this program can continue. 
+It would be wonderful if more contributors join this organization so we can bring
 this project back to life, update it with latest dependencies and start adding features / fixing
-issues.  This fork may be a starting point, or at least perhaps provide guidance on building.  Good
-luck!
+issues.
+There are a few small improvments
+(see [Code changes in this fork](#code-changes-in-this-fork)).
 
 ## Prerequisites
 
@@ -121,8 +120,3 @@ Aside from improving the ability to build (mostly in `binding.gyp`, `package.jso
 - Clarified the license is MIT.  Removed an old reference to GPL and added the `license` property to
   `package.json`.  Moved the `LICENSE.txt` file to the root and renamed to `LICENSE`.
 
-## Comments about updating to modern packages
-
-See [Updating Deepnest to use modern Node.js, Electron,
-etc.](https://github.com/cmidgley/Deepnest/issues/1) for information about my failed effort to bring
-Deepnest up to current packages, and thoughts about what it might take.
