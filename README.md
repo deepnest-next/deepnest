@@ -32,39 +32,44 @@ issues.
 There are a few small improvments
 (see [Code changes in this fork](#code-changes-in-this-fork)).
 
+
 ## Prerequisites
 
-- You must have Visual Studio with C++ extensions installed.  
-- Clone this fork with: `git clone --recurse-submodules --remote-submodules
-  https://github.com/cmidgley/Deepnest`
-- Use [Node.js](https://nodejs.org) version 8 (10 generates lots of warnings, and 12+ fails due to node-gyp).  Recommend using the Node version manager.
-  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change
-  versions.
-- Ensure you are on Python 2.7 (Python 3 does not work).  Recommend using Python version manager
-  [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.  Make sure to
-  close all command shells (including VSCode) after doing this, to get the latest environment
-  variables.  Check with `python --version`.
-  - NOTE: If you are running Windows 10 1905 or newer, you might need to disable the built-in Python
-  launcher via Start > "Manage App Execution Aliases" and turning off the "App Installer" aliases
-  for Python"
-- `node-gyp` (the Node to C++ binding environment) requires Visual Studio with C++ extensions.  See
-  [this
-  page](https://nodejs.github.io/node-addon-examples/getting-started/tools/#:~:text=It%20is%20not%20necessary%20to,that%20has%20everything%20you%20need.) for a simple to install package that may work (not tested, as my system already has it already
-  installed).
+- **Node 8:** Use [Node.js](https://nodejs.org) version 8 (10 generates lots of warnings, and 12+ fails due to node-gyp).  Recommend using the Node version manager.
+  -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
+- **Python 2.7** (Python 3 does not work).  Recommend using Python version manager   [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.  Make sure to  close all command shells (including VSCode) after doing this, to get the latest environment variables.  Check with `python --version`.
+  - NOTE: If you are running Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
+    - **Start** > "**Manage App Execution Aliases**" and turning off the "**App Installer" aliases   for Python**"
+- **Visual Studio 2019 with Desktop Development wit C++ extension**s - `node-gyp` (the Node to C++ binding environment) requires it.
+  - See [this page](https://nodejs.github.io/node-addon-examples/getting-started/tools/#:~:text=It%20is%20not%20necessary%20to,that%20has%20everything%20you%20need.) for a simple to install package that may work
+  - manually Install VS2019 with C++ extensions, if the above does not work
+
+
+```sh
+# if your VCINSTALLDIR points to VS2022, clear it
+set VCINSTALLDIR=
+```
 
 ## Building
 
-Your first build should do the following:
+```sh
+git clone --recurse-submodules --remote-submodules https://github.com/cmidgley/Deepnest
+cd Deepnest
+npm config set msvs_version 2019
+npm install
+npm run w:build
+npm run w:start
+```
 
-- `npm install`
-- `npm run w:build`
+### Rebuild
 
-If you change the electron-related files (web files, javascript), a build with 
-`npm run w:build` is all that is needed.  If you change the the Minkowski files (the `.cc` or `.h` files),
-where the NFP (Non-Fit Polygon) logic and background threading is handled, you must rebuild using
-`node-gyp` to recompile the files using:
+```sh
+# If you change the electron-related files (web files, javascript), a build with 
+npm run w:build
 
-- `npm run w:fullbuild`
+# If you change the the Minkowski files (the `.cc` or `.h` files):
+npm run w:fullbuild
+```
 
 ## Running
 
