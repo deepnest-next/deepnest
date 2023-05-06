@@ -1,0 +1,40 @@
+name: build
+
+on:
+  push:
+    # enable next line to limit branches to run
+    # branches: [ "master" ]
+  pull_request:
+    # enable next line to limit branches to run
+    # branches: [ "master" ]
+
+jobs:
+  build:
+    # this uses the VS2019, as VS2022 does not work, see:
+    # https://github.com/deepnest-io/Deepnest/issues/21#issuecomment-1534730830
+    runs-on: windows-2019
+
+    strategy:
+      matrix:
+                            # enable further versions if supported/needed
+        node-version: [8.x] #, 14.x, 16.x, 18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+#    not needed currently, but leaving here for future use
+#    - uses: actions/setup-python@v4
+#      with:
+#        python-version: '2.7.18'     
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Build
+      run: |
+        npm install
+        npm run w:build
