@@ -3,7 +3,7 @@ name: build
 on:
   push:
     # enable next line to limit branches to run
-    # branches: [ "master" ]
+    branches: [ "master" ]
   pull_request:
     # enable next line to limit branches to run
     # branches: [ "master" ]
