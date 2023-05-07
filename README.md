@@ -53,7 +53,7 @@ set VCINSTALLDIR=
 ## Building
 
 ```sh
-git clone --recurse-submodules --remote-submodules https://github.com/cmidgley/Deepnest
+git clone --recurse-submodules --remote-submodules https://github.com/deepnest-io/Deepnest
 cd Deepnest
 npm config set msvs_version 2019
 npm install
