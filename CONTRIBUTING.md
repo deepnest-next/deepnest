@@ -10,3 +10,11 @@ Just follow the usual github work-flows.
 - keep instructions minimal (assume the target-audience knows what they're doing)
 - do not close issues or PRs lightly. Ideally, the authors will close themselves.
 - prefer cli reproducers
+
+### Release
+
+The release-process is currently semi-automated. You can try it out on your fork.
+
+Follow those instructions:
+
+https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
