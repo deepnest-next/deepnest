@@ -2,7 +2,7 @@
 (newest on top)
 
 
-### Code changes from cmidgley form
+### Code changes from cmidgley fork
 
 Aside from improving the ability to build (mostly in `binding.gyp`, `package.json`, and
 `README.md`), the following changes have also been made:
