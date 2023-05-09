@@ -1,6 +1,6 @@
 {
   "name": "deepnest",
-  "version": "1.0.6cm",
+  "version": "1.1.0",
   "description": "Deep nesting for Laser and CNC",
   "main": "main.js",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "w:dist": ".\\node_modules\\.bin\\electron-packager . deepnest --platform=win32 --arch=x64",
     "w:copy": "xcopy /s /y .\\build\\Release .\\minkowski\\Release"
   },
-  "repository": "https://github.com/Jack000",
+  "repository": "https://github.com/deepnest-io/Deepnest",
   "keywords": [
     "Electron",
     "Nesting",
@@ -31,7 +31,6 @@
   "author": {
     "name": "Jack Qiao",
     "email": "jak000@gmail.com",
-    "url": "http://deepnest.io"
   },
   "devDependencies": {
     "electron": "^1.4.1",
