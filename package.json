@@ -30,7 +30,7 @@
   ],
   "author": {
     "name": "Jack Qiao",
-    "email": "jak000@gmail.com",
+    "email": "jak000@gmail.com"
   },
   "devDependencies": {
     "electron": "^1.4.1",
