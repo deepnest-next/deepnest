@@ -17,4 +17,6 @@ The release-process is currently semi-automated. You can try it out on your fork
 
 Follow those instructions:
 
-https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+- Edit version https://github.com/deepnest-io/Deepnest/blob/master/package.json#L3
+- https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+- create a distribution locally via `npm run w:dist` (add version to folder, then zip & upload it)
