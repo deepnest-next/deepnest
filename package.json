@@ -18,7 +18,7 @@
     "w:build": "mkdir minkowski >nul 2>&1|echo.>nul && mkdir minkowski\\Release >nul 2>&1|echo.>nul && .\\node_modules\\.bin\\electron-rebuild.cmd && npm run w:copy",
     "w:clean": "rmdir /s /q build dist >nul 2>&1|echo.>nul",
     "w:fullclean": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo.>nul",
-    "w:dist": ".\\node_modules\\.bin\\electron-packager . deepnest --platform=win32 --arch=x64",
+    "w:dist": ".\\node_modules\\.bin\\electron-packager . deepnest --platform=win32 --arch=x64 --overwrite",
     "w:copy": "xcopy /s /y .\\build\\Release .\\minkowski\\Release"
   },
   "repository": "https://github.com/deepnest-io/Deepnest",
