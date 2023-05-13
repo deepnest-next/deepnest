@@ -2,6 +2,8 @@
 (newest on top)
 
 
+2023-05-13  `npm run w:dist` now overwrites an existent dist directory of the same name
+
 ### Code changes from cmidgley fork
 
 Aside from improving the ability to build (mostly in `binding.gyp`, `package.json`, and
