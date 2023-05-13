@@ -38,3 +38,6 @@ jobs:
       run: |
         npm install
         npm run w:build
+    - name: Package
+      run: |    
+        npm run w:dist
