@@ -8,13 +8,14 @@ http://www.boost.org/LICENSE_1_0.txt).
 
 // code modified for the Deepnest project by Jack Qiao
 // https://github.com/Jack000/Deepnest/blob/master/minkowski.cc
+// updated for never node version taken from:
+// https://github.com/9swampy/Deepnest/tree/develop
 
 
 #include <nan.h>
 #include "minkowski.h"
 
 #include <iostream>
-#define BOOST_POLYGON_NO_DEPS
 #include <boost/polygon/polygon.hpp>
 #include <string>
 #include <iostream>
@@ -110,7 +111,7 @@ using v8::Local;
 using v8::Array;
 using v8::Isolate;
 using v8::String;
-using v8::Handle;
+using v8::Local;
 using v8::Object;
 using v8::Value;
 
@@ -119,12 +120,13 @@ using namespace boost::polygon;
 NAN_METHOD(calculateNFP) {
   //std::stringstream buffer;
   //std::streambuf * old = std::cout.rdbuf(buffer.rdbuf());
-  
+  v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+
   Isolate* isolate = info.GetIsolate();
 
-  Handle<Object> group = Handle<Object>::Cast(info[0]);
-  Handle<Array> A = Handle<Array>::Cast(group->Get(String::NewFromUtf8(isolate,"A")));
-  Handle<Array> B = Handle<Array>::Cast(group->Get(String::NewFromUtf8(isolate,"B")));
+  Local<Object> group = Local<Object>::Cast(info[0]);
+  Local<Array> A = Local<Array>::Cast(group->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"A",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked());
+  Local<Array> B = Local<Array>::Cast(group->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"B",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked());
   
   polygon_set a, b, c;
   std::vector<polygon> polys;
@@ -137,11 +139,11 @@ NAN_METHOD(calculateNFP) {
   double Amaxy = 0;
   double Aminy = 0;
   for (unsigned int i = 0; i < len; i++) {
-  	Local<Object> obj = Local<Object>::Cast(A->Get(i));
-  	Amaxx = (std::max)(Amaxx, (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-  	Aminx = (std::min)(Aminx, (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-  	Amaxy = (std::max)(Amaxy, (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
-  	Aminy = (std::min)(Aminy, (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
+  	Local<Object> obj = Local<Object>::Cast(A->Get(isolate->GetCurrentContext(), i).ToLocalChecked());
+  	Amaxx = (std::max)(Amaxx, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+  	Aminx = (std::min)(Aminx, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+  	Amaxy = (std::max)(Amaxy, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+  	Aminy = (std::min)(Aminy, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
   }
   
   len = B->Length();
@@ -150,11 +152,11 @@ NAN_METHOD(calculateNFP) {
   double Bmaxy = 0;
   double Bminy = 0;
   for (unsigned int i = 0; i < len; i++) {
-  	Local<Object> obj = Local<Object>::Cast(B->Get(i));
-  	Bmaxx = (std::max)(Bmaxx, (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-  	Bminx = (std::min)(Bminx, (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-  	Bmaxy = (std::max)(Bmaxy, (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
-  	Bminy = (std::min)(Bminy, (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
+  	Local<Object> obj = Local<Object>::Cast(B->Get(isolate->GetCurrentContext(), i).ToLocalChecked());
+  	Bmaxx = (std::max)(Bmaxx, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+  	Bminx = (std::min)(Bminx, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+  	Bmaxy = (std::max)(Bmaxy, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+  	Bminy = (std::min)(Bminy, (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
   }
   
   double Cmaxx = Amaxx + Bmaxx;
@@ -179,9 +181,9 @@ NAN_METHOD(calculateNFP) {
   len = A->Length();
   
   for (unsigned int i = 0; i < len; i++) {
-    Local<Object> obj = Local<Object>::Cast(A->Get(i));
-    int x = (int)(inputscale * (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-    int y = (int)(inputscale * (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
+    Local<Object> obj = Local<Object>::Cast(A->Get(isolate->GetCurrentContext(), i).ToLocalChecked());
+    int x = (int)(inputscale * (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+    int y = (int)(inputscale * (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
         
     pts.push_back(point(x, y));
   }
@@ -191,17 +193,17 @@ NAN_METHOD(calculateNFP) {
   a+=poly;
   
   // subtract holes from a here...
-  Handle<Array> holes = Handle<Array>::Cast(A->Get(String::NewFromUtf8(isolate,"children")));
+  Local<Array> holes = Local<Array>::Cast(A->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"children",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked());
   len = holes->Length();
   
   for(unsigned int i=0; i<len; i++){
-    Handle<Array> hole = Handle<Array>::Cast(holes->Get(i));
+    Local<Array> hole = Local<Array>::Cast(holes->Get(isolate->GetCurrentContext(), i).ToLocalChecked());
     pts.clear();
     unsigned int hlen = hole->Length();
     for(unsigned int j=0; j<hlen; j++){
-    	Local<Object> obj = Local<Object>::Cast(hole->Get(j));
-    	int x = (int)(inputscale * (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-    	int y = (int)(inputscale * (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
+    	Local<Object> obj = Local<Object>::Cast(hole->Get(isolate->GetCurrentContext(), j).ToLocalChecked());
+    	int x = (int)(inputscale * (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+    	int y = (int)(inputscale * (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
     	pts.push_back(point(x, y));
     }
     boost::polygon::set_points(poly, pts.begin(), pts.end());
@@ -217,14 +219,14 @@ NAN_METHOD(calculateNFP) {
   double yshift = 0;
   
   for (unsigned int i = 0; i < len; i++) {
-    Local<Object> obj = Local<Object>::Cast(B->Get(i));
-    int x = -(int)(inputscale * (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue());
-    int y = -(int)(inputscale * (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue());
+    Local<Object> obj = Local<Object>::Cast(B->Get(isolate->GetCurrentContext(), i).ToLocalChecked());
+    int x = -(int)(inputscale * (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
+    int y = -(int)(inputscale * (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust());
     pts.push_back(point(x, y));
     
     if(i==0){
-    	xshift = (double)obj->Get(String::NewFromUtf8(isolate,"x"))->NumberValue();
-    	yshift = (double)obj->Get(String::NewFromUtf8(isolate,"y"))->NumberValue();
+    	xshift = (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust();
+    	yshift = (double)obj->Get(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue(context).FromJust();
     }
   }
   
@@ -246,10 +248,10 @@ NAN_METHOD(calculateNFP) {
   	for(polygon_traits<polygon>::iterator_type itr = polys[i].begin(); itr != polys[i].end(); ++itr) {
   	   Local<Object> p = Object::New(isolate);
   	 //  std::cout << (double)(*itr).get(boost::polygon::HORIZONTAL) / inputscale << std::endl;
-       p->Set(String::NewFromUtf8(isolate, "x"), v8::Number::New(isolate, ((double)(*itr).get(boost::polygon::HORIZONTAL)) / inputscale + xshift));
-       p->Set(String::NewFromUtf8(isolate, "y"), v8::Number::New(isolate, ((double)(*itr).get(boost::polygon::VERTICAL)) / inputscale + yshift));
+       p->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"x",v8::NewStringType::kNormal).ToLocalChecked(), v8::Number::New(isolate, ((double)(*itr).get(boost::polygon::HORIZONTAL)) / inputscale + xshift));
+       p->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate,"y",v8::NewStringType::kNormal).ToLocalChecked(), v8::Number::New(isolate, ((double)(*itr).get(boost::polygon::VERTICAL)) / inputscale + yshift));
        
-       pointlist->Set(j, p);
+       pointlist->Set(isolate->GetCurrentContext(), j, p);
        j++;
     }
     
@@ -261,19 +263,19 @@ NAN_METHOD(calculateNFP) {
     	int z = 0;
     	for(polygon_traits<polygon>::iterator_type itr2 = (*itrh).begin(); itr2 != (*itrh).end(); ++itr2) {
     		Local<Object> c = Object::New(isolate);
-    		c->Set(String::NewFromUtf8(isolate, "x"), v8::Number::New(isolate, ((double)(*itr2).get(boost::polygon::HORIZONTAL)) / inputscale + xshift));
-    		c->Set(String::NewFromUtf8(isolate, "y"), v8::Number::New(isolate, ((double)(*itr2).get(boost::polygon::VERTICAL)) / inputscale + yshift));
+    		c->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "x",v8::NewStringType::kNormal).ToLocalChecked(), v8::Number::New(isolate, ((double)(*itr2).get(boost::polygon::HORIZONTAL)) / inputscale + xshift));
+    		c->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "y",v8::NewStringType::kNormal).ToLocalChecked(), v8::Number::New(isolate, ((double)(*itr2).get(boost::polygon::VERTICAL)) / inputscale + yshift));
     		
-    		child->Set(z, c);
+    		child->Set(isolate->GetCurrentContext(), z, c);
     		z++;
     	}
-    	children->Set(k, child);
+    	children->Set(isolate->GetCurrentContext(), k, child);
     	k++;
     }
     
-    pointlist->Set(String::NewFromUtf8(isolate, "children"), children);
+    pointlist->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, "children",v8::NewStringType::kNormal).ToLocalChecked(), children);
     
-    result_list->Set(i, pointlist);
+    result_list->Set(isolate->GetCurrentContext(), i, pointlist);
   }
   
   //std::string text = buffer.str();
