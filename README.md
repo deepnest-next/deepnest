@@ -29,13 +29,11 @@ The primary goal has been to get Deepnest buildable again, to prevent it to beco
 It would be wonderful if more contributors join this organization so we can bring
 this project back to life, update it with latest dependencies and start adding features / fixing
 issues.
-There are a few small improvments
-(see [Code changes in this fork](#code-changes-in-this-fork)).
 
 
 ## Prerequisites
 
-- **Node 8:** Use [Node.js](https://nodejs.org) version 8 or 10 (12+ fails due to node-gyp). You can use the Node Version Manager (nvm):
+- **Node 8:** Use [Node.js](https://nodejs.org) version 8, 10 or 12. You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 2.7** (Python 3 does not work).  Recommend using Python version manager   [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.  Make sure to  close all command shells (including VSCode) after doing this, to get the latest environment variables.  Check with `python --version`.
   - NOTE: If you are running Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
