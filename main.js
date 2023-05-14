@@ -61,16 +61,23 @@ let mainWindow = null;
 var backgroundWindows = [];
 
 // single instance
-const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
-  // Someone tried to run a second instance, we should focus our window.
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore()
-    mainWindow.focus()
-  }
-})
+const gotTheLock = app.requestSingleInstanceLock()
 
-if (shouldQuit) {
+if (!gotTheLock) {
   app.quit()
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+
+  // Create myWindow, load the rest of the app, etc...
+  app.whenReady().then(() => {
+    myWindow = createWindow()
+  })  
 }
 
 function createMainWindow() {
@@ -81,7 +88,15 @@ function createMainWindow() {
   var frameless = process.platform == 'darwin';
   //var frameless = true;
   
-  mainWindow = new BrowserWindow({width: Math.ceil(width*0.9), height: Math.ceil(height*0.9), frame: !frameless, show: false});
+  mainWindow = new BrowserWindow({
+    width: Math.ceil(width*0.9), 
+    height: Math.ceil(height*0.9), 
+    frame: !frameless, 
+    show: false,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
@@ -102,7 +117,7 @@ function createMainWindow() {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
-  })
+  }) 
 
   if (process.env.SAVE_PLACEMENTS_PATH !== undefined) {
     global.NEST_DIRECTORY = process.env.SAVE_PLACEMENTS_PATH;
@@ -121,7 +136,10 @@ function createBackgroundWindows() {
 	// used to have 8, now just 1 background window
 	if(winCount < 1){
 		var back = new BrowserWindow({
-			show: false
+      show: false,
+      webPreferences: {
+        nodeIntegration: true
+      }
 		});
 		
     if (process.env["deepnest_debug"] === '1') 
@@ -198,11 +216,11 @@ ipcMain.on('background-response', function(event, payload){
 	for(var i=0; i<backgroundWindows.length; i++){
     // todo: hack to fix errors on app closing - should instead close workers when window is closed
     try {
-      if(backgroundWindows[i].webContents == event.sender){
-        mainWindow.webContents.send('background-response', payload);
-        backgroundWindows[i].isBusy = false;
-        break;
-      }
+		  if(backgroundWindows[i].webContents == event.sender){
+		  	mainWindow.webContents.send('background-response', payload);
+		   	backgroundWindows[i].isBusy = false;
+		  	break;
+		  }
     } catch (ex) {
       // ignore errors, as they can reference destroyed objects during a window close event
     }
