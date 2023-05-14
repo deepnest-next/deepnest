@@ -2,6 +2,8 @@
 (newest on top)
 
 
+2023-05-14 removed all `npm run` hardcoded filesystem references to `Dogthemachine`
+           aliased the w:* commands to *
 2023-05-13  `npm run w:dist` now overwrites an existent dist directory of the same name
 
 ### Code changes from cmidgley fork
