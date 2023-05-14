@@ -51,18 +51,18 @@ git clone --recurse-submodules --remote-submodules https://github.com/deepnest-i
 cd Deepnest
 npm config set msvs_version 2019
 npm install
-npm run w:build
-npm run w:start
+npm run build
+npm run start
 ```
 
 ### Rebuild
 
 ```sh
 # If you change the electron-related files (web files, javascript), a build with 
-npm run w:build
+npm run build
 
 # If you change the the Minkowski files (the `.cc` or `.h` files):
-npm run w:fullbuild
+npm run fullbuild
 ```
 
 ## Running
@@ -70,19 +70,19 @@ npm run w:fullbuild
 Unless you want to create a [distribution build](#create-a-distribution-build) (a separate set of
 executable files that can be run without dependency on the build environment), you can run Deepnest with:
 
-- `npm run w:start`
+- `npm run start`
 
 ## Clean builds
 
 Two clean options:
-- For regular clean of build artifacts, use `npm run w:clean` and then `npm run w:build`.
-- To remove everything, including `node_modules` use `npm run w:fullclean`, then [build](#building) again.
+- For regular clean of build artifacts, use `npm run clean` and then `npm run build`.
+- To remove everything, including `node_modules` use `npm run fullclean`, then [build](#building) again.
 
 ## Create a distribution build
 
 To build a distribution set of files, run:
 
-- `npm run w:dist`
+- `npm run dist`
 
 The resulting files will be located in `.\deepnest-win32-x64`.  All files need to be distributed,
 meaning a ZIP file or writing a simple installer would be needed to avoid handling a larger number
