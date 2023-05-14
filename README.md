@@ -11,17 +11,14 @@ Deepnest is a desktop application originally based on [SVGNest](https://github.c
 - Support for DXF files (via conversion)
 - New path approximation feature for highly complex parts
 
+## Fork History
 
-## About this fork
+* https://github.com/Jack000/SVGnest (Academic Work References)
+* https://github.com/Jack000/Deepnest
+  * https://github.com/Dogthemachine/Deepnest
+    * https://github.com/cmidgley/Deepnest
+      * https://github.com/deepnest-io/Deepnest
 
-This is a fork of [Dogthemachine's fork](https://github.com/Dogthemachine/Deepnest) of [Jack000's
-Deepnest](https://github.com/Jack000/Deepnest), with changes made to the make it able to be built
-again (only Windows has tested, but work was done in the `binding.gyp` file to improve
-multi-platform building, and the dependency on a local path to boost has been removed).
-
-No attempts have been made to upgrade to the latest package versions, and as such this software depends on
-old packages.  You must pay close attention to the [prerequisites](#prerequisites) to get a
-successful build.  
 
 ## Support, issues and pull requests
 
@@ -33,21 +30,20 @@ issues.
 
 ## Prerequisites
 
-- **Node 8:** Use [Node.js](https://nodejs.org) version 8, 10 or 12. You can use the Node Version Manager (nvm):
+- **Node 8/10/12/14:** Use [Node.js](https://nodejs.org) version 8, 10, 12, 14. You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 2.7** (Python 3 does not work).  Recommend using Python version manager   [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.  Make sure to  close all command shells (including VSCode) after doing this, to get the latest environment variables.  Check with `python --version`.
-  - NOTE: If you are running Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
-    - **Start** > "**Manage App Execution Aliases**" and turning off the "**App Installer" aliases   for Python**"
 - **Visual Studio 2019 with Desktop Development wit C++ extension**s - `node-gyp` (the Node to C++ binding environment) requires it.
   - See [this page](https://nodejs.github.io/node-addon-examples/getting-started/tools/#:~:text=It%20is%20not%20necessary%20to,that%20has%20everything%20you%20need.) for a simple to install package that may work
   - manually Install VS2019 with C++ extensions, if the above does not work
 
+### Possible Problems
 
-```sh
-# if your VCINSTALLDIR points to VS2022, clear it
-set VCINSTALLDIR=
-```
-
+* if your VCINSTALLDIR points to VS2022, clear it
+  * `set VCINSTALLDIR=`
+* On Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
+  - **Start** > "**Manage App Execution Aliases**" and turning off the "**App Installer" aliases   for Python**"
+    
 ## Building
 
 ```sh
