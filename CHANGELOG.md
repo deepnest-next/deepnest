@@ -1,7 +1,9 @@
 # Deepnest Changelong
-(newest on top)
+(newest on top, breaking changes)
 
 
+2023-05-15 rename `npm run` scripts: fullbuild->build-all, fullclean->clean-all
+           introduced dist-all that includes a full clean rebuild with dist
 2023-05-14 removed all `npm run` hardcoded filesystem references to `Dogthemachine`
            aliased the w:* commands to *
 2023-05-13  `npm run w:dist` now overwrites an existent dist directory of the same name
