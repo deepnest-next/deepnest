@@ -28,21 +28,15 @@
   },
   "devDependencies": {
     "electron": "^6.1.12",
-    "electron-builder": "^20.44.4",
     "electron-packager": "^12.0.2",
     "electron-rebuild": "^1.11.0"
   },
   "dependencies": {
-    "electron-config": "^0.2.1",
     "electron-settings": "^2.2.2",
     "electron-window-manager": "^1.0.4",
-    "filequeue": "^0.5.0",
     "graceful-fs": "^4.1.11",
-    "melanke-watchjs": "^1.3.1",
     "nan": "^2.4.0",
-    "paralleljs": "^0.2.1",
-    "request": "^2.79.0",
-    "write-file-queue": "0.0.1"
+    "request": "^2.88.2"
   },
   "build": {
     "appId": "com.deepnest.io",
