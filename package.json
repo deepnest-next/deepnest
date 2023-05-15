@@ -11,7 +11,7 @@
     "build": "mkdir minkowski >nul 2>&1|echo.>nul && mkdir minkowski\\Release >nul 2>&1|echo.>nul && .\\node_modules\\.bin\\electron-rebuild.cmd && npm run copy",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo.>nul",
     "clean-all": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo.>nul",
-    "dist": ".\\node_modules\\.bin\\electron-packager . deepnest --platform=win32 --arch=x64 --overwrite",
+    "dist": ".\\node_modules\\.bin\\electron-packager . deepnest-v%npm_package_version% --platform=win32 --arch=x64 --overwrite",
     "dist-all": "npm run clean-all && npm install && npm run build-all && npm run dist",
     "copy": "xcopy /s /y .\\build\\Release .\\minkowski\\Release"
   },
