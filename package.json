@@ -1,6 +1,6 @@
 {
   "name": "deepnest",
-  "version": "1.1.1",
+  "version": "1.1.2-dev",
   "description": "Deep nesting for Laser and CNC",
   "main": "main.js",
   "license": "MIT",
