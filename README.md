@@ -62,7 +62,7 @@ npm run start
 npm run build
 
 # If you change the the Minkowski files (the `.cc` or `.h` files):
-npm run fullbuild
+npm run build-all
 ```
 
 ## Running
@@ -76,13 +76,17 @@ executable files that can be run without dependency on the build environment), y
 
 Two clean options:
 - For regular clean of build artifacts, use `npm run clean` and then `npm run build`.
-- To remove everything, including `node_modules` use `npm run fullclean`, then [build](#building) again.
+- To remove everything, including `node_modules` use `npm run clean-all`, then [build](#building) again.
 
 ## Create a distribution build
 
 To build a distribution set of files, run:
 
 - `npm run dist`
+
+For your convenience especially during development combine `clean-all, build-all and dist` via:
+
+- `npm run dist-all`
 
 The resulting files will be located in `.\deepnest-win32-x64`.  All files need to be distributed,
 meaning a ZIP file or writing a simple installer would be needed to avoid handling a larger number
