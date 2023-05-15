@@ -104,9 +104,11 @@ window.onload = function () {
 	window.path = require('path')
 	window.url = require('url')
 	window.fs = require('graceful-fs');
+/*
+add package 'filequeue 0.5.0' if you enable this
 	window.FileQueue = require('filequeue');
 	window.fq = new FileQueue(500);
-	
+*/	
 	window.nfpcache = {};
 	  
 	ipcRenderer.on('background-start', (event, data) => {
