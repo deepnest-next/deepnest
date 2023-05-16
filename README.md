@@ -2,7 +2,7 @@
 
 ## **Deepnest**
 
-A fast, robust nesting tool for laser cutters and other CNC tools
+A fast nesting tool for laser cutters and other CNC tools
 
 Deepnest is a desktop application originally based on [SVGNest](https://github.com/Jack000/SVGnest)
 
@@ -30,9 +30,12 @@ issues.
 
 ## Prerequisites
 
-- **Node 8/10/12/14:** Use [Node.js](https://nodejs.org) version 8, 10, 12, 14. You can use the Node Version Manager (nvm):
+- **Node 12/14:** Use [Node.js](https://nodejs.org) version 12, 14. You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
-- **Python 2.7** (Python 3 does not work).  Recommend using Python version manager   [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.  Make sure to  close all command shells (including VSCode) after doing this, to get the latest environment variables.  Check with `python --version`.
+- **Python 3.7.9** You can use the Python Version Manager (pyenv):
+  - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
+  - Make sure to  close all command shells (including VSCode) after doing this, to get the latest environment variables.
+  - Check with `python --version`. 
 - **Visual Studio 2019 with Desktop Development wit C++ extension**s - `node-gyp` (the Node to C++ binding environment) requires it.
   - See [this page](https://nodejs.github.io/node-addon-examples/getting-started/tools/#:~:text=It%20is%20not%20necessary%20to,that%20has%20everything%20you%20need.) for a simple to install package that may work
   - manually Install VS2019 with C++ extensions, if the above does not work
@@ -84,11 +87,11 @@ To build a distribution set of files, run:
 
 - `npm run dist`
 
-For your convenience especially during development combine `clean-all, build-all and dist` via:
+For your convenience during development combine `clean-all, build-all and dist` via:
 
 - `npm run dist-all`
 
-The resulting files will be located in `.\deepnest-win32-x64`.  All files need to be distributed,
+The resulting files will be located in `.\deepnest-<version>-win32-x64`.  All files need to be distributed,
 meaning a ZIP file or writing a simple installer would be needed to avoid handling a larger number
 of files.
 
