@@ -30,7 +30,7 @@ issues.
 
 ## Prerequisites
 
-- **Node 12/14:** Use [Node.js](https://nodejs.org) version 12, 14. You can use the Node Version Manager (nvm):
+- **Node 12/14/16/18:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 3.7.9** You can use the Python Version Manager (pyenv):
   - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
