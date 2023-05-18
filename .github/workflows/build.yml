@@ -10,9 +10,7 @@ on:
 
 jobs:
   build:
-    # this uses the VS2019, as VS2022 does not work, see:
-    # https://github.com/deepnest-io/Deepnest/issues/21#issuecomment-1534730830
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     strategy:
       matrix:
