@@ -30,15 +30,16 @@ issues.
 
 ## Prerequisites
 
-- **Node 12/14/16/18:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
+- **Node 14/16/18:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 3.7.9** You can use the Python Version Manager (pyenv):
   - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
   - Make sure to  close all command shells (including VSCode) after doing this, to get the latest environment variables.
   - Check with `python --version`. 
-- **Visual Studio 2019 with Desktop Development wit C++ extension**s - `node-gyp` (the Node to C++ binding environment) requires it.
-  - See [this page](https://nodejs.github.io/node-addon-examples/getting-started/tools/#:~:text=It%20is%20not%20necessary%20to,that%20has%20everything%20you%20need.) for a simple to install package that may work
-  - manually Install VS2019 with C++ extensions, if the above does not work
+- **Visual Studio with Desktop Development wit C++ extension**s - `node-gyp` (the Node to C++ binding environment) requires it.
+  - Install VS2022 from https://visualstudio.microsoft.com/vs/features/cplusplus/
+  - or, as an administrator via `npm install --global windows-build-tools` (older VS version)
+
 
 ### Possible Problems
 
