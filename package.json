@@ -32,7 +32,7 @@
     "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
-    "electron-settings": "^2.2.2",
+    "electron-settings": "^3.0.0",
     "electron-window-manager": "^1.0.4",
     "graceful-fs": "^4.1.11",
     "nan": "^2.4.0",
