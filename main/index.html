@@ -94,12 +94,12 @@
 			
 			// set to default if not set (for people with old configs stored)
 			for (var key in defaultconfig) {
-			  if(typeof config.get(key) === 'undefined'){
+			  if(typeof config.getSync(key) === 'undefined'){
 			  	config.setSync(key, defaultconfig[key]);
 			  }
 			}
 			
-			var cfgval = config.getAll();
+			var cfgval = config.get();
 			window.DeepNest.config(cfgval);
 			updateForm(cfgval);
 			
@@ -112,7 +112,7 @@
 					var key = i.getAttribute('data-config');
 					
 					if(key == 'scale'){					
-						if(config.get('units') == 'mm'){
+						if(config.getSync('units') == 'mm'){
 							val *= 25.4; // store scale config in inches
 						}
 					}
@@ -123,8 +123,8 @@
 					
 					if(i.getAttribute('data-conversion') == 'true'){
 						// convert real units to svg units
-						var conversion = config.get('scale');
-						if(config.get('units') == 'mm'){
+						var conversion = config.getSync('scale');
+						if(config.getSync('units') == 'mm'){
 							conversion /= 25.4;
 						}
 						val *= conversion;
@@ -134,7 +134,7 @@
 					i.parentNode.className = 'progress';
 					
 					config.set(key, val).then(() => {
-					    config.get().then(val => {
+					    config.getSync().then(val => {
 							window.DeepNest.config(val);
 							updateForm(val);
 							
@@ -152,12 +152,12 @@
 			var setdefault = document.querySelector('#setdefault');
 			setdefault.onclick = function(e){
 				// don't reset user profile
-				var tempaccess = config.get('access_token');
-				var tempid = config.get('id_token');
+				var tempaccess = config.getSync('access_token');
+				var tempid = config.getSync('id_token');
 				config.resetToDefaultsSync();
 				config.setSync('access_token', tempaccess);
 				config.setSync('id_token', tempid);
-				config.get().then(val => {
+				config.getSync().then(val => {
 					window.DeepNest.config(val);
 					updateForm(val);
 				});
@@ -272,8 +272,8 @@
 				  label: function(){
 					var width = this.get('bounds').width;
 					var height = this.get('bounds').height;
-					var units = config.get('units');
-					var conversion = config.get('scale');
+					var units = config.getSync('units');
+					var conversion = config.getSync('scale');
 					
 					// trigger computed dependency chain
 					this.get('getUnits');
@@ -324,7 +324,7 @@
 				},
 				computed: {
 					getUnits: function(){
-						var units = config.get('units');
+						var units = config.getSync('units');
 						if(units == 'mm'){
 							return 'mm';
 						}
@@ -615,7 +615,7 @@
 				}
 				else{
 					// send to conversion server
-					var url = config.get('conversionServer');
+					var url = config.getSync('conversionServer');
 					if(!url){
 						url = defaultConversionServer;
 					}
@@ -633,8 +633,8 @@
 								var con = null;
 								var dxfFlag = false;
 								if(ext.toLowerCase() == '.dxf'){
-									//var unit = config.get('units');
-									con = Number(config.get('dxfImportScale'));
+									//var unit = config.getSync('units');
+									con = Number(config.getSync('dxfImportScale'));
 									dxfFlag = true;
 									console.log('con', con);
 									
@@ -760,8 +760,8 @@
 					return false;
 				}
 				
-				var units = config.get('units');
-				var conversion = config.get('scale');
+				var units = config.getSync('units');
+				var conversion = config.getSync('scale');
 				
 				// remember, scale is stored in units/inch
 				if(units == 'mm'){
@@ -1067,7 +1067,7 @@
 							return false;
 						}
 						// send to conversion server
-						var url = config.get('conversionServer');
+						var url = config.getSync('conversionServer');
 						if(!url){
 							url = defaultConversionServer;
 						}
@@ -1114,7 +1114,7 @@
 							return false;
 						}
 						// send to conversion server
-						var url = config.get('conversionServer');
+						var url = config.getSync('conversionServer');
 						if(!url){
 							url = defaultConversionServer;
 						}
@@ -1199,13 +1199,13 @@
 					svgheight += 1.1*sheetbounds.height;
 				});
 				
-				var scale = config.get('scale');
+				var scale = config.getSync('scale');
 				
 				if(dxf){
-					scale /= Number(config.get('dxfExportScale')); // inkscape on server side
+					scale /= Number(config.getSync('dxfExportScale')); // inkscape on server side
 				}
 				
-				var units = config.get('units');
+				var units = config.getSync('units');
 				if(units == 'mm'){
 					scale /= 25.4;
 				}
@@ -1214,11 +1214,11 @@
 				svg.setAttribute('height', (svgheight/scale) + (units == 'inch' ? 'in' : 'mm'));
 				svg.setAttribute('viewBox', '0 0 '+svgwidth+' '+svgheight);
 				
-				if(config.get('mergeLines') && n.mergedLength > 0){
+				if(config.getSync('mergeLines') && n.mergedLength > 0){
 					SvgParser.applyTransform(svg);
 					SvgParser.flatten(svg);
 					SvgParser.splitLines(svg);
-					SvgParser.mergeOverlap(svg, 0.1*config.get('curveTolerance'));
+					SvgParser.mergeOverlap(svg, 0.1*config.getSync('curveTolerance'));
 					SvgParser.mergeLines(svg);
 					
 					// set stroke and fill for all
@@ -1445,7 +1445,7 @@
 						
 						var totalLength = selected.mergedLength;
 									
-						var scale = config.get('scale');						
+						var scale = config.getSync('scale');						
 						var lengthinches = totalLength/scale;
 												
 						var seconds = lengthinches/2; // assume 2 inches per second cut speed
