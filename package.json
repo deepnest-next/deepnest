@@ -29,7 +29,7 @@
   "devDependencies": {
     "electron": "^6.1.12",
     "electron-packager": "^17.1.1",
-    "electron-rebuild": "^3.2.9"
+    "@electron/rebuild": "^3.2.9"
   },
   "dependencies": {
     "electron-settings": "^4.0.2",
