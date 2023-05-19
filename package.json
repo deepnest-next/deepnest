@@ -34,7 +34,7 @@
   "dependencies": {
     "electron-settings": "^4.0.2",
     "electron-window-manager": "^1.0.6",
-    "graceful-fs": "^4.1.11",
+    "graceful-fs": "^4.2.11",
     "nan": "^2.4.0",
     "request": "^2.88.2"
   },
