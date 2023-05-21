@@ -88,7 +88,7 @@
 			  conversionServer: 'http://convert.deepnest.io'
 			};
 			
-			config.defaults(defaultconfig);
+			//config.defaults(defaultconfig);
 			
 			const defaultConversionServer = 'http://convert.deepnest.io';
 			
@@ -99,10 +99,9 @@
 			  }
 			}
 			
-			config.get().then(val => {
-				window.DeepNest.config(val);
-				updateForm(val);
-			});
+			var cfgval = config.get();
+			window.DeepNest.config(cfgval);
+			updateForm(cfgval);
 			
 			var inputs = document.querySelectorAll('#config input, #config select');
 			
@@ -135,7 +134,7 @@
 					i.parentNode.className = 'progress';
 					
 					config.set(key, val).then(() => {
-					    config.get().then(val => {
+					    config.getSync().then(val => {
 							window.DeepNest.config(val);
 							updateForm(val);
 							
@@ -158,7 +157,7 @@
 				config.resetToDefaultsSync();
 				config.setSync('access_token', tempaccess);
 				config.setSync('id_token', tempid);
-				config.get().then(val => {
+				config.getSync().then(val => {
 					window.DeepNest.config(val);
 					updateForm(val);
 				});
