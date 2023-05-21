@@ -99,9 +99,9 @@
 			  }
 			}
 			
-			var cfgval = config.get();
-			window.DeepNest.config(cfgval);
-			updateForm(cfgval);
+			var cfgvalues = config.getSync();
+			window.DeepNest.config(cfgvalues);
+			updateForm(cfgvalues);
 			
 			var inputs = document.querySelectorAll('#config input, #config select');
 			
@@ -133,19 +133,17 @@
 					// add a spinner during saving to indicate activity
 					i.parentNode.className = 'progress';
 					
-					config.set(key, val).then(() => {
-					    config.getSync().then(val => {
-							window.DeepNest.config(val);
-							updateForm(val);
+					config.setSync(key, val);
+					var cfgvalues = config.getSync();
+					window.DeepNest.config(cfgvalues);
+					updateForm(cfgvalues);
+						
+					i.parentNode.className = '';
 							
-							i.parentNode.className = '';
-							
-							if(key == 'units'){
-								ractive.update('getUnits');
-								ractive.update('dimensionLabel');
-							}
-						});
-					});			
+					if(key == 'units'){
+						ractive.update('getUnits');
+						ractive.update('dimensionLabel');
+					}
 				});
 			});
 			
@@ -157,10 +155,9 @@
 				config.resetToDefaultsSync();
 				config.setSync('access_token', tempaccess);
 				config.setSync('id_token', tempid);
-				config.getSync().then(val => {
-					window.DeepNest.config(val);
-					updateForm(val);
-				});
+				var cfgvalues = config.getSync();
+				window.DeepNest.config(cfgvalues);
+				updateForm(cfgvalues);
 				return false;
 			}
 			
