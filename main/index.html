@@ -577,30 +577,28 @@
 				}
 				
 				importbutton.className = 'button import disabled';
-				
-				setTimeout(function(){
-					var dialog = app.dialog;
-					dialog.showOpenDialog({ filters: [
-				
-					   { name: 'CAD formats', extensions: ['svg', 'dxf', 'cdr'] }
-				
-					  ],
-					  properties:['openFile', 'multiSelections']
-					  
-					}, function (fileName) {
-						if(fileName === undefined){
-							importbutton.className = 'button import';
-							console.log("No file selected");
-						}
-						else{
-							importbutton.className = 'button import spinner';
-							fileName.forEach(function(file) {
-								processFile(file);
-							});
-							importbutton.className = 'button import';
-						}
-					});
-				}, 50);
+
+				var dialog = app.dialog;
+				dialog.showOpenDialog({ filters: [
+
+						{ name: 'CAD formats', extensions: ['svg', 'dxf', 'cdr'] }
+
+					],
+					properties:['openFile', 'multiSelections']
+
+				}).then(result => {
+					if (result.canceled) {
+						importbutton.className = 'button import';
+						console.log("No file selected");
+					}
+					else{
+						importbutton.className = 'button import spinner';
+						result.filePaths.forEach(function (file) {
+							processFile(file);
+						});
+						importbutton.className = 'button import';
+					}
+				});
 			};
 			
 			function processFile(file) {
