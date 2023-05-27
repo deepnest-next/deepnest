@@ -1042,14 +1042,20 @@
 			
 			var exportdxf = document.querySelector('#exportdxf');
 			exportdxf.onclick = function(){
+//				var electron = require('electron');
+//				var app = electron.remote; 				
 				var dialog = app.dialog;
-				dialog.showSaveDialog({title: 'Export Deepnest DXF'}, function (fileName) {
+				var fileName = dialog.showSaveDialogSync({
+					title: 'Export Deepnest DXF'
+				})
+			        
 					if(fileName === undefined){
 						console.log("No file selected");
 					}
 					else{
 
 						var fileExt = '.dxf';
+						var filePathExt = fileName;
 						if (!fileName.toLowerCase().endsWith(fileExt)) {
 							fileName = fileName + fileExt;
 						}
@@ -1089,8 +1095,7 @@
 						  filename: 'deepnest.svg',
 						  contentType: 'image/svg+xml'
 						});
-					}
-				});
+				    };
 			};
 			/*
 			var exportgcode = document.querySelector('#exportgcode');
