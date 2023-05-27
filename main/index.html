@@ -1016,7 +1016,8 @@
 			exportsvg.onclick = function(){
 				
 				var dialog = app.dialog;
-				dialog.showSaveDialog({title: 'Export Deepnest SVG'}, function (fileName) {
+				var fileName = dialog.showSaveDialogSync({title: 'Export Deepnest SVG'});
+
 					if(fileName === undefined){
 						console.log("No file selected");
 					}
@@ -1037,7 +1038,7 @@
 						
 						fs.writeFileSync(fileName, exportNest(selected.pop()));
 					}
-				});
+
 			};
 			
 			var exportdxf = document.querySelector('#exportdxf');
