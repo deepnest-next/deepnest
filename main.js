@@ -94,6 +94,7 @@ function createMainWindow() {
     frame: !frameless, 
     show: false,
     webPreferences: {
+      contextIsolation: false,
       enableRemoteModule: true,      
       nodeIntegration: true
     }
@@ -139,6 +140,7 @@ function createBackgroundWindows() {
 		var back = new BrowserWindow({
       show: false,
       webPreferences: {
+        contextIsolation: false,
         enableRemoteModule: true,
         nodeIntegration: true
       }
