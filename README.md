@@ -49,7 +49,7 @@ issues.
 ## Building
 
 ```sh
-git clone --recurse-submodules --remote-submodules https://github.com/deepnest-io/Deepnest
+git clone https://github.com/deepnest-io/Deepnest
 cd Deepnest
 npm install
 npm run build

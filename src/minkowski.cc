@@ -11,16 +11,16 @@ http://www.boost.org/LICENSE_1_0.txt).
 // updated for never node version taken from:
 // https://github.com/9swampy/Deepnest/tree/develop
 
-
-#include <nan.h>
-#include "minkowski.h"
+#define BOOST_POLYGON_NO_DEPS
 
 #include <iostream>
-#include <boost/polygon/polygon.hpp>
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <limits>
+
+#include <nan.h>
+#include <boost/polygon/polygon.hpp>
 
 #undef min
 #undef max
