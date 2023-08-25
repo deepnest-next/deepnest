@@ -7,13 +7,13 @@
   "scripts": {
     "start": "electron .",
     "configure": "node-gyp configure --release",
-    "build-all": "node-gyp rebuild && mkdir minkowski >nul 2>&1|echo.>nul && npm run build",
-    "build": "mkdir minkowski >nul 2>&1|echo.>nul && mkdir minkowski\\Release >nul 2>&1|echo.>nul && .\\node_modules\\.bin\\electron-rebuild.cmd && npm run copy",
-    "clean": "rmdir /s /q build dist >nul 2>&1|echo.>nul",
-    "clean-all": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo.>nul",
-    "dist": ".\\node_modules\\.bin\\electron-packager . deepnest-v%npm_package_version% --platform=win32 --arch=x64 --overwrite",
+    "build-all": "node-gyp rebuild && mkdir minkowski >nul 2>&1|echo . >nul && npm run build",
+    "build": "mkdir minkowski >nul 2>&1|echo . >nul && mkdir minkowski/Release >nul 2>&1|echo . >nul &&  electron-rebuild && npm run copy",
+    "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
+    "clean-all": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo . >nul",
+    "dist": "electron-packager . deepnest-v%npm_package_version% --overwrite",
     "dist-all": "npm run clean-all && npm install && npm run build-all && npm run dist",
-    "copy": "xcopy /s /y .\\build\\Release .\\minkowski\\Release"
+    "copy": "shx cp -r ./build/Release ./minkowski/Release"
   },
   "repository": "https://github.com/deepnest-io/Deepnest",
   "keywords": [
@@ -29,7 +29,8 @@
   "devDependencies": {
     "electron": "^13.0.0",
     "electron-packager": "^17.1.1",
-    "@electron/rebuild": "^3.2.9"
+    "@electron/rebuild": "^3.2.9",
+    "shx": "^0.3.4"
   },
   "dependencies": {
     "electron-settings": "^4.0.2",
