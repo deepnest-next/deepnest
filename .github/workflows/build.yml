@@ -10,12 +10,11 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022
-
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x, 20.x]
-
+        os: [windows-2022, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
       with:
@@ -26,6 +25,10 @@ jobs:
 #      with:
 #        python-version: '2.7.18'     
 
+    - name: boost
+      if: startsWith(matrix.os,'ubuntu')
+      run: sudo apt-get update && sudo apt-get install -yq libboost-dev
+      
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
