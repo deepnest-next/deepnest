@@ -798,8 +798,10 @@
 		}
 		
 		if(p.tagName == 'polyline'){
+			// a 2-points polyline cannot be closed.
+			// return false to ensures that the polyline is further processed
 			if(p.points.length < 3){
-				return true;
+				return false;
 			}
 			var first = {
 				x: p.points[0].x,
