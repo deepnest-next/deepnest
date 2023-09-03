@@ -1,6 +1,6 @@
 {
   "name": "deepnest",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Deep nesting for Laser and CNC",
   "main": "main.js",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "clean-all": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo . >nul",
     "dist": "electron-packager . deepnest-v%npm_package_version% --overwrite",
     "dist-all": "npm run clean-all && npm install && npm run build-all && npm run dist",
-    "copy": "shx cp -r ./build/Release ./minkowski/Release"
+    "copy": "shx cp -r ./build/Release ./minkowski"
   },
   "repository": "https://github.com/deepnest-io/Deepnest",
   "keywords": [

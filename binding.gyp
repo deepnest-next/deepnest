@@ -26,7 +26,7 @@
       ],
       "include_dirs" : [
         "<!(node -e \"require('nan')\")",
-        ".\src\polygon\include"
+        "./src/polygon/include"
       ]
     }
   ],
