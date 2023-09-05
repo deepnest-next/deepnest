@@ -1206,6 +1206,11 @@
 					polygon.points.appendItem(p3);
 					polygon.points.appendItem(p4);
 					
+					// OnShape exports a rectangle at position 0/0, drop it
+					if (p1.x === 0 && p1.y === 0) {
+						polygon.points.clear();
+					}
+					
 					var transformProperty = element.getAttribute('transform');
 					if(transformProperty){
 						polygon.setAttribute('transform', transformProperty);
