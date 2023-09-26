@@ -20,12 +20,9 @@ Deepnest is a desktop application originally based on [SVGNest](https://github.c
       * https://github.com/deepnest-io/Deepnest
 
 
-## Support, issues and pull requests
+## This Fork
 
-The primary goal has been to get Deepnest buildable again, to prevent it to become abandonware as the original author does not seem to be activley involved. The goal of creating the fork under this organization is to create again a centralized repo where development of this program can continue. 
-It would be wonderful if more contributors join this organization so we can bring
-this project back to life, update it with latest dependencies and start adding features / fixing
-issues.
+The primary goal has been to get Deepnest buildable again, which has been achieved.
 
 
 ## Prerequisites
@@ -38,6 +35,9 @@ issues.
   - Install VS2022 from https://visualstudio.microsoft.com/vs/features/cplusplus/
   - or, as an administrator via `npm install --global windows-build-tools` (older VS version)
 
+For ubuntu (or when you're not sure how to build) look at the build workflow:
+
+https://github.com/deepnest-io/Deepnest/blob/master/.github/workflows/build.yml#L28
 
 ### Possible Problems
 
