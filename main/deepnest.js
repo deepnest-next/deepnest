@@ -6,15 +6,9 @@
 (function(root){
 	'use strict';
 	
-	const { ipcRenderer } = require('electron');
-	const path = require('path')
-	const url = require('url')
+	root.DeepNest = new DeepNest(require('electron').ipcRenderer);
 	
-	root.DeepNest = new DeepNest();
-	
-	function DeepNest(){
-		var self = this;
-		
+	function DeepNest(eventEmitter){		
 		var svg = null;
 		
 		var config = {
@@ -1021,8 +1015,8 @@
 			}
 		}
 		
-		ipcRenderer.on('background-response', (event, payload) => {
-		    ipcRenderer.send("setPlacements", payload);
+		eventEmitter.on('background-response', (event, payload) => {
+		    eventEmitter.send("setPlacements", payload);
 			console.log('ipc response',payload);
 			if(!GA){
 				// user might have quit while we're away
@@ -1158,7 +1152,7 @@
             filenames[j] = filename;
 					}
 					
-					ipcRenderer.send('background-start', {index: i, sheets: sheets, sheetids: sheetids, sheetsources: sheetsources, sheetchildren: sheetchildren, individual: GA.population[i], config: config, ids: ids, sources: sources, children: children, filenames: filenames});
+					eventEmitter.send('background-start', {index: i, sheets: sheets, sheetids: sheetids, sheetsources: sheetsources, sheetchildren: sheetchildren, individual: GA.population[i], config: config, ids: ids, sources: sources, children: children, filenames: filenames});
 					running++;					
 				}
 			}

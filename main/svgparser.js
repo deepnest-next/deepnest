@@ -313,7 +313,7 @@
 					var lastCommand = merged.pathSegList.getItem(merged.pathSegList.numberOfItems-1).pathSegTypeAsLetter;
 					if(lastCommand != 'z' && lastCommand != 'Z'){
 						// endpoints are actually far apart
-						console.log(merged);
+						// console.log(merged);
 						merged.pathSegList.appendItem(merged.createSVGPathSegClosePath());
 					}
 					
@@ -544,7 +544,7 @@
 			else if(path.tagName == 'path'){
 				this.pathToAbsolute(path);
 				var split = this.splitPathSegments(path);
-				console.log(split);
+				// console.log(split);
 				split.forEach(function(e){
 					root.appendChild(e);
 				});
