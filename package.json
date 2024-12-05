@@ -11,7 +11,7 @@
     "build": "mkdir minkowski >nul 2>&1|echo . >nul && mkdir minkowski/Release >nul 2>&1|echo . >nul &&  electron-rebuild && npm run copy",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
     "clean-all": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo . >nul",
-    "dist": "electron-packager . deepnest-v%npm_package_version% --overwrite",
+    "dist": "npx @electron/packager . deepnest-v$npm_package_version --overwrite",
     "dist-all": "npm run clean-all && npm install && npm run build-all && npm run dist",
     "copy": "shx cp -r ./build/Release ./minkowski"
   },
@@ -27,16 +27,16 @@
     "email": "jak000@gmail.com"
   },
   "devDependencies": {
-    "electron": "^13.0.0",
-    "electron-packager": "^17.1.1",
+    "@electron/packager": "^18.3.6",
     "@electron/rebuild": "^3.2.9",
+    "@types/node": "^22.10.1",
+    "electron": "^19.1.9",
+    "nan": "^2.22.0",
     "shx": "^0.3.4"
   },
   "dependencies": {
-    "electron-settings": "^4.0.2",
-    "electron-window-manager": "^1.0.6",
+    "@electron/remote": "^2.1.2",
     "graceful-fs": "^4.2.11",
-    "nan": "^2.17.0",
     "request": "^2.88.2"
   },
   "build": {
