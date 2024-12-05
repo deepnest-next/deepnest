@@ -1,18 +1,13 @@
-const electron = require('electron')
-const { Menu, ipcMain } = electron
+const { app, ipcMain, BrowserWindow, screen } = require('electron')
 const fs = require('graceful-fs');
-
-// Module to control application life.
-const app = electron.app
-
-app.commandLine.appendSwitch('--enable-precise-memory-info');
-
-// Module to create native browser window.
-const BrowserWindow = electron.BrowserWindow
-
 const path = require('path')
 const os = require('os')
 const url = require('url')
+
+require('@electron/remote/main').initialize()
+
+app.commandLine.appendSwitch('--enable-precise-memory-info');
+
 /*
 // main menu for mac
 const template = [
@@ -83,7 +78,7 @@ if (!gotTheLock) {
 function createMainWindow() {
 	
   // Create the browser window.
-  const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
+  const {width, height} = screen.getPrimaryDisplay().workAreaSize;
   
   var frameless = process.platform == 'darwin';
   //var frameless = true;
@@ -96,9 +91,12 @@ function createMainWindow() {
     webPreferences: {
       contextIsolation: false,
       enableRemoteModule: true,      
-      nodeIntegration: true
+      nodeIntegration: true,
+      nativeWindowOpen: true
     }
   })
+
+  require('@electron/remote/main').enable(mainWindow.webContents)
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
@@ -142,9 +140,12 @@ function createBackgroundWindows() {
       webPreferences: {
         contextIsolation: false,
         enableRemoteModule: true,
-        nodeIntegration: true
+        nodeIntegration: true,
+        nativeWindowOpen: true
       }
 		});
+
+    require('@electron/remote/main').enable(back.webContents)
 		
     if (process.env["deepnest_debug"] === '1') 
 		  back.webContents.openDevTools();
@@ -169,8 +170,6 @@ function createBackgroundWindows() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-  // https://www.electronjs.org/docs/latest/breaking-changes#planned-breaking-api-changes-90
-  app.allowRendererProcessReuse = false;
 	createMainWindow();
 	mainWindow.once('ready-to-show', () => {
 	  mainWindow.show();
@@ -256,6 +255,15 @@ ipcMain.on('background-stop', function(event){
 	console.log('stopped!', backgroundWindows);
 });
 
+// Backward compat with https://electron-settings.js.org/index.html#configure
+const configPath = path.resolve(app.getPath('userData'), 'settings.json');
+ipcMain.handle('read-config', () => {
+  return fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath).toString()) : {};
+});
+ipcMain.handle('write-config', (event, stringifiedConfig) => {
+  fs.writeFileSync(configPath, stringifiedConfig);
+});
+
 ipcMain.on('login-success', function(event, payload){
 	mainWindow.webContents.send('login-success', payload);
 });
@@ -266,8 +274,8 @@ ipcMain.on('purchase-success', function(event){
 
 ipcMain.on("setPlacements", (event, payload) => {
   global.exportedPlacements = payload;
-} );
+});
 
 ipcMain.on("test", (event, payload) => {
   global.test = payload;
-} );
+});

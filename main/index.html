@@ -32,13 +32,15 @@
 			}
 		}
 		
-		const { ipcRenderer, remote } = require('electron');
+		const { ipcRenderer } = require('electron');
+		const remote = require('@electron/remote');
+		const { dialog } = remote;
 		const fs = require('graceful-fs');
 		const request = require('request');
 		const http = require('http');
 		const path = require('path');
 		
-		ready(function(){
+		ready(async function(){
 			// main navigation			
 			var tabs = document.querySelectorAll('#sidenav li');
 			
@@ -66,8 +68,9 @@
 			});
 			
 			// config form
-			const config = require('electron-settings');
-			window.config = config;
+			
+
+			const defaultConversionServer = 'http://convert.deepnest.io';
 			
 			var defaultconfig = {
 			  units: 'inch',
@@ -85,18 +88,29 @@
 			  dxfImportScale: "1",
 			  dxfExportScale: "72",
 			  endpointTolerance: 0.36,
-			  conversionServer: 'http://convert.deepnest.io'
+			  conversionServer: defaultConversionServer
 			};
-			
-			//config.defaults(defaultconfig);
-			
-			const defaultConversionServer = 'http://convert.deepnest.io';
-			
-			// set to default if not set (for people with old configs stored)
-			for (var key in defaultconfig) {
-			  if(typeof config.getSync(key) === 'undefined'){
-			  	config.setSync(key, defaultconfig[key]);
-			  }
+
+			// Removed `electron-settings` while keeping the same interface to minimize changes
+			const config = window.config = {
+				...defaultconfig,
+				...(await ipcRenderer.invoke('read-config')),
+				getSync(k){
+					return typeof k==='undefined'? this: this[k];
+				},
+				setSync(arg0, v){
+					if(typeof arg0 === 'object') {
+						for (const key in arg0) {
+							this[key] = arg0[key];
+						}
+					} else if(typeof arg0 === 'string'){
+						this[arg0] = v;
+					}
+					ipcRenderer.invoke('write-config', JSON.stringify(this, null, 2));
+				},
+				resetToDefaultsSync(){
+					this.setSync(defaultconfig);
+				}
 			}
 			
 			var cfgvalues = config.getSync();
@@ -559,9 +573,6 @@
 			}
 			
 			// file import
-			var electron = require('electron');
-			var app = electron.remote; 
-			var fs = require('fs');
 
 			var files = fs.readdirSync(remote.getGlobal('NEST_DIRECTORY'));
 			var svgs = files.map(file => file.includes('.svg') ? file : undefined).filter(file => file !== undefined).sort();
@@ -578,7 +589,6 @@
 				
 				importbutton.className = 'button import disabled';
 
-				var dialog = app.dialog;
 				dialog.showOpenDialog({ filters: [
 
 						{ name: 'CAD formats', extensions: ['svg', 'dxf', 'cdr'] }
@@ -732,7 +742,7 @@
 			// add sheet
 			document.querySelector('#addsheet').onclick = function(){
 				var tools = document.querySelector('#partstools');
-				var dialog = document.querySelector('#sheetdialog');
+				// var dialog = document.querySelector('#sheetdialog');
 				
 				tools.className = 'active';
 			};
@@ -800,7 +810,6 @@
 				nestwindow.setAlwaysOnTop(true);
 				nestwindow.open();*/
 				
-				//const remote = require('electron').remote;
 				
 				/*window.nestwindow = new BrowserWindow({width: window.outerWidth*0.8, height: window.outerHeight*0.8, frame: true});
 				
@@ -904,7 +913,6 @@
 				
 				
 				for(var i=0; i<DeepNest.parts.length; i++){
-					console.log(DeepNest.parts);
 					if(DeepNest.parts[i].sheet){
 						// need at least one sheet
 						document.querySelector('#main').className = '';
@@ -1015,7 +1023,6 @@
 			var exportsvg = document.querySelector('#exportsvg');
 			exportsvg.onclick = function(){
 				
-				var dialog = app.dialog;
 				var fileName = dialog.showSaveDialogSync({title: 'Export Deepnest SVG'});
 
 					if(fileName === undefined){
@@ -1043,9 +1050,6 @@
 			
 			var exportdxf = document.querySelector('#exportdxf');
 			exportdxf.onclick = function(){
-//				var electron = require('electron');
-//				var app = electron.remote; 				
-				var dialog = app.dialog;
 				var fileName = dialog.showSaveDialogSync({
 					title: 'Export Deepnest DXF'
 				})
@@ -1101,7 +1105,6 @@
 			/*
 			var exportgcode = document.querySelector('#exportgcode');
 			exportgcode.onclick = function(){
-				var dialog = app.dialog;
 				dialog.showSaveDialog({title: 'Export Deepnest Gcode'}, function (fileName) {
 					if(fileName === undefined){
 						console.log("No file selected");
@@ -1472,11 +1475,6 @@
 			document.body.ondrop = (ev) => {
 			  ev.preventDefault();
 			}
-						
-			var windowManager = app.require('electron-window-manager');
-			
-			const BrowserWindow = app.BrowserWindow;
-			const url = require('url');
 			
 			window.loginWindow = null;
 		});
