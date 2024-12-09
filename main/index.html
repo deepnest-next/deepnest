@@ -591,7 +591,9 @@
 
 				dialog.showOpenDialog({ filters: [
 
-						{ name: 'CAD formats', extensions: ['svg', 'dxf', 'cdr'] }
+						{ name: 'CAD formats', extensions: ['svg', 'dxf', 'cdr'] },
+						{ name: 'SVG', extensions: ['svg'] },
+						{ name: 'DXF', extensions: ['dxf'] }
 
 					],
 					properties:['openFile', 'multiSelections']
@@ -1023,7 +1025,12 @@
 			var exportsvg = document.querySelector('#exportsvg');
 			exportsvg.onclick = function(){
 				
-				var fileName = dialog.showSaveDialogSync({title: 'Export Deepnest SVG'});
+				var fileName = dialog.showSaveDialogSync({
+					title: 'Export Deepnest SVG', 
+					filters: [
+						{ name: 'SVG', extensions: ['svg'] }
+					]
+				});
 
 					if(fileName === undefined){
 						console.log("No file selected");
@@ -1051,7 +1058,10 @@
 			var exportdxf = document.querySelector('#exportdxf');
 			exportdxf.onclick = function(){
 				var fileName = dialog.showSaveDialogSync({
-					title: 'Export Deepnest DXF'
+					title: 'Export Deepnest DXF', 
+					filters: [
+						{ name: 'DXF', extensions: ['dxf'] }
+					]
 				})
 			        
 					if(fileName === undefined){
