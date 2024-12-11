@@ -36,7 +36,8 @@
 		const remote = require('@electron/remote');
 		const { dialog } = remote;
 		const fs = require('graceful-fs');
-		const request = require('request');
+		const FormData = require('form-data');
+		const axios = require('axios').default;
 		const http = require('http');
 		const path = require('path');
 		
@@ -627,43 +628,49 @@
 						url = defaultConversionServer;
 					}
 					
-					var req = request.post(url, function (err, resp, body) {
-						if (err) {
-							message('could not contact file conversion server', true);
-						} else {
-							if(body.substring(0, 5) == 'error'){
-								message(body, true);
-							}
-							else{
-								// expected input dimensions on server is points
-								// scale based on unit preferences
-								var con = null;
-								var dxfFlag = false;
-								if(ext.toLowerCase() == '.dxf'){
-									//var unit = config.getSync('units');
-									con = Number(config.getSync('dxfImportScale'));
-									dxfFlag = true;
-									console.log('con', con);
-									
-									/*if(unit == 'inch'){
-										con = 72;
-									}
-									else{
-										// mm
-										con = 2.83465;
-									}*/
-								}
-								
-								// dirpath is used for loading images embedded in svg files
-								// converted svgs will not have images
-								importData(body, filename, null, con, dxfFlag);
-							}
-						}
+					const formData = new FormData();
+					formData.append('fileUpload', require('fs').readFileSync(file), {
+						filename: filename,
+						contentType: 'application/dxf'
 					});
+					formData.append('format', 'svg');
 
-					var form = req.form();
-					form.append('format', 'svg');
-					form.append('fileUpload', fs.createReadStream(file));
+					axios.post(url, formData.getBuffer(), {
+						headers: {
+							...formData.getHeaders(),
+						},
+						responseType: 'text'
+					}).then(resp => {
+						const body = resp.data;
+						if (body.substring(0, 5) == 'error') {
+							message(body, true);
+						} else {
+							// expected input dimensions on server is points
+							// scale based on unit preferences
+							var con = null;
+							var dxfFlag = false;
+							if (ext.toLowerCase() == '.dxf') {
+								//var unit = config.getSync('units');
+								con = Number(config.getSync('dxfImportScale'));
+								dxfFlag = true;
+								console.log('con', con);
+
+								/*if(unit == 'inch'){
+									con = 72;
+								}
+								else{
+									// mm
+									con = 2.83465;
+								}*/
+							}
+
+							// dirpath is used for loading images embedded in svg files
+							// converted svgs will not have images
+							importData(body, filename, null, con, dxfFlag);
+						}
+					}).catch(err => {
+						message('could not contact file conversion server', true);
+					});
 				}
 			}
 
@@ -1090,25 +1097,33 @@
 						
 						exportbutton.className = 'button export spinner';
 						
-						var req = request.post(url, function (err, resp, body) {
-							exportbutton.className = 'button export';
-							if (err) {
-								message('could not contact file conversion server', true);
-							} else {
-								if(body.substring(0, 5) == 'error'){
-									message(body, true);
-								}
-								else{
-									fs.writeFileSync(fileName, body);
-								}
-							}
-						});
+					const formData = new FormData();
+					formData.append('fileUpload', exportNest(selected.pop(), true), {
+						filename: 'deepnest.svg',
+						contentType: 'image/svg+xml'
+					});
+						formData.append('format', 'dxf');
 
-						var form = req.form();
-						form.append('format', 'dxf');
-						form.append('fileUpload', exportNest(selected.pop(), true), {
-						  filename: 'deepnest.svg',
-						  contentType: 'image/svg+xml'
+					axios.post(url, formData.getBuffer(), {
+						headers: {
+							...formData.getHeaders(),
+						},
+						responseType: 'text'
+					}).then(resp => {
+						const body = resp.data;
+							// function (err, resp, body) {
+							exportbutton.className = 'button export';
+							//if (err) {
+							//	message('could not contact file conversion server', true);
+							//} else {
+							if (body.substring(0, 5) == 'error') {
+								message(body, true);
+							} else {
+								fs.writeFileSync(fileName, body);
+							}
+							//}
+						}).catch(err => {
+							message('could not contact file conversion server', true);
 						});
 				    };
 			};

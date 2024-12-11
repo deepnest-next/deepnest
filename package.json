@@ -36,8 +36,9 @@
   },
   "dependencies": {
     "@electron/remote": "^2.1.2",
-    "graceful-fs": "^4.2.11",
-    "request": "^2.88.2"
+    "axios": "^1.7.9",
+    "form-data": "^4.0.1",
+    "graceful-fs": "^4.2.11"
   },
   "build": {
     "appId": "com.deepnest.io",
@@ -51,5 +52,11 @@
     "win": {
       "icon": "icon.ico"
     }
-  }
+  },
+  "contributors": [
+    {
+      "name": "Josef Fröhle",
+      "email": "github@josef-froehle.de"
+    }
+  ]
 }
