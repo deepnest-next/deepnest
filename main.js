@@ -1,10 +1,11 @@
 const { app, ipcMain, BrowserWindow, screen } = require('electron')
+const remote = require('@electron/remote/main')
 const fs = require('graceful-fs');
 const path = require('path')
 const os = require('os')
 const url = require('url')
 
-require('@electron/remote/main').initialize()
+remote.initialize()
 
 app.commandLine.appendSwitch('--enable-precise-memory-info');
 
@@ -96,7 +97,7 @@ function createMainWindow() {
     }
   })
 
-  require('@electron/remote/main').enable(mainWindow.webContents)
+  remote.enable(mainWindow.webContents)
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
@@ -145,7 +146,7 @@ function createBackgroundWindows() {
       }
 		});
 
-    require('@electron/remote/main').enable(back.webContents)
+    remote.enable(back.webContents)
 		
     if (process.env["deepnest_debug"] === '1') 
 		  back.webContents.openDevTools();
