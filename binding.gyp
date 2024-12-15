@@ -14,6 +14,9 @@
             'cflags!': [ '-fno-exceptions', "-m64" ],
             "ldflags": [ "-m elf_i386" ],
             'cflags_cc!': [ '-fno-exceptions', '-fPIC -m64' ],
+            "defines": [
+              "NOMINMAX"
+            ],
           }
         ],
         [ 
