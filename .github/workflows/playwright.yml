@@ -20,16 +20,16 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-          # https://github.com/electron/electron/issues/17972
-          file=node_modules/electron/dist/chrome-sandbox
-          chown root $file
-          chmod 4755 $file
+          # # https://github.com/electron/electron/issues/17972
+          # file=node_modules/electron/dist/chrome-sandbox
+          # chown root $file
+          # chmod 4755 $file
       - name: Build
         run: npm run build
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
       - name: Run Playwright tests
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm test
+        run: sudo xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm test
         env:
           DEBUG: pw:browser*
       - uses: actions/upload-artifact@v4
