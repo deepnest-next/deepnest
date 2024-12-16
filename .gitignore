@@ -8,8 +8,12 @@
 /bin
 /minkowski
 /deepnest-*win32-x64
-package-lock.json
 git_token.rtf
 .idea
 *.zip
 .python-version
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
