@@ -20,7 +20,8 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-          # # https://github.com/electron/electron/issues/17972
+      - name: Fix Ubuntu 24.04 issue https://github.com/electron/electron/issues/17972
+        run: |
           file=node_modules/electron/dist/chrome-sandbox
           sudo chown root $file
           sudo chmod 4755 $file

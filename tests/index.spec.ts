@@ -180,9 +180,11 @@ test("Nest", async ({}, testInfo) => {
   await expect(window.locator("id=nestinfo").locator("h1").nth(0)).toHaveText(
     "1"
   );
-  await expect(window.locator("id=nestinfo").locator("h1").nth(1)).toHaveText(
-    "54/54"
-  );
+  await expect(() =>
+    expect(window.locator("id=nestinfo").locator("h1").nth(1)).toHaveText(
+      "54/54"
+    )
+  ).toPass();
 
   await test.step("Attachments", async () => {
     const svg = await downloadSvg();
