@@ -1,10 +1,10 @@
-<img src="https://deepnest.io/img/logo-large.png" alt="Deepnest" width="250">
+<img src="https://github.com/user-attachments/assets/0f24f4c9-d1af-4db5-9570-37c89b42cdfa" alt="deepnest next" width="250">
 
-## **Deepnest**
+## **deepnest**
 
 A fast nesting tool for laser cutters and other CNC tools
 
-Deepnest is a desktop application originally based on [SVGNest](https://github.com/Jack000/SVGnest)
+deepnest is a desktop application originally based on [SVGNest](https://github.com/Jack000/SVGnest)
 
 - New nesting engine with speed critical code written in C
 - Merges common lines for laser cuts
@@ -23,12 +23,12 @@ Deepnest is a desktop application originally based on [SVGNest](https://github.c
 
 ## This Fork
 
-The primary goal has been to get Deepnest buildable again, which has been achieved.
+The primary goal has been to get deepnest buildable again, which has been achieved.
 
 
 ## Prerequisites
 
-- **Node 20:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
+- **Node 20+:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 3.7.9 and up** You can use the Python Version Manager (pyenv):
   - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
@@ -51,7 +51,7 @@ https://github.com/deepnest-next/deepnest/blob/master/.github/workflows/build.ym
 
 ```sh
 git clone https://github.com/deepnest-next/deepnest
-cd Deepnest
+cd deepnest
 npm install
 npm run build
 npm run start
@@ -96,7 +96,7 @@ Create a zip file of this folder for a simple distribution.
 
 ## Debugging
 
-If the environment variable "deepnest_debug" has a value of "1", Deepnest will open the browser dev tools (debugger/inspector).
+If the environment variable "deepnest_debug" has a value of "1", deepnest will open the browser dev tools (debugger/inspector).
 
 ## License
 
