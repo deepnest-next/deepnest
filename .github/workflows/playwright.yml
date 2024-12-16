@@ -18,7 +18,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          # https://github.com/electron/electron/issues/17972
+          file=node_modules/electron/dist/chrome-sandbox
+          chown root $file
+          chmod 4755 $file
       - name: Build
         run: npm run build
       - name: Install Playwright Browsers
