@@ -3,9 +3,11 @@
   "version": "1.2.2",
   "description": "Deep nesting for Laser and CNC",
   "main": "main.js",
+  "types": "index.d.ts",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "test": "playwright test",
     "configure": "node-gyp configure --release",
     "build-all": "node-gyp rebuild && mkdir minkowski >nul 2>&1|echo . >nul && npm run build",
     "build": "mkdir minkowski >nul 2>&1|echo . >nul && mkdir minkowski/Release >nul 2>&1|echo . >nul &&  electron-rebuild && npm run copy",
@@ -29,6 +31,7 @@
   "devDependencies": {
     "@electron/packager": "^18.3.6",
     "@electron/rebuild": "^3.2.9",
+    "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.1",
     "electron": "32.2.7",
     "nan": "^2.20.0",
