@@ -18,6 +18,7 @@ Deepnest is a desktop application originally based on [SVGNest](https://github.c
   * https://github.com/Dogthemachine/Deepnest
     * https://github.com/cmidgley/Deepnest
       * https://github.com/deepnest-io/Deepnest
+        * https://github.com/deepnest-next/deepnest
 
 
 ## This Fork
@@ -27,9 +28,9 @@ The primary goal has been to get Deepnest buildable again, which has been achiev
 
 ## Prerequisites
 
-- **Node 14/16/18/20:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
+- **Node 20:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
   -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
-- **Python 3.7.9** You can use the Python Version Manager (pyenv):
+- **Python 3.7.9 and up** You can use the Python Version Manager (pyenv):
   - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
 - **Visual Studio with Desktop Development with C++ extension**
   - Install VS2022 from https://visualstudio.microsoft.com/vs/features/cplusplus/
@@ -37,7 +38,7 @@ The primary goal has been to get Deepnest buildable again, which has been achiev
 
 For ubuntu (or when you're not sure how to build) look at the build workflow:
 
-https://github.com/deepnest-io/Deepnest/blob/master/.github/workflows/build.yml#L28
+https://github.com/deepnest-next/deepnest/blob/master/.github/workflows/build.yml#L28
 
 ### Possible Problems
 
@@ -49,7 +50,7 @@ https://github.com/deepnest-io/Deepnest/blob/master/.github/workflows/build.yml#
 ## Building
 
 ```sh
-git clone https://github.com/deepnest-io/Deepnest
+git clone https://github.com/deepnest-next/deepnest
 cd Deepnest
 npm install
 npm run build
