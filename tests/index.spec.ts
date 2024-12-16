@@ -21,6 +21,11 @@ test("Nest", async ({}, testInfo) => {
   const electronApp = await electron.launch({
     args: ["main.js"],
     recordVideo: { dir: testInfo.outputDir },
+    env: {
+      ...process.env,
+      // https://github.com/microsoft/playwright/issues/11932#issuecomment-1200164702
+      NODE_ENV: "development",
+    },
   });
 
   const window = await electronApp.firstWindow();
