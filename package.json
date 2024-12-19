@@ -17,7 +17,7 @@
     "dist-all": "npm run clean-all && npm install && npm run build-all && npm run dist",
     "copy": "shx cp -r ./build/Release ./minkowski"
   },
-  "repository": "https://github.com/deepnest-io/Deepnest",
+  "repository": "https://github.com/deepnest-next/deepnest",
   "keywords": [
     "Electron",
     "Nesting",
@@ -43,9 +43,19 @@
     "form-data": "^4.0.1",
     "graceful-fs": "^4.2.11"
   },
+  "files": [
+    "main.js",
+    "main/**/*",
+    "index.d.ts",
+    "minkowski/addon.node",
+    "node_modules",
+    "package.json",
+    "icon.icns",
+    "icon.ico"
+  ],
   "build": {
-    "appId": "com.deepnest.io",
-    "copyright": "Copyright 2016 Jack Qiao",
+    "appId": "net.deepnest.app",
+    "copyright": "Copyright 2016 Jack Qiao, 2024 deepnest-next Community",
     "compression": "maximum",
     "nodeGypRebuild": false,
     "mac": {
