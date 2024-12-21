@@ -17,7 +17,7 @@ deepnest is a desktop application originally based on [SVGNest](https://github.c
 * https://github.com/Jack000/Deepnest
   * https://github.com/Dogthemachine/Deepnest
     * https://github.com/cmidgley/Deepnest
-      * https://github.com/deepnest-io/Deepnest
+      * https://github.com/deepnest-io/Deepnest (⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
         * https://github.com/deepnest-next/deepnest
 
 
