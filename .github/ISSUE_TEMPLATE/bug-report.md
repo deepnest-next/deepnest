@@ -1,9 +1,9 @@
 ---
 name: Bug Report
 about: Something does not work as expected
-title: ''
+title: ':bug: <title>'
 labels: bug
-assignees: ''
+assignees: 'Dexus'
 
 ---
 
@@ -11,7 +11,7 @@ assignees: ''
 
 For Questions, Support, Ideas, please use:
 
-https://github.com/deepnest-io/Deepnest/discussions
+https://github.com/deepnest-next/deepnest/discussions
 -->
 
 **Describe the bug**
