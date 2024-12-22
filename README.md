@@ -13,23 +13,21 @@ deepnest is a desktop application originally based on [SVGNest](https://github.c
 
 ## Fork History
 
-* https://github.com/Jack000/SVGnest (Academic Work References)
-* https://github.com/Jack000/Deepnest
-  * https://github.com/Dogthemachine/Deepnest
-    * https://github.com/cmidgley/Deepnest
-      * https://github.com/deepnest-io/Deepnest (⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
-        * https://github.com/deepnest-next/deepnest
-
+- https://github.com/Jack000/SVGnest (Academic Work References)
+- https://github.com/Jack000/Deepnest
+  - https://github.com/Dogthemachine/Deepnest
+    - https://github.com/cmidgley/Deepnest
+      - https://github.com/deepnest-io/Deepnest (⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
+        - https://github.com/deepnest-next/deepnest
 
 ## This Fork
 
 The primary goal has been to get deepnest buildable again, which has been achieved.
 
-
 ## Prerequisites
 
 - **Node 20+:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
-  -  [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
+  - [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 3.7.9 and up** You can use the Python Version Manager (pyenv):
   - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
 - **Visual Studio with Desktop Development with C++ extension**
@@ -38,14 +36,13 @@ The primary goal has been to get deepnest buildable again, which has been achiev
 
 For ubuntu (or when you're not sure how to build) look at the build workflow:
 
-https://github.com/deepnest-next/deepnest/blob/master/.github/workflows/build.yml#L28
+https://github.com/deepnest-next/deepnest/blob/main/.github/workflows/build.yml#L28
 
 ### Possible Problems
 
-* On Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
-  - **Start** > "**Manage App Execution Aliases**" and turning off the "**App Installer" aliases   for Python**"
-* close-and-open all command shells and your IDE to activate the latest setup
-
+- On Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
+  - **Start** > "**Manage App Execution Aliases**" and turning off the "**App Installer" aliases for Python**"
+- close-and-open all command shells and your IDE to activate the latest setup
 
 ## Building
 
@@ -60,7 +57,7 @@ npm run start
 ### Rebuild
 
 ```sh
-# If you change the electron-related files (web files, javascript), a build with 
+# If you change the electron-related files (web files, javascript), a build with
 npm run build
 
 # If you change the the Minkowski files (the `.cc` or `.h` files):
@@ -102,8 +99,8 @@ If the environment variable "deepnest_debug" has a value of "1", deepnest will o
 
 The main license is the MIT.
 
-* [LICENSE](LICENSE)
+- [LICENSE](LICENSE)
 
 Further Licenses:
 
-* [LICENSES](LICENSES.md)
+- [LICENSES](LICENSES.md)
