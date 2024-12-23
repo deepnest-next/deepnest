@@ -1,6 +1,7 @@
 name: build
 
 on:
+  workflow_dispatch:
   push:
     # enable next line to limit branches to run
     branches: ["main"]
