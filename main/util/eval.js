@@ -1,11 +1,11 @@
-﻿var isNode = typeof module !== 'undefined' && module.exports;
+﻿var isNode = typeof module !== "undefined" && module.exports;
 
 if (isNode) {
-	process.once('message', function (code) {
-		eval(JSON.parse(code).data);
-	});
+  process.once("message", function (code) {
+    eval(JSON.parse(code).data);
+  });
 } else {
-	self.onmessage = function (code) {
-		eval(code.data);
-	};
+  self.onmessage = function (code) {
+    eval(code.data);
+  };
 }
