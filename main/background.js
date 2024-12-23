@@ -99,7 +99,7 @@ window.db = {
 window.onload = function () {
 	const { ipcRenderer } = require('electron');
 	window.ipcRenderer = ipcRenderer;
-	window.addon = require('../minkowski/Release/addon');
+	window.addon = require('@deepnest/calculate-nfp');
 	
 	window.path = require('path')
 	window.url = require('url')

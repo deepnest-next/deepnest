@@ -2,20 +2,24 @@
   "name": "deepnest",
   "version": "1.2.2",
   "description": "Deep nesting for Laser and CNC",
+  "private": true,
   "main": "main.js",
   "types": "index.d.ts",
   "license": "MIT",
+  "funding":[
+    {
+      "type": "patreon",
+      "url": "https://patreon.com/deepnest_next?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link"
+    }
+  ],
   "scripts": {
     "start": "electron .",
     "test": "playwright test",
-    "configure": "node-gyp configure --release",
-    "build-all": "node-gyp rebuild && mkdir minkowski >nul 2>&1|echo . >nul && npm run build",
-    "build": "mkdir minkowski >nul 2>&1|echo . >nul && mkdir minkowski/Release >nul 2>&1|echo . >nul &&  electron-rebuild && npm run copy",
+    "build": "electron-rebuild",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
-    "clean-all": "rmdir /s /q build dist node_modules minkowski bin >nul 2>&1|echo . >nul",
+    "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
     "dist": "npx @electron/packager . deepnest-v$npm_package_version --overwrite",
-    "dist-all": "npm run clean-all && npm install && npm run build-all && npm run dist",
-    "copy": "shx cp -r ./build/Release ./minkowski"
+    "dist-all": "npm run clean-all && npm install && npm run build && npm run dist"
   },
   "repository": "https://github.com/deepnest-next/deepnest",
   "keywords": [
@@ -24,21 +28,16 @@
     "CNC",
     "Laser"
   ],
-  "author": {
-    "name": "Jack Qiao",
-    "email": "jak000@gmail.com"
-  },
   "devDependencies": {
     "@electron/packager": "^18.3.6",
     "@electron/rebuild": "^3.2.9",
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.1",
-    "electron": "32.2.7",
-    "nan": "^2.20.0",
-    "shx": "^0.3.4"
+    "electron": "32.2.7"
   },
   "dependencies": {
     "@electron/remote": "^2.1.2",
+    "@deepnest/calculate-nfp": "*",
     "axios": "^1.7.9",
     "form-data": "^4.0.1",
     "graceful-fs": "^4.2.11"
@@ -47,7 +46,6 @@
     "main.js",
     "main/**/*",
     "index.d.ts",
-    "minkowski/addon.node",
     "node_modules",
     "package.json",
     "icon.icns",
@@ -70,6 +68,10 @@
     {
       "name": "Josef Fröhle",
       "email": "github@josef-froehle.de"
+    },
+    {
+      "name": "Jack Qiao",
+      "email": "jak000@gmail.com"
     }
   ]
 }
