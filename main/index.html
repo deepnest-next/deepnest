@@ -41,6 +41,7 @@
 		const axios = require('axios').default;
 		const http = require('http');
 		const path = require('path');
+		const svgPreProcessor = require('@deepnest/svg-preprocessor');
 
 		ready(async function () {
 			// main navigation
@@ -90,7 +91,8 @@
 				dxfImportScale: "1",
 				dxfExportScale: "72",
 				endpointTolerance: 0.36,
-				conversionServer: defaultConversionServer
+				conversionServer: defaultConversionServer,
+				useSvgPreProcessor: false,
 			};
 
 			// Removed `electron-settings` while keeping the same interface to minimize changes
@@ -133,7 +135,7 @@
 						}
 					}
 
-					if (key == 'mergeLines' || key == 'simplify') {
+					if (key == 'mergeLines' || key == 'simplify' || key == 'useSvgPreProcessor') {
 						val = i.checked;
 					}
 
@@ -232,7 +234,7 @@
 					else if (i.getAttribute('data-conversion') == 'true') {
 						i.value = c[i.getAttribute('data-config')] / scale.value;
 					}
-					else if (key == 'mergeLines' || key == 'simplify') {
+					else if (key == 'mergeLines' || key == 'simplify' || key == 'useSvgPreProcessor') {
 						i.checked = c[i.getAttribute('data-config')];
 					}
 					else {
@@ -668,7 +670,17 @@
 
 							// dirpath is used for loading images embedded in svg files
 							// converted svgs will not have images
-							importData(body, filename, null, con, dxfFlag);
+							if (config.getSync('useSvgPreProcessor')) {
+								const svgResult = svgPreProcessor.loadSvgString(body);
+								if (!svgResult.success) {
+									message(svgResult.result, true);
+								} else {
+									importData(svgResult.result, filename, null, con, dxfFlag);
+								}
+							} else {
+								importData(body, filename, null, con, dxfFlag);
+							}
+
 						}
 					}).catch(err => {
 						message('could not contact file conversion server', true);
@@ -684,8 +696,16 @@
 					}
 					var filename = path.basename(filepath);
 					var dirpath = path.dirname(filepath);
-
-					importData(data, filename, dirpath, null);
+					if (config.getSync('useSvgPreProcessor')) {
+						const svgResult = svgPreProcessor.loadSvgString(data);
+						if (!svgResult.success) {
+							message(svgResult.result, true);
+						} else {
+							importData(svgResult.result, filename, null);
+						}
+					} else {
+						importData(data, filename, dirpath, null);
+					}
 				});
 			};
 
@@ -1807,6 +1827,11 @@
 
 				<h1>Import/Export</h1>
 				<dl class="formgroup">
+					<dt>Use SVG Normalizer?</dt>
+					<dd>
+						<input id="useSvgPreProcessor" type="checkbox" data-config="useSvgPreProcessor" />
+					</dd>
+
 					<dt>SVG scale</dt>
 					<dd>
 						<input id="inputscale" type="number" value="72" min="1" step="any" data-config="scale" required />

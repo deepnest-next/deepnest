@@ -38,6 +38,7 @@
   "dependencies": {
     "@electron/remote": "^2.1.2",
     "@deepnest/calculate-nfp": "*",
+    "@deepnest/svg-preprocessor": "*",
     "axios": "^1.7.9",
     "form-data": "^4.0.1",
     "graceful-fs": "^4.2.11"
