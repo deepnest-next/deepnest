@@ -93,6 +93,7 @@
 				endpointTolerance: 0.36,
 				conversionServer: defaultConversionServer,
 				useSvgPreProcessor: false,
+				useQuantityFromFileName: false,
 			};
 
 			// Removed `electron-settings` while keeping the same interface to minimize changes
@@ -135,7 +136,7 @@
 						}
 					}
 
-					if (key == 'mergeLines' || key == 'simplify' || key == 'useSvgPreProcessor') {
+					if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName'].includes(key)) {
 						val = i.checked;
 					}
 
@@ -234,7 +235,7 @@
 					else if (i.getAttribute('data-conversion') == 'true') {
 						i.value = c[i.getAttribute('data-config')] / scale.value;
 					}
-					else if (key == 'mergeLines' || key == 'simplify' || key == 'useSvgPreProcessor') {
+					else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName'].includes(key)) {
 						i.checked = c[i.getAttribute('data-config')];
 					}
 					else {
@@ -1890,6 +1891,14 @@
 					<dt>GA mutation rate</dt>
 					<dd>
 						<input type="number" value="10" step="1" min="1" max="50" data-config="mutationRate" required />
+					</dd>
+				</dl>
+
+				<h1>Other Settings</h1>
+				<dl class="formgroup">
+					<dt>Use Quantity from filename (demosvg.{quantity:3}.svg = demosvg.3.svg) *beta</dt>
+					<dd>
+						<input type="checkbox" data-config="useQuantityFromFileName" />
 					</dd>
 				</dl>
 
