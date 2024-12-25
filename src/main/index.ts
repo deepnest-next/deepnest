@@ -96,9 +96,11 @@ function createWindow(): void {
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
+    console.log('mainWindow closed')
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
+    closeBackgroundWindows()
     mainWindow = null
     if (process.platform !== 'darwin') {
       app.quit()
@@ -115,6 +117,15 @@ function createWindow(): void {
 }
 
 let winCount = 0
+
+function closeBackgroundWindows(): void {
+  for (let i = 0; i < backgroundWindows.length; i++) {
+    if (backgroundWindows[i]) {
+      backgroundWindows[i].destroy()
+      delete backgroundWindows[i]
+    }
+  }
+}
 
 function createBackgroundWindows(): void {
   //busyWindows = [];
