@@ -5,7 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import url from 'node:url'
 import os from 'node:os'
-import fs from 'graceful-fs'
+import * as fs from 'graceful-fs'
 
 remote.initialize()
 
