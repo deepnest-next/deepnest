@@ -2,7 +2,7 @@
 <html itemscope="" itemtype="http://schema.org/WebPage" lang="en">
 
 <head>
-	<title>Deepnest - Industrial nesting</title>
+	<title>deepnest - Industrial nesting</title>
 
 	<link type="text/css" rel="stylesheet" media="all" href="font/latolatinfonts.css" />
 	<link rel="stylesheet" type="text/css" href="style.css" />
@@ -1056,7 +1056,7 @@
 			exportsvg.onclick = function () {
 
 				var fileName = dialog.showSaveDialogSync({
-					title: 'Export Deepnest SVG',
+					title: 'Export deepnest SVG',
 					filters: [
 						{ name: 'SVG', extensions: ['svg'] }
 					]
@@ -1088,7 +1088,7 @@
 			var exportdxf = document.querySelector('#exportdxf');
 			exportdxf.onclick = function () {
 				var fileName = dialog.showSaveDialogSync({
-					title: 'Export Deepnest DXF',
+					title: 'Export deepnest DXF',
 					filters: [
 						{ name: 'DXF', extensions: ['dxf'] }
 					]
@@ -1153,7 +1153,7 @@
 			/*
 			var exportgcode = document.querySelector('#exportgcode');
 			exportgcode.onclick = function(){
-				dialog.showSaveDialog({title: 'Export Deepnest Gcode'}, function (fileName) {
+				dialog.showSaveDialog({title: 'Export deepnest Gcode'}, function (fileName) {
 					if(fileName === undefined){
 						console.log("No file selected");
 					}
@@ -3195,9 +3195,13 @@
 						r="25.866" />
 				</g>
 			</svg>
-			<h1 style="margin: 0 0 0.2em 0; font-size: 3em; color:#26A9E0; text-align: center">Deepnest</h1>
+			<h1 style="margin: 0 0 0.2em 0; font-size: 3em; color:#26A9E0; text-align: center">deepnest</h1>
 
-			v<span id="package-version"></span>
+			<p>v<span id="package-version"></span></p>
+			<p>Visit our website: <a href="https://www.deepnest.net" target="_blank" tabindex="-1">www.deepnest.net</a>.</p>
+			<p>If you use this software regularly, you should consider supporting us! We are on <a
+					href="https://patreon.com/deepnest_next?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link"
+					target="_blank" tabindex="-1">https://patreon.com/deepnest_next</a>.</p>
 
 		</div>
 	</div>
