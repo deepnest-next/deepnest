@@ -1,13 +1,13 @@
 import { resolve } from 'path'
-import { defineConfig, externalizeDepsPlugin, bytecodePlugin } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import solid from 'vite-plugin-solid'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin(), bytecodePlugin()]
+    plugins: [externalizeDepsPlugin()]
   },
   preload: {
-    plugins: [externalizeDepsPlugin(), bytecodePlugin()],
+    plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
         input: {
@@ -26,9 +26,6 @@ export default defineConfig({
     plugins: [solid()],
     build: {
       rollupOptions: {
-        output: {
-          format: 'cjs'
-        },
         input: {
           index: resolve(__dirname, 'src/renderer/index.html'),
           backend: resolve(__dirname, 'src/renderer/backend.html')

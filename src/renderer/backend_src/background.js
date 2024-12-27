@@ -1,9 +1,9 @@
 'use strict'
 
 import * as GeometryUtil from './util/geometryutil.js'
-const ClipperLib = require('./util/clipper.js')
-const Parallel = require('./util/parallel.js')
-const d3 = require('./util/d3-polygon.js')
+import * as ClipperLib from './util/clipper.js'
+import * as Parallel from './util/parallel.js'
+import * as d3 from './util/d3-polygon.js'
 
 function clone(nfp) {
   var newnfp = []
