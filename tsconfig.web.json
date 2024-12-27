@@ -7,7 +7,7 @@
     "src/preload/*.d.ts"
   ],
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "composite": true,
     "jsxImportSource": "solid-js",
     "baseUrl": ".",
