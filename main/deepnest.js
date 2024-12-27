@@ -567,8 +567,8 @@
         config.timeRatio = n;
       }
 
-      if (c.scale && parseInt(c.scale) > 0) {
-        config.scale = parseInt(c.scale);
+      if (c.scale && parseFloat(c.scale) > 0) {
+        config.scale = parseFloat(c.scale);
       }
 
       SvgParser.config({
