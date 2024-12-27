@@ -5,6 +5,9 @@
       "path": "./tsconfig.node.json"
     },
     {
+      "path": "./tsconfig.playwright.json"
+    },
+    {
       "path": "./tsconfig.web.json"
     }
   ]
