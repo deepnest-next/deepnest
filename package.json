@@ -6,7 +6,7 @@
   "main": "main.js",
   "types": "index.d.ts",
   "license": "MIT",
-  "funding":[
+  "funding": [
     {
       "type": "patreon",
       "url": "https://patreon.com/deepnest_next?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_fan&utm_content=join_link"
@@ -18,7 +18,7 @@
     "build": "electron-rebuild",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
     "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
-    "dist": "npx @electron/packager . deepnest-v$npm_package_version --overwrite",
+    "dist": "cross-replace npx @electron/packager . deepnest-v${npm_package_version} --overwrite",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist"
   },
   "repository": "https://github.com/deepnest-next/deepnest",
@@ -33,12 +33,13 @@
     "@electron/rebuild": "^3.2.9",
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.1",
+    "cross-replace": "^0.2.0",
     "electron": "32.2.7"
   },
   "dependencies": {
-    "@electron/remote": "^2.1.2",
     "@deepnest/calculate-nfp": "*",
     "@deepnest/svg-preprocessor": "*",
+    "@electron/remote": "^2.1.2",
     "axios": "^1.7.9",
     "form-data": "^4.0.1",
     "graceful-fs": "^4.2.11"
