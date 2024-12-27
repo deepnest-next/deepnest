@@ -1,5 +1,10 @@
 'use strict'
 
+import * as GeometryUtil from './util/geometryutil.js'
+const ClipperLib = require('./util/clipper.js')
+const Parallel = require('./util/parallel.js')
+const d3 = require('./util/d3-polygon.js')
+
 function clone(nfp) {
   var newnfp = []
   for (var i = 0; i < nfp.length; i++) {
@@ -123,13 +128,6 @@ window.db = {
 }
 
 window.onload = function () {
-  const { ipcRenderer } = require('electron')
-  window.ipcRenderer = ipcRenderer
-  window.addon = require('@deepnest/calculate-nfp')
-
-  window.path = require('path')
-  window.url = require('url')
-  window.fs = require('graceful-fs')
   /*
 add package 'filequeue 0.5.0' if you enable this
 	window.FileQueue = require('filequeue');
@@ -137,7 +135,7 @@ add package 'filequeue 0.5.0' if you enable this
 */
   window.nfpcache = {}
 
-  ipcRenderer.on('background-start', (event, data) => {
+  window.electron.ipcRenderer.on('background-start', (event, data) => {
     var index = data.index
     var individual = data.individual
 
@@ -167,7 +165,7 @@ add package 'filequeue 0.5.0' if you enable this
     // preprocess
     var pairs = []
     var inpairs = function (key, p) {
-      for (var i = 0; i < p.length; i++) {
+      for (let i = 0; i < p.length; i++) {
         if (
           p[i].Asource == key.Asource &&
           p[i].Bsource == key.Bsource &&
@@ -179,7 +177,7 @@ add package 'filequeue 0.5.0' if you enable this
       }
       return false
     }
-    for (var i = 0; i < parts.length; i++) {
+    for (let i = 0; i < parts.length; i++) {
       var B = parts[i]
       for (var j = 0; j < i; j++) {
         var A = parts[j]
@@ -197,7 +195,7 @@ add package 'filequeue 0.5.0' if you enable this
           Arotation: A.rotation,
           Brotation: B.rotation
         }
-        if (!inpairs(key, pairs) && !db.has(doc)) {
+        if (!inpairs(key, pairs) && !window.db.has(doc)) {
           pairs.push(key)
         }
       }
@@ -209,13 +207,11 @@ add package 'filequeue 0.5.0' if you enable this
       var A = rotatePolygon(pair.A, pair.Arotation)
       var B = rotatePolygon(pair.B, pair.Brotation)
 
-      var clipper = new ClipperLib.Clipper()
-
       var Ac = toClipperCoordinates(A)
       ClipperLib.JS.ScaleUpPath(Ac, 10000000)
       var Bc = toClipperCoordinates(B)
       ClipperLib.JS.ScaleUpPath(Bc, 10000000)
-      for (var i = 0; i < Bc.length; i++) {
+      for (let i = 0; i < Bc.length; i++) {
         Bc[i].X *= -1
         Bc[i].Y *= -1
       }
@@ -223,7 +219,7 @@ add package 'filequeue 0.5.0' if you enable this
       var clipperNfp
 
       var largestArea = null
-      for (i = 0; i < solution.length; i++) {
+      for (let i = 0; i < solution.length; i++) {
         var n = toNestCoordinates(solution[i], 10000000)
         var sarea = -GeometryUtil.polygonArea(n)
         if (largestArea === null || largestArea < sarea) {
@@ -286,17 +282,13 @@ add package 'filequeue 0.5.0' if you enable this
     function sync() {
       //console.log('starting synchronous calculations', Object.keys(window.nfpCache).length);
       console.log('in sync')
-      var c = 0
-      for (var key in window.nfpcache) {
-        c++
-      }
-      console.log('nfp cached:', c)
+      console.log('nfp cached:', window.nfpcache.length)
       console.log()
-      ipcRenderer.send('test', [data.sheets, parts, data.config, index])
+      window.electron.ipcRenderer.send('test', [data.sheets, parts, data.config, index])
       var placement = placeParts(data.sheets, parts, data.config, index)
 
       placement.index = data.index
-      ipcRenderer.send('background-response', placement)
+      window.electron.ipcRenderer.send('background-response', placement)
     }
 
     console.time('Total')
@@ -311,15 +303,15 @@ add package 'filequeue 0.5.0' if you enable this
 
       p._spawnMapWorker = function (i, cb, done, env, wrk) {
         // hijack the worker call to check progress
-        ipcRenderer.send('background-progress', {
+        window.electron.ipcRenderer.send('background-progress', {
           index: index,
           progress: 0.5 * (spawncount++ / pairs.length)
         })
         return Parallel.prototype._spawnMapWorker.call(p, i, cb, done, env, wrk)
       }
 
-      p.require('clipper.js')
-      p.require('geometryutil.js')
+      p.require('./util/clipper.js')
+      p.require('./util/geometryutil.js')
 
       p.map(process).then(function (processed) {
         function getPart(source) {
@@ -386,7 +378,7 @@ add package 'filequeue 0.5.0' if you enable this
 // returns the square of the length of any merged lines
 // filter out any lines less than minlength long
 function mergedLength(parts, p, minlength, tolerance) {
-  var min2 = minlength * minlength
+  let min2 = minlength * minlength
   var totalLength = 0
   var segments = []
 
@@ -426,11 +418,11 @@ function mergedLength(parts, p, minlength, tolerance) {
       if (B.length > 1) {
         for (var k = 0; k < B.length; k++) {
           var B1 = B[k]
-
+          let B2
           if (k + 1 == B.length) {
-            var B2 = B[0]
+            B2 = B[0]
           } else {
-            var B2 = B[k + 1]
+            B2 = B[k + 1]
           }
 
           if (!B1.exact || !B2.exact) {
@@ -461,7 +453,7 @@ function mergedLength(parts, p, minlength, tolerance) {
           var min1 = Math.min(0, rotA2x)
           var max1 = Math.max(0, rotA2x)
 
-          var min2 = Math.min(rotB1.x, rotB2.x)
+          min2 = Math.min(rotB1.x, rotB2.x)
           var max2 = Math.max(rotB1.x, rotB2.x)
 
           // not overlapping
@@ -683,7 +675,7 @@ function getOuterNfp(A, B, inside) {
   if (inside || (A.children && A.children.length > 0)) {
     //console.log('computing minkowski: ',A.length, B.length);
     //console.time('addon');
-    nfp = addon.calculateNFP({ A: A, B: B })
+    nfp = window.backend_api.calculateNFP({ A: A, B: B })
     //console.timeEnd('addon');
   } else {
     console.log('minkowski', A.length, B.length, A.source, B.source)
@@ -712,7 +704,7 @@ function getOuterNfp(A, B, inside) {
       }
     }
 
-    for (var i = 0; i < clipperNfp.length; i++) {
+    for (let i = 0; i < clipperNfp.length; i++) {
       clipperNfp[i].x += B[0].x
       clipperNfp[i].y += B[0].y
     }
@@ -830,14 +822,14 @@ function getInnerNfp(A, B, config) {
   }
 
   var f = []
-  for (var i = 0; i < finalNfp.length; i++) {
+  for (let i = 0; i < finalNfp.length; i++) {
     f.push(toNestCoordinates(finalNfp[i], config.clipperScale))
   }
 
   if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
     // insert into db
     console.log('inserting inner: ', A.source, B.source, B.rotation, f)
-    var doc = {
+    let doc = {
       A: A.source,
       B: B.source,
       Arotation: 0,
@@ -882,7 +874,6 @@ function placeParts(sheets, parts, config, nestindex) {
   //var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
 
   var key, nfp
-  var part
 
   while (parts.length > 0) {
     var placed = []
@@ -912,7 +903,7 @@ function placeParts(sheets, parts, config, nestindex) {
           break
         }
 
-        var r = rotatePolygon(part, 360 / config.rotations)
+        let r = rotatePolygon(part, 360 / config.rotations)
         r.rotation = part.rotation + 360 / config.rotations
         r.source = part.source
         r.id = part.id
@@ -1220,7 +1211,7 @@ function placeParts(sheets, parts, config, nestindex) {
         placednum += allplacements[j].sheetplacements.length
       }
       //console.log(placednum, totalnum);
-      ipcRenderer.send('background-progress', {
+      window.electron.ipcRenderer.send('background-progress', {
         index: nestindex,
         progress: 0.5 + 0.5 * (placednum / totalnum)
       })
@@ -1255,7 +1246,7 @@ function placeParts(sheets, parts, config, nestindex) {
     fitness += 100000000 * (Math.abs(GeometryUtil.polygonArea(parts[i])) / totalsheetarea)
   }
   // send finish progerss signal
-  ipcRenderer.send('background-progress', { index: nestindex, progress: -1 })
+  window.electron.ipcRenderer.send('background-progress', { index: nestindex, progress: -1 })
 
   console.log('WATCH', allplacements)
 
@@ -1263,6 +1254,7 @@ function placeParts(sheets, parts, config, nestindex) {
 }
 
 // clipperjs uses alerts for warnings
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function alert(message) {
   console.log('alert: ', message)
 }
