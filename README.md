@@ -2,6 +2,7 @@
 - This repository is a fork of the original due to numerous system failures in the previous fork (https://github.com/ahmadileham/Deepnest). Many of these issues stemmed from untested branches being merged into the main repository.
 - This fork was created within this organization to ensure members of the original repository are aware that it is intended for learning purposes by Universiti Malaya students. For further context, refer to the discussion in [this comment](https://github.com/ahmadileham/Deepnest/pull/12#issuecomment-2562395238).
 - Please review [Pull Request #12](https://github.com/ahmadileham/Deepnest/pull/12) for additional details.
+- To the members of this organization, please read [contributing guidelines](https://github.com/deepnest-next/.github/blob/3a4d36cc515b83ba36500fbf0d37f1299c9fe66e/CONTRIBUTING.md) first before contributing to this fork.
 
 #
 <img src="https://github.com/user-attachments/assets/0f24f4c9-d1af-4db5-9570-37c89b42cdfa" alt="deepnest next" width="250">
