@@ -2,8 +2,10 @@
 
 import * as GeometryUtil from './util/geometryutil.js'
 import * as ClipperLib from './util/clipper.js'
-import * as Parallel from './util/parallel.js'
-import * as d3 from './util/d3-polygon.js'
+import * as parallel from './util/parallel.js'
+import * as d3 from 'd3-polygon'
+
+const Parallel = parallel.Parallel
 
 function clone(nfp) {
   var newnfp = []

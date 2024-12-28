@@ -1993,5 +1993,7 @@ const GeometryUtil = {
     return rotated
   }
 }
-
-module.exports = GeometryUtil
+if (typeof window !== 'undefined') {
+  window.GeometryUtil = GeometryUtil
+}
+export default GeometryUtil
