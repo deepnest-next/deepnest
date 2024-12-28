@@ -7,7 +7,7 @@ on:
     branches: ["main"]
   pull_request:
     # enable next line to limit branches to run
-    # branches: [ "main" ]
+    branches: [ "main" ]
 
 jobs:
   build:
