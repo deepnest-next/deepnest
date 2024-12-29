@@ -7,128 +7,6 @@ import * as d3 from 'd3-polygon'
 
 const Parallel = parallel.Parallel
 
-function clone(nfp) {
-  var newnfp = []
-  for (var i = 0; i < nfp.length; i++) {
-    newnfp.push({
-      x: nfp[i].x,
-      y: nfp[i].y
-    })
-  }
-
-  if (nfp.children && nfp.children.length > 0) {
-    newnfp.children = []
-    for (i = 0; i < nfp.children.length; i++) {
-      var child = nfp.children[i]
-      var newchild = []
-      for (var j = 0; j < child.length; j++) {
-        newchild.push({
-          x: child[j].x,
-          y: child[j].y
-        })
-      }
-      newnfp.children.push(newchild)
-    }
-  }
-
-  return newnfp
-}
-
-function cloneNfp(nfp, inner) {
-  if (!inner) {
-    return clone(nfp)
-  }
-
-  // inner nfp is actually an array of nfps
-  var newnfp = []
-  for (var i = 0; i < nfp.length; i++) {
-    newnfp.push(clone(nfp[i]))
-  }
-
-  return newnfp
-}
-
-window.db = {
-  has: function (obj) {
-    var key =
-      'A' +
-      obj.A +
-      'B' +
-      obj.B +
-      'Arot' +
-      parseInt(obj.Arotation) +
-      'Brot' +
-      parseInt(obj.Brotation)
-    if (window.nfpcache[key]) {
-      return true
-    }
-    return false
-  },
-
-  find: function (obj, inner) {
-    var key =
-      'A' +
-      obj.A +
-      'B' +
-      obj.B +
-      'Arot' +
-      parseInt(obj.Arotation) +
-      'Brot' +
-      parseInt(obj.Brotation)
-    //console.log('key: ', key);
-    if (window.nfpcache[key]) {
-      return cloneNfp(window.nfpcache[key], inner)
-    }
-    /*var keypath = './nfpcache/'+key+'.json';
-		if(fs.existsSync(keypath)){
-			// could be partially written
-			obj = null;
-			try{
-				obj = JSON.parse(fs.readFileSync(keypath).toString());
-			}
-			catch(e){
-				return null;
-			}
-			var nfp = obj.nfp;
-			nfp.children = obj.children;
-
-			window.nfpcache[key] = clone(nfp);
-
-			return nfp;
-		}*/
-    return null
-  },
-
-  insert: function (obj, inner) {
-    var key =
-      'A' +
-      obj.A +
-      'B' +
-      obj.B +
-      'Arot' +
-      parseInt(obj.Arotation) +
-      'Brot' +
-      parseInt(obj.Brotation)
-    if (
-      window.performance.memory.totalJSHeapSize <
-      0.8 * window.performance.memory.jsHeapSizeLimit
-    ) {
-      window.nfpcache[key] = cloneNfp(obj.nfp, inner)
-      //console.log('cached: ',window.cache[key].poly);
-      //console.log('using', window.performance.memory.totalJSHeapSize/window.performance.memory.jsHeapSizeLimit);
-    }
-
-    /*obj.children = obj.nfp.children;
-
-		var keypath = './nfpcache/'+key+'.json';
-		fq.writeFile(keypath, JSON.stringify(obj), function (err) {
-			if (err){
-				console.log("couldn't write");
-			}
-		});*/
-  }
-}
-
 window.onload = function () {
   /*
 add package 'filequeue 0.5.0' if you enable this
@@ -197,7 +75,7 @@ add package 'filequeue 0.5.0' if you enable this
           Arotation: A.rotation,
           Brotation: B.rotation
         }
-        if (!inpairs(key, pairs) && !window.db.has(doc)) {
+        if (!inpairs(key, pairs) && !window.backend_api.db.has(doc)) {
           pairs.push(key)
         }
       }
@@ -365,7 +243,7 @@ add package 'filequeue 0.5.0' if you enable this
             Brotation: processed[i].Brotation,
             nfp: processed[i].nfp
           }
-          window.db.insert(doc)
+          window.backend_api.db.insert(doc)
         }
         console.timeEnd('Total')
         console.log('before sync')
@@ -662,7 +540,7 @@ function getOuterNfp(A, B, inside) {
 	}*/
 
   // try the file cache if the calculation will take a long time
-  var doc = window.db.find({
+  var doc = window.backend_api.db.find({
     A: A.source,
     B: B.source,
     Arotation: A.rotation,
@@ -736,7 +614,7 @@ function getOuterNfp(A, B, inside) {
       Brotation: B.rotation,
       nfp: nfp
     }
-    window.db.insert(doc)
+    window.backend_api.db.insert(doc)
   }
 
   return nfp
@@ -766,7 +644,7 @@ function getFrame(A) {
 
 function getInnerNfp(A, B, config) {
   if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
-    var doc = window.db.find(
+    var doc = window.backend_api.db.find(
       { A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation },
       true
     )
@@ -838,7 +716,7 @@ function getInnerNfp(A, B, config) {
       Brotation: B.rotation,
       nfp: f
     }
-    window.db.insert(doc, true)
+    window.backend_api.db.insert(doc, true)
   }
 
   return f

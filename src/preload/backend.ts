@@ -1,12 +1,17 @@
 import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import path from 'node:path'
+import url from 'node:url'
+import cacheDB from './shared/cache'
+import fs from 'graceful-fs'
 
 // Custom APIs for renderer
 const backend_api = {
   calculateNFP: require('@deepnest/calculate-nfp').calculateNFP,
-  path: require('node:path'),
-  url: require('node:url'),
-  fs: require('graceful-fs')
+  path: path,
+  url: url,
+  fs: fs,
+  db: cacheDB
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
