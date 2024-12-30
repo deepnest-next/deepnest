@@ -8,7 +8,7 @@ const url = require("url");
 remote.initialize();
 
 app.commandLine.appendSwitch("--enable-precise-memory-info");
-
+//
 /*
 // main menu for mac
 const template = [
