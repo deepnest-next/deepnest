@@ -47,6 +47,7 @@
 
   // basic distance-based simplification
   function simplifyRadialDist(points, sqTolerance) {
+    console.time('simplifyRadialDist');
     var prevPoint = points[0],
       newPoints = [prevPoint],
       point;
@@ -61,7 +62,7 @@
     }
 
     if (prevPoint !== point) newPoints.push(point);
-
+    console.timeEnd('simplifyRadialDist');
     return newPoints;
   }
 
@@ -98,25 +99,49 @@
   // simplification using Ramer-Douglas-Peucker algorithm
   function simplifyDouglasPeucker(points, sqTolerance) {
     var last = points.length - 1;
-
+    console.time('simplifyDouglasPeucker');
     var simplified = [points[0]];
     simplifyDPStep(points, 0, last, sqTolerance, simplified);
     simplified.push(points[last]);
-
+    console.timeEnd('simplifyDouglasPeucker');
     return simplified;
   }
 
   // both algorithms combined for awesome performance
   function simplify(points, tolerance, highestQuality) {
+    console.time('simplify');
     if (points.length <= 2) return points;
 
     var sqTolerance = tolerance !== undefined ? tolerance * tolerance : 1;
 
     points = highestQuality ? points : simplifyRadialDist(points, sqTolerance);
     points = simplifyDouglasPeucker(points, sqTolerance);
-
+    console.timeEnd('simplify');
     return points;
   }
 
-  window.simplify = simplify;
-})();
+  global.simplify = simplify;
+    
+    })(typeof window !== 'undefined' ? window : global);
+
+    
+    // test
+    if (require.main === module) {
+      const points = [
+          { x: 0, y: 0 },
+          { x: 1, y: 1 },
+          { x: 2, y: 2 },
+          { x: 3, y: 3 },
+          { x: 4, y: 4 },
+          { x: 5, y: 5 },
+          { x: 6, y: 6 },
+          { x: 7, y: 7 },
+          { x: 8, y: 8 },
+          { x: 9, y: 9 },
+      ];
+  
+      const tolerance = 1;
+      const highestQuality = false;
+  
+      console.log('Simplified points:', simplify(points, tolerance, highestQuality));
+  }
