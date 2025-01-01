@@ -6,11 +6,10 @@ const os = require("os");
 const url = require("url");
 
 remote.initialize();
-
 app.commandLine.appendSwitch("--enable-precise-memory-info");
 
 /*
-// main menu for mac
+ Menu Template (macOS Only) 
 const template = [
 {
     label: 'Deepnest',
@@ -51,37 +50,30 @@ const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 */
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
+//  Global Variables 
 let mainWindow = null;
 var backgroundWindows = [];
 
-// single instance
+// single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
-
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on("second-instance", (event, commandLine, workingDirectory) => {
-    // Someone tried to run a second instance, we should focus our window.
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
   });
-
-  // Create myWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     //myWindow = createWindow()
   });
 }
 
+// Window Management 
 function createMainWindow() {
-  // Create the browser window.
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-
   var frameless = process.platform == "darwin";
-  //var frameless = true;
 
   mainWindow = new BrowserWindow({
     width: Math.ceil(width * 0.9),
@@ -98,7 +90,6 @@ function createMainWindow() {
 
   remote.enable(mainWindow.webContents);
 
-  // and load the index.html of the app.
   mainWindow.loadURL(
     url.format({
       pathname: path.join(__dirname, "./main/index.html"),
@@ -109,15 +100,10 @@ function createMainWindow() {
 
   mainWindow.setMenu(null);
 
-  // Open the DevTools.
   if (process.env["deepnest_debug"] === "1")
     mainWindow.webContents.openDevTools();
 
-  // Emitted when the window is closed.
   mainWindow.on("closed", function () {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
     mainWindow = null;
   });
 
@@ -126,16 +112,21 @@ function createMainWindow() {
   } else {
     global.NEST_DIRECTORY = path.join(os.tmpdir(), "nest");
   }
-  // make sure the export directory exists
-  if (!fs.existsSync(global.NEST_DIRECTORY))
-    fs.mkdirSync(global.NEST_DIRECTORY);
+
+  // make sure the export directory exists and handle any errors that may occur
+  if (!fs.existsSync(global.NEST_DIRECTORY)) {
+  try {
+    fs.mkdirSync(global.NEST_DIRECTORY, { recursive: true });
+    console.log(`Directory created: ${global.NEST_DIRECTORY}`);
+  } catch (error) {
+    console.error(`Error creating directory: ${error.message}`);
+  }
+ }
 }
 
 let winCount = 0;
 
 function createBackgroundWindows() {
-  //busyWindows = [];
-  // used to have 8, now just 1 background window
   if (winCount < 1) {
     var back = new BrowserWindow({
       show: false,
@@ -162,7 +153,6 @@ function createBackgroundWindows() {
     backgroundWindows[winCount] = back;
 
     back.once("ready-to-show", () => {
-      //back.show();
       winCount++;
       createBackgroundWindows();
     });
