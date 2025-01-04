@@ -1,13 +1,18 @@
 'use strict'
 
-import * as GeometryUtil from './util/geometryutil.js'
+import GeometryUtil from '@deepnest/geometryutil'
 import * as ClipperLib from './util/clipper.js'
-import * as parallel from './util/parallel.js'
+console.log('clipper', ClipperLib)
+import './util/parallel.js'
 import * as d3 from 'd3-polygon'
-
-const Parallel = parallel.Parallel
+//import WorkerFile from './util/eval.js?modulePath'
+//console.log('workerfile', WorkerFile)
+console.log(window.Parallel)
 
 window.onload = function () {
+  window.electron.ipcRenderer.send('test', 'hello')
+
+  window.electron.ipcRenderer.send('test', { hello: 'world' })
   /*
 add package 'filequeue 0.5.0' if you enable this
 	window.FileQueue = require('filequeue');
@@ -174,8 +179,12 @@ add package 'filequeue 0.5.0' if you enable this
     console.time('Total')
 
     if (pairs.length > 0) {
-      var p = new Parallel(pairs, {
-        evalPath: '/src/backend_src/util/eval.js',
+      // TODO: use main thread for parallel processing via Piscina
+      // window.electron.ipcRenderer.invoke('get-parallel', pairs).then((result) => {
+      //   console.log('result', result)
+      // })
+      var p = new window.Parallel(pairs, {
+        evalPath: 'src/renderer/backend_src/util/eval.js',
         synchronous: false
       })
 
@@ -187,7 +196,7 @@ add package 'filequeue 0.5.0' if you enable this
           index: index,
           progress: 0.5 * (spawncount++ / pairs.length)
         })
-        return Parallel.prototype._spawnMapWorker.call(p, i, cb, done, env, wrk)
+        return window.Parallel.prototype._spawnMapWorker.call(p, i, cb, done, env, wrk)
       }
 
       p.require('./util/clipper.js')
@@ -753,6 +762,7 @@ function placeParts(sheets, parts, config, nestindex) {
   var fitness = 0
   //var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   var key, nfp
 
   while (parts.length > 0) {
@@ -1014,7 +1024,7 @@ function placeParts(sheets, parts, config, nestindex) {
             }
           } else {
             // must be convex hull
-            var localpoints = clone(allpoints)
+            var localpoints = window.backend_api.db.clone(allpoints)
 
             for (m = 0; m < part.length; m++) {
               localpoints.push({ x: part[m].x + shiftvector.x, y: part[m].y + shiftvector.y })
