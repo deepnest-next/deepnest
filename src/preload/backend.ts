@@ -4,6 +4,14 @@ import path from 'node:path'
 import url from 'node:url'
 import cacheDB from './shared/cache'
 import fs from 'graceful-fs'
+import {
+  minkowskiSumF64,
+  minkowskiSumI64,
+  Clipper,
+  ClipperFloat64,
+  Point,
+  PointFloat64
+} from '@deepnest/clipper2'
 
 // Custom APIs for renderer
 const backend_api = {
@@ -11,7 +19,19 @@ const backend_api = {
   path: path,
   url: url,
   fs: fs,
-  db: cacheDB
+  db: cacheDB,
+  clipper: {
+    Clipper: Clipper,
+    ClipperFloat64: ClipperFloat64,
+    minkowskiSumFloat: (
+      a: Array<PointFloat64>,
+      b: Array<PointFloat64>,
+      closed: boolean,
+      precision: number = Math.pow(10, -8)
+    ): Array<Array<PointFloat64>> => minkowskiSumF64(a, b, closed, precision),
+    minkowskiSumInt: (a: Array<Point>, b: Array<Point>, closed: boolean): Array<Array<Point>> =>
+      minkowskiSumI64(a, b, closed)
+  }
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
