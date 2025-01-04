@@ -1,3 +1,5 @@
+// TODO: this cache implementation needs to refactored to be more efficient and new types need to be added
+// TODO: in the future this file should a native module to escape the memory cage of electron and nodejs
 const cache = {}
 
 type NFP = {
@@ -19,8 +21,12 @@ const resolveCacheKey = (obj): string =>
   'Brot' +
   parseFloat(obj.Brotation).toFixed(6)
 
-function clone(nfp: NFPsWithChildren): NFPsWithChildren {
-  const newnfp: NFPsWithChildren = []
+//TODO: this is a hack, need to refactor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function clone(nfp: any): NFPsWithChildren {
+  //TODO: this is a hack, need to refactor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const newnfp: any = []
   for (let i = 0; i < nfp.length; i++) {
     newnfp.push({
       x: nfp[i].x,
@@ -32,7 +38,9 @@ function clone(nfp: NFPsWithChildren): NFPsWithChildren {
     newnfp.children = []
     for (let i = 0; i < nfp.children.length; i++) {
       const child = nfp.children[i]
-      const newchild: NFPsWithChildren = []
+      //TODO: this is a hack, need to refactor
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const newchild: any = []
       for (let j = 0; j < child.length; j++) {
         newchild.push({
           x: child[j].x,
@@ -46,13 +54,17 @@ function clone(nfp: NFPsWithChildren): NFPsWithChildren {
   return newnfp
 }
 
-function cloneNfp(nfp, inner: boolean): NFPsWithChildren {
+//TODO: this is a hack, need to refactor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function cloneNfp(nfp, inner: boolean): any {
   if (!inner) {
     return clone(nfp)
   }
 
   // inner nfp is actually an array of nfps
-  const newnfp: NFPsWithChildren = []
+  //TODO: this is a hack, need to refactor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const newnfp: any = []
   for (let i = 0; i < nfp.length; i++) {
     newnfp.push(clone(nfp[i]))
   }
@@ -61,6 +73,7 @@ function cloneNfp(nfp, inner: boolean): NFPsWithChildren {
 }
 
 export default {
+  //TODO: this is a hack, need to refactor
   has: (obj): boolean => {
     const key = resolveCacheKey(obj)
     if (cache[key]) {
@@ -74,7 +87,7 @@ export default {
       delete cache[key]
     }
   },
-
+  //TODO: this is a hack, need to refactor
   find: (obj, inner: boolean): NFPsWithChildren | null => {
     const key = resolveCacheKey(obj)
     if (cache[key]) {
@@ -99,7 +112,7 @@ export default {
 		}*/
     return null
   },
-
+  //TODO: this is a hack, need to refactor
   insert: (obj, inner: boolean): void => {
     const key = resolveCacheKey(obj)
     // if (
