@@ -7,6 +7,8 @@ import url from 'node:url'
 import os from 'node:os'
 import * as fs from 'graceful-fs'
 
+import './worker/index'
+
 remote.initialize()
 
 app.commandLine.appendSwitch('--enable-precise-memory-info')
@@ -299,6 +301,17 @@ ipcMain.on('setPlacements', (_event, payload) => {
 
 ipcMain.on('test', (_event, payload) => {
   global.test = payload
+})
+
+// background thread
+// old: Parallel
+// new: Piscina
+// const pool = new Parallel({ maxWorkers: os.cpus().length })
+// const pool = new Piscina({ filename: path.join(__dirname, 'worker.js') })
+
+ipcMain.on('startThreads', (_event, payload) => {
+  console.log('startThreads _event', _event)
+  console.log('startThreads payload', payload)
 })
 
 // In this file you can include the rest of your app"s specific main process
