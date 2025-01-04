@@ -1,20 +1,31 @@
 import { resolve } from 'path'
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin, swcPlugin } from 'electron-vite'
 import solid from 'vite-plugin-solid'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: {
+        '@shared': resolve('src/shared/src')
+      }
+    },
+    plugins: [externalizeDepsPlugin(), swcPlugin()],
     build: {
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          worker_bg: resolve(__dirname, 'src/main/worker/background.worker.ts')
+          'background.woker': resolve(__dirname, 'src/main/worker/background.worker.ts'),
+          worker: resolve(__dirname, 'node_modules/piscina/src/worker.ts')
         }
       }
     }
   },
   preload: {
+    resolve: {
+      alias: {
+        '@shared': resolve('src/shared/src')
+      }
+    },
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {

@@ -308,7 +308,10 @@ ipcMain.on('test', (_event, payload) => {
 // new: Piscina
 // const pool = new Parallel({ maxWorkers: os.cpus().length })
 // const pool = new Piscina({ filename: path.join(__dirname, 'worker.js') })
-
+ipcMain.on('worker:run', async (_event, taskData) => {
+  console.log('DEBUG: Worker task received:', taskData)
+  //return pool.run(taskData)
+})
 ipcMain.on('startThreads', (_event, payload) => {
   console.log('startThreads _event', _event)
   console.log('startThreads payload', payload)

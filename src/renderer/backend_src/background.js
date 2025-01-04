@@ -10,6 +10,20 @@ import * as d3 from 'd3-polygon'
 console.log(window.Parallel)
 
 window.onload = function () {
+  window.electron.ipcRenderer.invoke('worker:initialize', {}).then((result) => {
+    console.log('worker initialized', result)
+  })
+  window.electron.ipcRenderer
+    .invoke(
+      'worker:run',
+      JSON.stringify({
+        task: { a: 6, b: 3 },
+        options: { name: 'addNumbers' }
+      })
+    )
+    .then((result) => {
+      console.log('worker:run', result)
+    })
   window.electron.ipcRenderer.send('test', 'hello')
 
   window.electron.ipcRenderer.send('test', { hello: 'world' })
@@ -21,6 +35,20 @@ add package 'filequeue 0.5.0' if you enable this
   window.nfpcache = {}
 
   window.electron.ipcRenderer.on('background-start', (event, data) => {
+    window.electron.ipcRenderer.invoke('worker:initialize', {}).then((result) => {
+      console.log('worker initialized', result)
+    })
+    window.electron.ipcRenderer
+      .invoke(
+        'worker:run',
+        JSON.stringify({
+          task: { a: 10, b: 3 },
+          options: { name: 'addNumbers' }
+        })
+      )
+      .then((result) => {
+        console.log('worker:run', result)
+      })
     var index = data.index
     var individual = data.individual
 
