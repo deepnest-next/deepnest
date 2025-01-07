@@ -9,7 +9,7 @@ import BackgroundWorker from './background.worker?modulePath'
 const defaultOptions: Options = {
   minThreads: os.availableParallelism() <= 2 ? os.availableParallelism() : 2,
   maxThreads: os.availableParallelism() <= 8 ? os.availableParallelism() : 8,
-  maxQueue: 'auto'
+  maxQueue: 100000
 }
 const fixedOptions: Options = {
   filename: BackgroundWorker
@@ -35,7 +35,7 @@ function initializeWorkerPool(config: Options): Piscina {
 }
 
 ipcMain.handle('worker:initialize', async (_event, config: Options): Promise<boolean> => {
-  console.log('Worker pool initialized with config:', config)
+  //console.log('Worker pool initialized with config:', config)
   if (pool) {
     pool.destroy()
     pool = null
@@ -45,7 +45,7 @@ ipcMain.handle('worker:initialize', async (_event, config: Options): Promise<boo
 })
 
 ipcMain.handle('worker:run', async (_event, taskData) => {
-  console.log('Worker task received:', taskData)
+  //console.log('Worker task received:', taskData)
   if (!pool) {
     throw new Error('Worker pool not initialized')
   }

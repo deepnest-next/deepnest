@@ -9,13 +9,19 @@ export default defineConfig({
         '@shared': resolve('src/shared/src')
       }
     },
-    plugins: [externalizeDepsPlugin(), swcPlugin()],
+    plugins: [
+      externalizeDepsPlugin({
+        include: ['@deepnest/clipper2', 'piscina']
+      }),
+      swcPlugin()
+    ],
     build: {
       rollupOptions: {
+        external: ['@deepnest/clipper2', 'piscina'],
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          'background.woker': resolve(__dirname, 'src/main/worker/background.worker.ts'),
-          worker: resolve(__dirname, 'node_modules/piscina/src/worker.ts')
+          'background.woker': resolve(__dirname, 'src/main/worker/index.ts')
+          //worker: resolve(__dirname, 'node_modules/piscina/src/worker.ts')
         }
       }
     }

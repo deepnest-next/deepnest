@@ -116,80 +116,80 @@ add package 'filequeue 0.5.0' if you enable this
 
     console.log('pairs: ', pairs.length)
 
-    var process = function (pair) {
-      var A = rotatePolygon(pair.A, pair.Arotation)
-      var B = rotatePolygon(pair.B, pair.Brotation)
+    // var process = function (pair) {
+    //   var A = rotatePolygon(pair.A, pair.Arotation)
+    //   var B = rotatePolygon(pair.B, pair.Brotation)
 
-      var Ac = toClipperCoordinates(A)
-      ClipperLib.JS.ScaleUpPath(Ac, 10000000)
-      var Bc = toClipperCoordinates(B)
-      ClipperLib.JS.ScaleUpPath(Bc, 10000000)
-      for (let i = 0; i < Bc.length; i++) {
-        Bc[i].X *= -1
-        Bc[i].Y *= -1
-      }
-      var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true)
-      var clipperNfp
+    //   var Ac = toClipperCoordinates(A)
+    //   ClipperLib.JS.ScaleUpPath(Ac, 10000000)
+    //   var Bc = toClipperCoordinates(B)
+    //   ClipperLib.JS.ScaleUpPath(Bc, 10000000)
+    //   for (let i = 0; i < Bc.length; i++) {
+    //     Bc[i].X *= -1
+    //     Bc[i].Y *= -1
+    //   }
+    //   var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true)
+    //   var clipperNfp
 
-      var largestArea = null
-      for (let i = 0; i < solution.length; i++) {
-        var n = toNestCoordinates(solution[i], 10000000)
-        var sarea = -GeometryUtil.polygonArea(n)
-        if (largestArea === null || largestArea < sarea) {
-          clipperNfp = n
-          largestArea = sarea
-        }
-      }
+    //   var largestArea = null
+    //   for (let i = 0; i < solution.length; i++) {
+    //     var n = toNestCoordinates(solution[i], 10000000)
+    //     var sarea = -GeometryUtil.polygonArea(n)
+    //     if (largestArea === null || largestArea < sarea) {
+    //       clipperNfp = n
+    //       largestArea = sarea
+    //     }
+    //   }
 
-      for (var i = 0; i < clipperNfp.length; i++) {
-        clipperNfp[i].x += B[0].x
-        clipperNfp[i].y += B[0].y
-      }
+    //   for (var i = 0; i < clipperNfp.length; i++) {
+    //     clipperNfp[i].x += B[0].x
+    //     clipperNfp[i].y += B[0].y
+    //   }
 
-      pair.A = null
-      pair.B = null
-      pair.nfp = clipperNfp
-      return pair
+    //   pair.A = null
+    //   pair.B = null
+    //   pair.nfp = clipperNfp
+    //   return pair
 
-      function toClipperCoordinates(polygon) {
-        var clone = []
-        for (var i = 0; i < polygon.length; i++) {
-          clone.push({
-            X: polygon[i].x,
-            Y: polygon[i].y
-          })
-        }
+    //   function toClipperCoordinates(polygon) {
+    //     var clone = []
+    //     for (var i = 0; i < polygon.length; i++) {
+    //       clone.push({
+    //         X: polygon[i].x,
+    //         Y: polygon[i].y
+    //       })
+    //     }
 
-        return clone
-      }
+    //     return clone
+    //   }
 
-      function toNestCoordinates(polygon, scale) {
-        var clone = []
-        for (var i = 0; i < polygon.length; i++) {
-          clone.push({
-            x: polygon[i].X / scale,
-            y: polygon[i].Y / scale
-          })
-        }
+    //   function toNestCoordinates(polygon, scale) {
+    //     var clone = []
+    //     for (var i = 0; i < polygon.length; i++) {
+    //       clone.push({
+    //         x: polygon[i].X / scale,
+    //         y: polygon[i].Y / scale
+    //       })
+    //     }
 
-        return clone
-      }
+    //     return clone
+    //   }
 
-      function rotatePolygon(polygon, degrees) {
-        var rotated = []
-        var angle = (degrees * Math.PI) / 180
-        for (var i = 0; i < polygon.length; i++) {
-          var x = polygon[i].x
-          var y = polygon[i].y
-          var x1 = x * Math.cos(angle) - y * Math.sin(angle)
-          var y1 = x * Math.sin(angle) + y * Math.cos(angle)
+    //   function rotatePolygon(polygon, degrees) {
+    //     var rotated = []
+    //     var angle = (degrees * Math.PI) / 180
+    //     for (var i = 0; i < polygon.length; i++) {
+    //       var x = polygon[i].x
+    //       var y = polygon[i].y
+    //       var x1 = x * Math.cos(angle) - y * Math.sin(angle)
+    //       var y1 = x * Math.sin(angle) + y * Math.cos(angle)
 
-          rotated.push({ x: x1, y: y1 })
-        }
+    //       rotated.push({ x: x1, y: y1 })
+    //     }
 
-        return rotated
-      }
-    }
+    //     return rotated
+    //   }
+    // }
 
     // run the placement synchronously
     function sync() {
@@ -211,81 +211,107 @@ add package 'filequeue 0.5.0' if you enable this
       // window.electron.ipcRenderer.invoke('get-parallel', pairs).then((result) => {
       //   console.log('result', result)
       // })
-      var p = new window.Parallel(pairs, {
-        evalPath: 'src/renderer/backend_src/util/eval.js',
-        synchronous: false
-      })
+      // var p = new window.Parallel(pairs, {
+      //   evalPath: 'src/renderer/backend_src/util/eval.js',
+      //   synchronous: false
+      // })
 
+      // var spawncount = 0
+
+      // p._spawnMapWorker = function (i, cb, done, env, wrk) {
+      //   // hijack the worker call to check progress
+      //   window.electron.ipcRenderer.send('background-progress', {
+      //     index: index,
+      //     progress: 0.5 * (spawncount++ / pairs.length)
+      //   })
+      //   return window.Parallel.prototype._spawnMapWorker.call(p, i, cb, done, env, wrk)
+      // }
+
+      // p.require('./util/clipper.js')
+      // p.require('./util/geometryutil.js')
       var spawncount = 0
+      Promise.all(
+        pairs.map((pair) => {
+          window.electron.ipcRenderer.send('background-progress', {
+            index: index,
+            progress: 0.5 * (spawncount++ / pairs.length)
+          })
 
-      p._spawnMapWorker = function (i, cb, done, env, wrk) {
-        // hijack the worker call to check progress
-        window.electron.ipcRenderer.send('background-progress', {
-          index: index,
-          progress: 0.5 * (spawncount++ / pairs.length)
+          return window.electron.ipcRenderer
+            .invoke(
+              'worker:run',
+              JSON.stringify({
+                task: pair,
+                options: { name: 'process' }
+              })
+            )
+            .catch((error) => {
+              console.error(`Error processing pair: ${pair}`, error)
+              throw error // Optional, um den Fehler an Promise.all weiterzugeben
+            })
         })
-        return window.Parallel.prototype._spawnMapWorker.call(p, i, cb, done, env, wrk)
-      }
-
-      p.require('./util/clipper.js')
-      p.require('./util/geometryutil.js')
-
-      p.map(process).then(function (processed) {
-        function getPart(source) {
-          for (var k = 0; k < parts.length; k++) {
-            if (parts[k].source == source) {
-              return parts[k]
+      )
+        .then(function (processed) {
+          function getPart(source) {
+            for (var k = 0; k < parts.length; k++) {
+              if (parts[k].source == source) {
+                return parts[k]
+              }
             }
+            return null
           }
-          return null
-        }
-        // store processed data in cache
-        for (var i = 0; i < processed.length; i++) {
-          // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
-          // this is because the c++ addon which can process interior nfps cannot run in the worker thread
-          var A = getPart(processed[i].Asource)
-          var B = getPart(processed[i].Bsource)
+          // store processed data in cache
+          for (var i = 0; i < processed.length; i++) {
+            // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
+            // this is because the c++ addon which can process interior nfps cannot run in the worker thread
+            var A = getPart(processed[i].Asource)
+            var B = getPart(processed[i].Bsource)
 
-          var Achildren = []
+            var Achildren = []
 
-          var j
-          if (A.children) {
-            for (j = 0; j < A.children.length; j++) {
-              Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation))
-            }
-          }
-
-          if (Achildren.length > 0) {
-            var Brotated = rotatePolygon(B, processed[i].Brotation)
-            var bbounds = GeometryUtil.getPolygonBounds(Brotated)
-            var cnfp = []
-
-            for (j = 0; j < Achildren.length; j++) {
-              var cbounds = GeometryUtil.getPolygonBounds(Achildren[j])
-              if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
-                var n = getInnerNfp(Achildren[j], Brotated, data.config)
-                if (n && n.length > 0) {
-                  cnfp = cnfp.concat(n)
-                }
+            var j
+            if (A.children) {
+              for (j = 0; j < A.children.length; j++) {
+                Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation))
               }
             }
 
-            processed[i].nfp.children = cnfp
-          }
+            if (Achildren.length > 0) {
+              var Brotated = rotatePolygon(B, processed[i].Brotation)
+              var bbounds = GeometryUtil.getPolygonBounds(Brotated)
+              var cnfp = []
 
-          var doc = {
-            A: processed[i].Asource,
-            B: processed[i].Bsource,
-            Arotation: processed[i].Arotation,
-            Brotation: processed[i].Brotation,
-            nfp: processed[i].nfp
+              for (j = 0; j < Achildren.length; j++) {
+                var cbounds = GeometryUtil.getPolygonBounds(Achildren[j])
+                if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
+                  var n = getInnerNfp(Achildren[j], Brotated, data.config)
+                  if (n && n.length > 0) {
+                    cnfp = cnfp.concat(n)
+                  }
+                }
+              }
+
+              processed[i].nfp.children = cnfp
+            }
+
+            var doc = {
+              A: processed[i].Asource,
+              B: processed[i].Bsource,
+              Arotation: processed[i].Arotation,
+              Brotation: processed[i].Brotation,
+              nfp: processed[i].nfp
+            }
+            window.backend_api.db.insert(doc)
           }
-          window.backend_api.db.insert(doc)
-        }
-        console.timeEnd('Total')
-        console.log('before sync')
-        sync()
-      })
+          console.timeEnd('Total')
+          console.log('before sync')
+          sync()
+        })
+        .catch((error) => {
+          console.error('One or more tasks failed:', error)
+          console.log('before sync')
+          sync()
+        })
     } else {
       sync()
     }
@@ -446,13 +472,15 @@ function shiftPolygon(p, shift) {
 }
 // jsClipper uses X/Y instead of x/y...
 function toClipperCoordinates(polygon) {
-  var clone = []
+  var clone = [...polygon]
+  /* 
   for (var i = 0; i < polygon.length; i++) {
     clone.push({
       X: polygon[i].x,
       Y: polygon[i].y
     })
   }
+  */
 
   return clone
 }
@@ -467,9 +495,10 @@ function nfpToClipperCoordinates(nfp, config) {
       if (GeometryUtil.polygonArea(nfp.children[j]) < 0) {
         nfp.children[j].reverse()
       }
-      var childNfp = toClipperCoordinates(nfp.children[j])
-      ClipperLib.JS.ScaleUpPath(childNfp, config.clipperScale)
-      clipperNfp.push(childNfp)
+      //var childNfp = toClipperCoordinates(nfp.children[j])
+      //ClipperLib.JS.ScaleUpPath(childNfp, config.clipperScale)
+      //clipperNfp.push(childNfp)
+      clipperNfp.push(nfp.children[j])
     }
   }
 
@@ -477,11 +506,11 @@ function nfpToClipperCoordinates(nfp, config) {
     nfp.reverse()
   }
 
-  var outerNfp = toClipperCoordinates(nfp)
+  var outerNfp = nfp //toClipperCoordinates(nfp)
 
   // clipper js defines holes based on orientation
 
-  ClipperLib.JS.ScaleUpPath(outerNfp, config.clipperScale)
+  //ClipperLib.JS.ScaleUpPath(outerNfp, config.clipperScale)
   //var cleaned = ClipperLib.Clipper.CleanPolygon(outerNfp, 0.00001*config.clipperScale);
 
   clipperNfp.push(outerNfp)
@@ -502,13 +531,15 @@ function innerNfpToClipperCoordinates(nfp, config) {
 }
 
 function toNestCoordinates(polygon, scale) {
-  var clone = []
+  var clone = [...polygon]
+  /*
   for (var i = 0; i < polygon.length; i++) {
     clone.push({
       x: polygon[i].X / scale,
       y: polygon[i].Y / scale
     })
   }
+  */
 
   return clone
 }
@@ -598,25 +629,26 @@ function getOuterNfp(A, B, inside) {
     console.log('minkowski', A.length, B.length, A.source, B.source)
     console.time('clipper')
 
-    var Ac = toClipperCoordinates(A)
-    ClipperLib.JS.ScaleUpPath(Ac, 10000000)
-    var Bc = toClipperCoordinates(B)
-    ClipperLib.JS.ScaleUpPath(Bc, 10000000)
+    //var Ac = toClipperCoordinates(A)
+    //ClipperLib.JS.ScaleUpPath(Ac, 10000000)
+    var Bc = [...B] //toClipperCoordinates(B)
+    //ClipperLib.JS.ScaleUpPath(Bc, 10000000)
     for (var i = 0; i < Bc.length; i++) {
       Bc[i].X *= -1
       Bc[i].Y *= -1
     }
-    var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true)
+    //var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true)
+    var solution = window.backend_api.clipper.minkowskiSumFloat(A, Bc, true)
     //console.log(solution.length, solution);
     //var clipperNfp = toNestCoordinates(solution[0], 10000000);
     var clipperNfp
 
     var largestArea = null
     for (i = 0; i < solution.length; i++) {
-      var n = toNestCoordinates(solution[i], 10000000)
-      var sarea = -GeometryUtil.polygonArea(n)
+      //var n = toNestCoordinates(solution[i], 10000000)
+      var sarea = -GeometryUtil.polygonArea(solution[i])
       if (largestArea === null || largestArea < sarea) {
-        clipperNfp = n
+        clipperNfp = solution[i]
         largestArea = sarea
       }
     }

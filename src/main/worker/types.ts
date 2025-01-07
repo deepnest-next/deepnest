@@ -1,3 +1,4 @@
+import { PointFloat64 } from '@deepnest/clipper2'
 import { ResourceLimits } from 'node:worker_threads'
 import { TaskQueue } from 'piscina'
 import { EnvSpecifier } from 'piscina/dist/types'
@@ -41,4 +42,12 @@ export interface TaskInfo {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   task: any
   options?: RunOptions
+}
+
+export interface Pair {
+  A: Array<PointFloat64> | null
+  B: Array<PointFloat64> | null
+  Arotation: number
+  Brotation: number
+  nfp: number
 }
