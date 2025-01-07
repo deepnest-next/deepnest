@@ -827,7 +827,11 @@
           part.sheet = true;
         }
 
-        if (window.config.getSync("useQuantityFromFileName")) {
+        if (
+          window.config.getSync("useQuantityFromFileName") &&
+          part.filename &&
+          part.filename !== null
+        ) {
           const fileNameParts = part.filename.split(".");
           if (fileNameParts.length === 3) {
             const fileNameMiddlePart = fileNameParts[1];
