@@ -1137,6 +1137,12 @@
       }
     });
 
+    this.padNumber = (n, width, z) => {
+      z = z || '0';
+      n = n + '';
+      return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+    }
+
     this.launchWorkers = function (
       parts,
       config,
@@ -1226,11 +1232,11 @@
           var poly = parts[i].polygontree;
           for (j = 0; j < parts[i].quantity; j++) {
             sheets.push(poly);
-            sheetids.push(sid);
+            sheetids.push(this.padNumber(sid,4)+'-'+this.padNumber(j,4));
             sheetsources.push(i);
             sheetchildren.push(poly.children);
-            sid++;
           }
+          sid++;
         }
       }
 

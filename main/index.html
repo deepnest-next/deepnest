@@ -94,6 +94,9 @@
 				conversionServer: defaultConversionServer,
 				useSvgPreProcessor: false,
 				useQuantityFromFileName: false,
+				exportWithSheetBoundboarders: false,
+				exportWithSheetsSpace: false,
+				exportWithSheetsSpaceValue: 0.3937007874015748, // 10mm
 			};
 
 			// Removed `electron-settings` while keeping the same interface to minimize changes
@@ -136,7 +139,7 @@
 						}
 					}
 
-					if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName'].includes(key)) {
+					if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace'].includes(key)) {
 						val = i.checked;
 					}
 
@@ -235,7 +238,7 @@
 					else if (i.getAttribute('data-conversion') == 'true') {
 						i.value = c[i.getAttribute('data-config')] / scale.value;
 					}
-					else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName'].includes(key)) {
+					else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace'].includes(key)) {
 						i.checked = c[i.getAttribute('data-config')];
 					}
 					else {
@@ -1205,16 +1208,23 @@
 				var svgwidth = 0;
 				var svgheight = 0;
 
+				let sheetNumber = 0;
+
 				// create elements if they don't exist, show them otherwise
 				n.placements.forEach(function (s) {
+					sheetNumber++;
 					var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					svg.appendChild(group);
-					/*DeepNest.parts[s.sheet].svgelements.forEach(function(e){
-						var node = e.cloneNode(false);
-						node.setAttribute('stroke', '#000');
-						node.setAttribute('fill', 'none');
-						group.appendChild(node);
-					});*/
+
+					if(!!config.getSync("exportWithSheetBoundboarders")) {
+						// create sheet boundings if it doesn't exist
+						DeepNest.parts[s.sheet].svgelements.forEach(function(e){
+							var node = e.cloneNode(false);
+							node.setAttribute('stroke', '#00ff00');
+							node.setAttribute('fill', 'none');
+							group.appendChild(node);
+						});
+					}
 
 					var sheetbounds = DeepNest.parts[s.sheet].bounds;
 
@@ -1247,8 +1257,17 @@
 						partgroup.setAttribute('id', p.id);
 					});
 
-					// put next sheet below
-					svgheight += 1.1 * sheetbounds.height;
+					if (n.placements.length == sheetNumber) {
+						// last sheet
+						svgheight += sheetbounds.height;
+					}
+					else {
+						// put next sheet below
+						svgheight += sheetbounds.height;
+						if (!!config.getSync("exportWithSheetsSpace")) {
+							svgheight +=  config.getSync('exportWithSheetsSpaceValue');
+						}
+					}
 				});
 
 				var scale = config.getSync('scale');
@@ -1318,6 +1337,8 @@
 
 				// create elements if they don't exist, show them otherwise
 				n.placements.forEach(function (s) {
+
+					// create sheet if it doesn't exist
 					var groupelement = document.querySelector('#sheet' + s.sheetid);
 					if (!groupelement) {
 						var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1828,7 +1849,7 @@
 
 				<h1>Import/Export</h1>
 				<dl class="formgroup">
-					<dt>Use SVG Normalizer?</dt>
+					<dt>Use SVG Normalizer?<small><br \>since v1.3.0</small></dt>
 					<dd>
 						<input id="useSvgPreProcessor" type="checkbox" data-config="useSvgPreProcessor" />
 					</dd>
@@ -1866,6 +1887,22 @@
 							<option value="2.54">cm</option>
 						</select>
 					</dd>
+
+					<dt>Export with Sheet Boundborders?<small><br \>since v1.3.1</small></dt>
+					<dd>
+						<input id="exportWithSheetBoundboarders" type="checkbox" data-config="exportWithSheetBoundboarders" />
+					</dd>
+
+					<dt>Export with Space between Sheets?<small><br \>since v1.3.1</small></dt>
+					<dd>
+						<input id="exportWithSheetsSpace" type="checkbox" data-config="exportWithSheetsSpace" />
+					</dd>
+
+					<dt>Distance between Sheets?<small><br \>since v1.3.1</small></dt>
+					<dd>
+						<input id="exportWithSheetsSpaceValue" type="number" value="0.25" min="0" max="100" step="any" data-config="exportWithSheetsSpaceValue"  data-conversion="true" required />
+						<i><span class="unit-label">inch</span></i>
+					</dd>
 				</dl>
 
 				<h1>Laser options</h1>
@@ -1896,7 +1933,7 @@
 
 				<h1>Other Settings</h1>
 				<dl class="formgroup">
-					<dt>Use Quantity from filename (demosvg.{quantity:3}.svg = demosvg.3.svg) *beta</dt>
+					<dt>Use Quantity from filename (demosvg.{quantity:3}.svg = demosvg.3.svg)<small><br \>since v1.3.0</small></dt>
 					<dd>
 						<input type="checkbox" data-config="useQuantityFromFileName" />
 					</dd>
