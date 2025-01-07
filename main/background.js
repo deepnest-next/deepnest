@@ -1069,7 +1069,7 @@ function placeParts(sheets, parts, config, nestindex){
 
 						// weigh width more, to help compress in direction of gravity
 						if(config.placementType == 'gravity'){
-							area = rectbounds.width*2 + rectbounds.height;
+							area = rectbounds.width*5 + rectbounds.height;
 						}
 						else{
 							area = rectbounds.width * rectbounds.height;
@@ -1110,19 +1110,18 @@ function placeParts(sheets, parts, config, nestindex){
 
 					if(
 					minarea === null ||
-					area < minarea ||
-					(GeometryUtil.almostEqual(minarea, area) && (minx === null || shiftvector.x < minx)) ||
-					(GeometryUtil.almostEqual(minarea, area) && (minx !== null && GeometryUtil.almostEqual(shiftvector.x, minx) && shiftvector.y < miny))
+					(config.placementType == 'gravity' && (
+						rectbounds.width < minwidth ||
+						(GeometryUtil.almostEqual(rectbounds.width, minwidth) && area < minarea)
+					)) ||
+					(config.placementType != 'gravity' && area < minarea) ||
+					(GeometryUtil.almostEqual(minarea, area) && shiftvector.x < minx)
 					){
 						minarea = area;
-						minwidth = rectbounds ? rectbounds.width : 0;
+						minwidth = rectbounds.width;
 						position = shiftvector;
-						if(minx === null || shiftvector.x < minx){
-							minx = shiftvector.x;
-						}
-						if(miny === null || shiftvector.y < miny){
-							miny = shiftvector.y;
-						}
+						minx = shiftvector.x;
+						miny = shiftvector.y;
 
 						if(config.mergeLines){
 							position.mergedLength = merged.totalLength;
