@@ -3,7 +3,7 @@
 
 function clone(nfp){
 	var newnfp = [];
-	for(var i=0; i<nfp.length; i++){
+	for(let i=0; i<nfp.length; i++){
 		newnfp.push({
 			x: nfp[i].x,
 			y: nfp[i].y
@@ -12,10 +12,10 @@ function clone(nfp){
 
 	if(nfp.children && nfp.children.length > 0){
 		newnfp.children = [];
-		for(i=0; i<nfp.children.length; i++){
+		for(let i=0; i<nfp.children.length; i++){
 			var child = nfp.children[i];
 			var newchild = [];
-			for(var j=0; j<child.length; j++){
+			for(let j=0; j<child.length; j++){
 				newchild.push({
 					x: child[j].x,
 					y: child[j].y
@@ -35,7 +35,7 @@ function cloneNfp(nfp, inner){
 
 	// inner nfp is actually an array of nfps
 	var newnfp = [];
-	for(var i=0; i<nfp.length; i++){
+	for(let i=0; i<nfp.length; i++){
 		newnfp.push(clone(nfp[i]));
 	}
 
@@ -122,7 +122,7 @@ add package 'filequeue 0.5.0' if you enable this
 		var children = data.children;
 		var filenames = data.filenames;
 
-		for(var i=0; i<parts.length; i++){
+		for(let i=0; i<parts.length; i++){
 			parts[i].rotation = rotations[i];
 			parts[i].id = ids[i];
 			parts[i].source = sources[i];
@@ -132,25 +132,27 @@ add package 'filequeue 0.5.0' if you enable this
 			}
 		}
 
-		for(i=0; i<data.sheets.length; i++){
-			data.sheets[i].id = data.sheetids[i];
-			data.sheets[i].source = data.sheetsources[i];
-			data.sheets[i].children = data.sheetchildren[i];
+		const _sheets = JSON.parse(JSON.stringify(data.sheets));
+		for (let i = 0; i < data.sheets.length; i++){
+			_sheets[i].id = data.sheetids[i];
+			_sheets[i].source = data.sheetsources[i];
+			_sheets[i].children = data.sheetchildren[i];
 		}
+		data.sheets = _sheets;
 
 		// preprocess
 		var pairs = [];
 		var inpairs = function(key, p){
-			for(var i=0; i<p.length; i++){
+			for(let i=0; i<p.length; i++){
 				if(p[i].Asource == key.Asource && p[i].Bsource == key.Bsource && p[i].Arotation == key.Arotation && p[i].Brotation == key.Brotation){
 					return true;
 				}
 			}
 			return false;
 		}
-		for(var i=0; i<parts.length; i++){
+		for(let i=0; i<parts.length; i++){
 			var B = parts[i];
-			for(var j=0; j<i; j++){
+			for(let j=0; j<i; j++){
 				var A = parts[j];
 				var key = {
 					A: A,
@@ -185,7 +187,7 @@ add package 'filequeue 0.5.0' if you enable this
 			ClipperLib.JS.ScaleUpPath(Ac, 10000000);
 			var Bc = toClipperCoordinates(B);
 			ClipperLib.JS.ScaleUpPath(Bc, 10000000);
-			for(var i=0; i<Bc.length; i++){
+			for(let i=0; i<Bc.length; i++){
 				Bc[i].X *= -1;
 				Bc[i].Y *= -1;
 			}
@@ -193,7 +195,7 @@ add package 'filequeue 0.5.0' if you enable this
 			var clipperNfp;
 
 			var largestArea = null;
-			for(i=0; i<solution.length; i++){
+			for(let i=0; i<solution.length; i++){
 				var n = toNestCoordinates(solution[i], 10000000);
 				var sarea = -GeometryUtil.polygonArea(n);
 				if(largestArea === null || largestArea < sarea){
@@ -202,7 +204,7 @@ add package 'filequeue 0.5.0' if you enable this
 				}
 			}
 
-			for(var i=0; i<clipperNfp.length; i++){
+			for(let i=0; i<clipperNfp.length; i++){
 				clipperNfp[i].x += B[0].x;
 				clipperNfp[i].y += B[0].y;
 			}
@@ -214,7 +216,7 @@ add package 'filequeue 0.5.0' if you enable this
 
 			function toClipperCoordinates(polygon){
 				var clone = [];
-				for(var i=0; i<polygon.length; i++){
+				for(let i=0; i<polygon.length; i++){
 					clone.push({
 						X: polygon[i].x,
 						Y: polygon[i].y
@@ -226,7 +228,7 @@ add package 'filequeue 0.5.0' if you enable this
 
 			function toNestCoordinates(polygon, scale){
 				var clone = [];
-				for(var i=0; i<polygon.length; i++){
+				for(let i=0; i<polygon.length; i++){
 					clone.push({
 						x: polygon[i].X/scale,
 						y: polygon[i].Y/scale
@@ -239,7 +241,7 @@ add package 'filequeue 0.5.0' if you enable this
 			function rotatePolygon(polygon, degrees){
 				var rotated = [];
 				var angle = degrees * Math.PI / 180;
-				for(var i=0; i<polygon.length; i++){
+				for(let i=0; i<polygon.length; i++){
 					var x = polygon[i].x;
 					var y = polygon[i].y;
 					var x1 = x*Math.cos(angle)-y*Math.sin(angle);
@@ -291,7 +293,7 @@ add package 'filequeue 0.5.0' if you enable this
 
 			  p.map(process).then(function(processed){
 			  	 function getPart(source){
-					for(var k=0; k<parts.length; k++){
+					for(let k=0; k<parts.length; k++){
 						if(parts[k].source == source){
 							return parts[k];
 						}
@@ -299,7 +301,7 @@ add package 'filequeue 0.5.0' if you enable this
 					return null;
 				  }
 				// store processed data in cache
-				for(var i=0; i<processed.length; i++){
+				for(let i=0; i<processed.length; i++){
 					// returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
 					// this is because the c++ addon which can process interior nfps cannot run in the worker thread
 					var A = getPart(processed[i].Asource);
@@ -309,7 +311,7 @@ add package 'filequeue 0.5.0' if you enable this
 
 					var j;
 					if(A.children){
-						for(j=0; j<A.children.length; j++){
+						for(let j=0; j<A.children.length; j++){
 							Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
 						}
 					}
@@ -319,7 +321,7 @@ add package 'filequeue 0.5.0' if you enable this
 						var bbounds = GeometryUtil.getPolygonBounds(Brotated);
 						var cnfp = [];
 
-						for(j=0; j<Achildren.length; j++){
+						for(let j=0; j<Achildren.length; j++){
 							var cbounds = GeometryUtil.getPolygonBounds(Achildren[j]);
 							if(cbounds.width > bbounds.width && cbounds.height > bbounds.height){
 								var n = getInnerNfp(Achildren[j], Brotated, data.config);
@@ -360,7 +362,7 @@ function mergedLength(parts, p, minlength, tolerance){
 	var totalLength = 0;
 	var segments = [];
 
-	for(var i=0; i<p.length; i++){
+	for(let i=0; i<p.length; i++){
 		var A1 = p[i];
 
 		if(i+1 == p.length){
@@ -392,10 +394,10 @@ function mergedLength(parts, p, minlength, tolerance){
 		var relA2 = {x: A2.x-A1.x, y: A2.y-A1.y};
 		var rotA2x = relA2.x * c - relA2.y * s;
 
-		for(var j=0; j<parts.length; j++){
+		for(let j=0; j<parts.length; j++){
 			var B = parts[j];
 			if(B.length > 1){
-				for(var k=0; k<B.length; k++){
+				for(let k=0; k<B.length; k++){
 					var B1 = B[k];
 
 					if(k+1 == B.length){
@@ -494,12 +496,12 @@ function mergedLength(parts, p, minlength, tolerance){
 
 function shiftPolygon(p, shift){
 	var shifted = [];
-	for(var i=0; i<p.length; i++){
+	for(let i=0; i<p.length; i++){
 		shifted.push({x: p[i].x+shift.x, y:p[i].y+shift.y, exact: p[i].exact});
 	}
 	if(p.children && p.children.length){
 		shifted.children = [];
-		for(i=0; i<p.children.length; i++){
+		for(let i=0; i<p.children.length; i++){
 			shifted.children.push(shiftPolygon(p.children[i], shift));
 		}
 	}
@@ -509,7 +511,7 @@ function shiftPolygon(p, shift){
 // jsClipper uses X/Y instead of x/y...
 function toClipperCoordinates(polygon){
 	var clone = [];
-	for(var i=0; i<polygon.length; i++){
+	for(let i=0; i<polygon.length; i++){
 		clone.push({
 			X: polygon[i].x,
 			Y: polygon[i].y
@@ -525,7 +527,7 @@ function nfpToClipperCoordinates(nfp, config){
 
 	// children first
 	if(nfp.children && nfp.children.length > 0){
-		for(var j=0; j<nfp.children.length; j++){
+		for(let j=0; j<nfp.children.length; j++){
 			if(GeometryUtil.polygonArea(nfp.children[j]) < 0){
 				nfp.children[j].reverse();
 			}
@@ -555,7 +557,7 @@ function nfpToClipperCoordinates(nfp, config){
 // inner nfps can be an array of nfps, outer nfps are always singular
 function innerNfpToClipperCoordinates(nfp, config){
 	var clipperNfp = [];
-	for(var i=0; i<nfp.length; i++){
+	for(let i=0; i<nfp.length; i++){
 		var clip = nfpToClipperCoordinates(nfp[i], config);
 		clipperNfp = clipperNfp.concat(clip);
 	}
@@ -565,7 +567,7 @@ function innerNfpToClipperCoordinates(nfp, config){
 
 function toNestCoordinates(polygon, scale){
 	var clone = [];
-	for(var i=0; i<polygon.length; i++){
+	for(let i=0; i<polygon.length; i++){
 		clone.push({
 			x: polygon[i].X/scale,
 			y: polygon[i].Y/scale
@@ -578,13 +580,13 @@ function toNestCoordinates(polygon, scale){
 function getHull(polygon){
 	// convert to hulljs format
 	/*var hull = new ConvexHullGrahamScan();
-	for(var i=0; i<polygon.length; i++){
+	for(let i=0; i<polygon.length; i++){
 		hull.addPoint(polygon[i].x, polygon[i].y);
 	}
 
 	return hull.getHull();*/
 	var points = [];
-	for(var i=0; i<polygon.length; i++){
+	for(let i=0; i<polygon.length; i++){
 		points.push([polygon[i].x, polygon[i].y]);
 	}
 	var hullpoints = d3.polygonHull(points);
@@ -594,7 +596,7 @@ function getHull(polygon){
 	}
 
 	var hull = [];
-	for(i=0; i<hullpoints.length; i++){
+	for(let i=0; i<hullpoints.length; i++){
 		hull.push({x: hullpoints[i][0], y: hullpoints[i][1]});
 	}
 
@@ -604,7 +606,7 @@ function getHull(polygon){
 function rotatePolygon(polygon, degrees){
 	var rotated = [];
 	var angle = degrees * Math.PI / 180;
-	for(var i=0; i<polygon.length; i++){
+	for(let i=0; i<polygon.length; i++){
 		var x = polygon[i].x;
 		var y = polygon[i].y;
 		var x1 = x*Math.cos(angle)-y*Math.sin(angle);
@@ -615,7 +617,7 @@ function rotatePolygon(polygon, degrees){
 
 	if(polygon.children && polygon.children.length > 0){
 		rotated.children = [];
-		for(var j=0; j<polygon.children.length; j++){
+		for(let j=0; j<polygon.children.length; j++){
 			rotated.children.push(rotatePolygon(polygon.children[j], degrees));
 		}
 	}
@@ -660,7 +662,7 @@ function getOuterNfp(A, B, inside){
 		ClipperLib.JS.ScaleUpPath(Ac, 10000000);
 		var Bc = toClipperCoordinates(B);
 		ClipperLib.JS.ScaleUpPath(Bc, 10000000);
-		for(var i=0; i<Bc.length; i++){
+		for(let i=0; i<Bc.length; i++){
 			Bc[i].X *= -1;
 			Bc[i].Y *= -1;
 		}
@@ -670,7 +672,7 @@ function getOuterNfp(A, B, inside){
 		var clipperNfp;
 
 		var largestArea = null;
-		for(i=0; i<solution.length; i++){
+		for(let i=0; i<solution.length; i++){
 			var n = toNestCoordinates(solution[i], 10000000);
 			var sarea = -GeometryUtil.polygonArea(n);
 			if(largestArea === null || largestArea < sarea){
@@ -679,7 +681,7 @@ function getOuterNfp(A, B, inside){
 			}
 		}
 
-		for(var i=0; i<clipperNfp.length; i++){
+		for(let i=0; i<clipperNfp.length; i++){
 			clipperNfp[i].x += B[0].x;
 			clipperNfp[i].y += B[0].y;
 		}
@@ -757,7 +759,7 @@ function getInnerNfp(A, B, config){
 
 	var holes = [];
 	if(A.children && A.children.length > 0){
-		for(var i=0; i<A.children.length; i++){
+		for(let i=0; i<A.children.length; i++){
 			var hnfp = getOuterNfp(A.children[i], B);
 			if(hnfp){
 				holes.push(hnfp);
@@ -787,7 +789,7 @@ function getInnerNfp(A, B, config){
 	}
 
 	var f = [];
-	for(var i=0; i<finalNfp.length; i++){
+	for(let i=0; i<finalNfp.length; i++){
 		f.push(toNestCoordinates(finalNfp[i], config.clipperScale));
 	}
 
@@ -823,7 +825,7 @@ function placeParts(sheets, parts, config, nestindex){
 
 	// rotate paths by given rotation
 	var rotated = [];
-	for(i=0; i<parts.length; i++){
+	for(let i=0; i<parts.length; i++){
 		var r = rotatePolygon(parts[i], parts[i].rotation);
 		r.rotation = parts[i].rotation;
 		r.source = parts[i].source;
@@ -856,7 +858,7 @@ function placeParts(sheets, parts, config, nestindex){
 
 		var clipCache = [];
 		//console.log('new sheet');
-		for(i=0; i<parts.length; i++){
+		for(let i=0; i<parts.length; i++){
 			console.time('placement');
 			part = parts[i];
 
@@ -864,7 +866,7 @@ function placeParts(sheets, parts, config, nestindex){
 			var sheetNfp = null;
 			// try all possible rotations until it fits
 			// (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
-			for(j=0; j<config.rotations; j++){
+			for(let j=0; j<config.rotations; j++){
 				sheetNfp = getInnerNfp(sheet, part, config);
 
 				if(sheetNfp){
@@ -894,8 +896,8 @@ function placeParts(sheets, parts, config, nestindex){
 
 			if(placed.length == 0){
 				// first placement, put it on the top left corner
-				for(j=0; j<sheetNfp.length; j++){
-					for(k=0; k<sheetNfp[j].length; k++){
+				for(let j=0; j<sheetNfp.length; j++){
+					for(let k=0; k<sheetNfp[j].length; k++){
 						if(position === null || sheetNfp[j][k].x-part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x-part[0].x, position.x) && sheetNfp[j][k].y-part[0].y < position.y ) ){
 							position = {
 								x: sheetNfp[j][k].x-part[0].x,
@@ -934,7 +936,7 @@ function placeParts(sheets, parts, config, nestindex){
 				startindex = clipCache[clipkey].index;
 			}
 
-			for(j=startindex; j<placed.length; j++){
+			for(let j=startindex; j<placed.length; j++){
 				nfp = getOuterNfp(placed[j], part);
 				// minkowski difference failed. very rare but could happen
 				if(!nfp){
@@ -942,14 +944,14 @@ function placeParts(sheets, parts, config, nestindex){
 					break;
 				}
 				// shift to placed location
-				for(m=0; m<nfp.length; m++){
+				for(let m=0; m<nfp.length; m++){
 					nfp[m].x += placements[j].x;
 					nfp[m].y += placements[j].y;
 				}
 
 				if(nfp.children && nfp.children.length > 0){
-					for(n=0; n<nfp.children.length; n++){
-						for(var o=0; o<nfp.children[n].length; o++){
+					for(let n=0; n<nfp.children.length; n++){
+						for(let o=0; o<nfp.children[n].length; o++){
 							nfp.children[n][o].x += placements[j].x;
 							nfp.children[n][o].y += placements[j].y;
 						}
@@ -995,7 +997,7 @@ function placeParts(sheets, parts, config, nestindex){
 			}
 
 			var f = [];
-			for(j=0; j<finalNfp.length; j++){
+			for(let j=0; j<finalNfp.length; j++){
 				// back to normal scale
 				f.push(toNestCoordinates(finalNfp[j], config.clipperScale));
 			}
@@ -1010,8 +1012,8 @@ function placeParts(sheets, parts, config, nestindex){
 			var nf, area, shiftvector;
 
 			var allpoints = [];
-			for(m=0; m<placed.length; m++){
-				for(n=0; n<placed[m].length; n++){
+			for(let m=0; m<placed.length; m++){
+				for(let n=0; n<placed[m].length; n++){
 					allpoints.push({x:placed[m][n].x+placements[m].x, y: placed[m][n].y+placements[m].y});
 				}
 			}
@@ -1022,7 +1024,7 @@ function placeParts(sheets, parts, config, nestindex){
 				allbounds = GeometryUtil.getPolygonBounds(allpoints);
 
 				var partpoints = [];
-				for(m=0; m<part.length; m++){
+				for(let m=0; m<part.length; m++){
 					partpoints.push({x: part[m].x, y:part[m].y});
 				}
 				partbounds = GeometryUtil.getPolygonBounds(partpoints);
@@ -1030,10 +1032,10 @@ function placeParts(sheets, parts, config, nestindex){
 			else{
 				allpoints = getHull(allpoints);
 			}
-			for(j=0; j<finalNfp.length; j++){
+			for(let j=0; j<finalNfp.length; j++){
 				nf = finalNfp[j];
 				//console.log('evalnf',nf.length);
-				for(k=0; k<nf.length; k++){
+				for(let k=0; k<nf.length; k++){
 
 					shiftvector = {
 						x: nf[k].x-part[0].x,
@@ -1077,7 +1079,7 @@ function placeParts(sheets, parts, config, nestindex){
 						// must be convex hull
 						var localpoints = clone(allpoints);
 
-						for(m=0; m<part.length; m++){
+						for(let m=0; m<part.length; m++){
 							localpoints.push({x: part[m].x+shiftvector.x, y:part[m].y+shiftvector.y});
 						}
 
@@ -1094,7 +1096,7 @@ function placeParts(sheets, parts, config, nestindex){
 						var shiftedpart = shiftPolygon(part, shiftvector);
 						var shiftedplaced = [];
 
-						for(m=0; m<placed.length; m++){
+						for(let m=0; m<placed.length; m++){
 							shiftedplaced.push(shiftPolygon(placed[m], placements[m]));
 						}
 
@@ -1140,7 +1142,7 @@ function placeParts(sheets, parts, config, nestindex){
 
 			// send placement progress signal
 			var placednum = placed.length;
-			for(j=0; j<allplacements.length; j++){
+			for(let j=0; j<allplacements.length; j++){
 				placednum += allplacements[j].sheetplacements.length;
 			}
 			//console.log(placednum, totalnum);
@@ -1152,7 +1154,7 @@ function placeParts(sheets, parts, config, nestindex){
 		fitness += (minwidth/sheetarea) + minarea;
 		//}
 
-		for(i=0; i<placed.length; i++){
+		for(let i=0; i<placed.length; i++){
 			var index = parts.indexOf(placed[i]);
 			if(index >= 0){
 				parts.splice(index,1);
@@ -1173,7 +1175,7 @@ function placeParts(sheets, parts, config, nestindex){
 
 	// there were parts that couldn't be placed
 	// scale this value high - we really want to get all the parts in, even at the cost of opening new sheets
-	for(i=0; i<parts.length; i++){
+	for(let i=0; i<parts.length; i++){
 		fitness += 100000000*(Math.abs(GeometryUtil.polygonArea(parts[i]))/totalsheetarea);
 	}
 	// send finish progerss signal
