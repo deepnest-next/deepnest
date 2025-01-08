@@ -1,14 +1,55 @@
 body,
 html {
+  /* Light theme variables */
+  --bg-primary: #f5f7f9;
+  --bg-secondary: #fff;
+  --text-primary: #404247;
+  --text-secondary: #818489;
+  --border-color: #e2e8ed;
+  --nav-bg: #404247;
+  --button-primary: #24c7ed;
+  --button-hover: #3eddf7;
+  --table-bg: #fff;
+  --table-hover: #f5f7f9;
+  --table-active: #24c7ed;
+  --input-bg: #e2e8ed;
+  --input-border: #c8cedb;
+  --input-text: #7b879e;
+  --message-bg: rgba(255, 255, 255, 0.9);
+  --nest-bg: #404247;
+  --progress-bg: #cdd8e0;
+
+  /* Default to light theme */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
   border: 0;
   font: normal 14px/1.4 "LatoLatinWeb", helvetica, arial, verdana, sans-serif;
-  background-color: #f5f7f9;
-  color: #404247;
   overflow: hidden;
   --nav-width: 4.375em;
   -webkit-user-select: none;
+}
+
+/* Dark theme */
+body.dark-mode {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --border-color: #404040;
+  --nav-bg: #000000;
+  --button-primary: #1a98b8;
+  --button-hover: #1fb3d8;
+  --table-bg: #2d2d2d;
+  --table-hover: #3d3d3d;
+  --table-active: #1a98b8;
+  --input-bg: #3d3d3d;
+  --input-border: #505050;
+  --input-text: #ffffff;
+  --message-bg: rgba(45, 45, 45, 0.9);
+  --nest-bg: #1a1a1a;
+  --progress-bg: #404040;
 }
 
 a {
@@ -25,7 +66,6 @@ h1 {
   font-family: "LatoLatinWebLight", helvetica, arial, verdana, sans-serif;
   font-weight: normal;
   margin: 1.2em 0 0.5em 0;
-  color: #818489;
   cursor: default;
 }
 
@@ -33,14 +73,18 @@ h2 {
   font-size: 1.1em;
   font-weight: bold;
   margin: 1em 0 0.5em 0;
-  color: #818489;
 }
 
 h3 {
   font-size: 1em;
   font-weight: bold;
   margin: 1em 0 0.2em 0;
-  color: #818489;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--text-secondary);
 }
 
 #sidenav {
@@ -104,12 +148,20 @@ h3 {
   background-position: 50%;
 }
 
+#darkmode_tab {
+  background-image: url(img/dark_mode.svg);
+  background-repeat: no-repeat;
+  background-size: 1.25em 1.25em;
+  background-position: 50%;
+}
+
 .page {
   width: calc(100% - var(--nav-width));
   height: 100%;
   position: absolute;
   top: 0;
   left: var(--nav-width);
+  background-color: var(--bg-primary);
   display: none;
 }
 
@@ -120,7 +172,8 @@ h3 {
 .topnav {
   width: 100%;
   height: calc(var(--nav-width) - 0.625em);
-  background-color: #fff;
+  background-color: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
   float: left;
   margin: 0;
   padding: 0;
@@ -349,9 +402,9 @@ ul.dropdown li:hover {
 }
 
 #parts {
-  background-color: #e2e8ed;
+  background-color: var(--table-bg);
+  border-right: 0.2em solid var(--border-color);
   width: 32em;
-  border-right: 0.2em solid #cdd8e0;
   height: 100%;
   overflow: visible;
   box-sizing: border-box;
@@ -379,7 +432,8 @@ ul.dropdown li:hover {
 #partscroll {
   width: 100%;
   height: calc(100% - 2 * (var(--nav-width) - 0.625em));
-  overflow: scroll;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* config */
@@ -553,7 +607,7 @@ ul.dropdown li:hover {
   min-width: 28em;
   margin: 0;
   padding: 0;
-  color: #b1b5bc;
+  color: var(--text-secondary);
   border-collapse: collapse;
   cursor: default;
   font-size: 0.9em;
@@ -586,17 +640,17 @@ ul.dropdown li:hover {
   line-height: 3em;
   padding: 0 0.5em;
   box-sizing: border-box;
-  background-color: #fcf7e0;
+  background-color: var(--table-bg);
   color: #b5b1a0;
   border-bottom: 1px solid #dbd8cc;
 }
 
 #parts table thead tr th:first-child span {
-  padding-left: 1.5em;
+  padding-left: 0.5em;
 }
 
 #parts table thead tr th:hover span {
-  background-color: #fffef8;
+  background-color: var(--table-hover);
 }
 
 #parts table thead tr th.asc span {
@@ -614,16 +668,16 @@ ul.dropdown li:hover {
 }
 
 #parts table tbody tr td:first-child {
-  padding-left: 1.2em;
+  padding-left: 0.2em;
 }
 
 #parts table tbody tr:hover td {
-  background-color: #f5f7f9;
+  background-color: var(--table-hover);
 }
 
 #parts table tbody tr.active td {
-  background-color: #24c7ed;
-  color: #fff;
+  background-color: var(--table-active);
+  color: var(--text-primary);
 }
 
 #parts table tbody tr.active td input {
@@ -1411,4 +1465,168 @@ li.progress svg .bar {
 .slideInUp {
   -webkit-animation-name: slideInUp;
   animation-name: slideInUp;
+}
+
+.button:hover {
+  background-color: var(--button-hover);
+}
+/* Update table styles */
+#parts table input[type="text"],
+#parts table input[type="number"] {
+  background-color: transparent;
+  color: var(--text-primary);
+}
+/* SVG styles for dark mode */
+body.dark-mode #parts table svg * {
+  stroke: var(--text-primary) !important;
+}
+body.dark-mode #bins svg * {
+  fill: #4a5a8d !important;
+  stroke: #3a4a7d !important;
+}
+body.dark-mode #nestdisplay svg * {
+  stroke: var(--text-primary);
+}
+/* Navigation */
+#sidenav {
+  background-color: var(--nav-bg);
+}
+#sidenav li:hover {
+  background-color: var(--button-hover);
+}
+/* Config form */
+#configform {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+#config input[type="text"],
+#config input[type="number"] {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
+/* SVG elements */
+#parts table svg * {
+  stroke: var(--text-primary) !important;
+}
+#imports svg * {
+  stroke: var(--text-primary) !important;
+}
+/* Message wrapper */
+#messagewrapper {
+  background-image: linear-gradient(
+    to right top,
+    rgba(var(--bg-primary), 0),
+    var(--message-bg)
+  );
+}
+/* Nest view */
+#nest {
+  background-color: var(--nest-bg);
+}
+.nest {
+  background-color: var(--bg-secondary);
+}
+/* Progress bar */
+#progressbar_wrapper {
+  background-color: var(--progress-bg);
+}
+/* Buttons */
+.button {
+  background-color: var(--button-primary);
+  color: var(--text-primary);
+}
+.button:hover {
+  background-color: var(--button-hover);
+}
+.button.disabled {
+  opacity: 0.5;
+  background-color: var(--text-secondary);
+}
+/* Dropdown */
+ul.dropdown {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+ul.dropdown li:hover {
+  background-color: var(--button-hover);
+}
+/* Info page */
+#info {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+/* Import section */
+#imports {
+  background-color: var(--bg-primary);
+}
+#importsnav {
+  background-color: var(--progress-bg);
+}
+#importsnav li {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+/* Zoom tools */
+.zoomtools a {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+.zoomtools a:hover {
+  background-color: var(--button-hover);
+}
+/* Form elements */
+input,
+select,
+textarea {
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--button-primary);
+  outline: none;
+}
+/* Chrome, Edge and Safari */
+*::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+*::-webkit-scrollbar-track {
+  border-radius: 5px;
+  background-color: #384F71;
+}
+
+*::-webkit-scrollbar-track:hover {
+  background-color: #4A4D4E;
+}
+
+*::-webkit-scrollbar-track:active {
+  background-color: #3E556A;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 0px;
+  background-color: #3276A4;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #327AA3;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: #3774A3;
+}
+
+body.dark-mode .unit-label {
+  color: var(--text-primary);
+}
+body.dark-mode #configform dl.formgroup * {
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+}
+body.dark-mode #home * {
+  color: var(--text-secondary);
 }
