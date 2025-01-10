@@ -4,7 +4,7 @@ import * as os from 'node:os'
 import Piscina from 'piscina'
 import { Options, TaskInfo } from './types'
 
-import BackgroundWorker from './background.worker?modulePath'
+import BackgroundWorker from './background.worker.ts?modulePath'
 
 const defaultOptions: Options = {
   minThreads: os.availableParallelism() <= 2 ? os.availableParallelism() : 2,

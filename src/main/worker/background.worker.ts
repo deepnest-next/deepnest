@@ -2,12 +2,6 @@ import { Pair } from './types'
 import { minkowskiSumF64, PointFloat64 } from '@deepnest/clipper2'
 import GeometryUtil from '@deepnest/geometryutil'
 
-// TODO: HACK! this is need to be fixed
-let { polygonArea } = GeometryUtil.default ?? GeometryUtil
-if (!polygonArea) {
-  polygonArea = GeometryUtil.polygonArea
-}
-
 interface Inputs {
   a: number
   b: number
@@ -34,7 +28,7 @@ export const process = function (pair: Pair): any {
 
   let largestArea: number | null = null
   for (let i = 0; i < solution.length; i++) {
-    const sarea = -polygonArea(solution[i])
+    const sarea = -GeometryUtil.polygonArea(solution[i])
     if (largestArea === null || largestArea < sarea) {
       clipperNfp = solution[i]
       largestArea = sarea
