@@ -48,6 +48,9 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
+    optimizeDeps: {
+      exclude: ['@deepnest/clipper2']
+    },
     plugins: [solid()],
     build: {
       rollupOptions: {

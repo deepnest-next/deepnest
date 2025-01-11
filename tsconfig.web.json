@@ -19,7 +19,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "noEmit": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "types": [
       "vite/client"
     ],

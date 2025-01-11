@@ -8,6 +8,9 @@ import {
   minkowskiSumF64,
   minkowskiSumI64,
   Clipper,
+  PolyType,
+  ClipType,
+  FillType,
   ClipperFloat64,
   Point,
   PointFloat64
@@ -21,6 +24,9 @@ const backend_api = {
   fs: fs,
   db: cacheDB,
   clipper: {
+    PolyType: PolyType,
+    ClipType: ClipType,
+    FillType: FillType,
     Clipper: Clipper,
     ClipperFloat64: ClipperFloat64,
     minkowskiSumFloat: (

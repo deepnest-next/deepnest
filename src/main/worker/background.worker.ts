@@ -1,6 +1,6 @@
 import { Pair } from './types'
 import { minkowskiSumF64, PointFloat64 } from '@deepnest/clipper2'
-import GeometryUtil from '@deepnest/geometryutil'
+import { GeometryUtil } from '@deepnest/geometryutil'
 
 interface Inputs {
   a: number

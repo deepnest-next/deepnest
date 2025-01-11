@@ -1,8 +1,9 @@
 'use strict'
 
-import GeometryUtil from '@deepnest/geometryutil'
+import { GeometryUtil } from '@deepnest/geometryutil'
 import * as ClipperLib from './util/clipper.js'
-console.log('clipper', ClipperLib)
+//import { ClipperFloat64, window.backend_api.clipper.PolyType, ClipType, FillType, PointFloat64 } from '@deepnest/clipper2'
+
 import './util/parallel.js'
 import * as d3 from 'd3-polygon'
 //import WorkerFile from './util/eval.js?modulePath'
@@ -32,7 +33,8 @@ add package 'filequeue 0.5.0' if you enable this
 	window.FileQueue = require('filequeue');
 	window.fq = new FileQueue(500);
 */
-  window.nfpcache = {}
+  //TODO: window.nfpCache unused or never set
+  //window.nfpcache = {}
 
   window.electron.ipcRenderer.on('background-start', (event, data) => {
     window.electron.ipcRenderer.invoke('worker:initialize', {}).then((result) => {
@@ -195,8 +197,8 @@ add package 'filequeue 0.5.0' if you enable this
     function sync() {
       //console.log('starting synchronous calculations', Object.keys(window.nfpCache).length);
       console.log('in sync')
-      console.log('nfp cached:', window.nfpcache.length)
-      console.log()
+      //TODO: window.nfpCache unused or never set
+      //console.log('nfp cached:', window.nfpCache.length)
       window.electron.ipcRenderer.send('test', [data.sheets, parts, data.config, index])
       var placement = placeParts(data.sheets, parts, data.config, index)
 
@@ -749,20 +751,24 @@ function getInnerNfp(A, B, config) {
   var clipperNfp = innerNfpToClipperCoordinates(nfp.children, config)
   var clipperHoles = innerNfpToClipperCoordinates(holes, config)
 
-  var finalNfp = new ClipperLib.Paths()
+  let finalNfp = []
+  /*
+  TODO: clipper lib is not available is old code
+  var finalNfp
   var clipper = new ClipperLib.Clipper()
-
   clipper.AddPaths(clipperHoles, ClipperLib.PolyType.ptClip, true)
   clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true)
+  */
 
-  if (
-    !clipper.Execute(
-      ClipperLib.ClipType.ctDifference,
-      finalNfp,
-      ClipperLib.PolyFillType.pftNonZero,
-      ClipperLib.PolyFillType.pftNonZero
+  const clipperF64 = new window.backend_api.clipper.ClipperFloat64.new(2)
+  clipperF64.addPaths(clipperHoles, window.backend_api.clipper.PolyType.Clip)
+  clipperF64.addPaths(clipperNfp, window.backend_api.clipper.PolyType.Subject)
+  try {
+    finalNfp = clipperF64.execute(
+      window.backend_api.clipper.ClipType.Difference,
+      window.backend_api.clipper.FillType.NonZero
     )
-  ) {
+  } catch (e) {
     return nfp.children
   }
 
@@ -906,8 +912,8 @@ function placeParts(sheets, parts, config, nestindex) {
 
       var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config)
 
-      var clipper = new ClipperLib.Clipper()
-      var combinedNfp = new ClipperLib.Paths()
+      const clipperF64 = new window.backend_api.clipper.ClipperFloat64.new(2)
+      let combinedNfp = []
 
       var error = false
 
@@ -917,7 +923,9 @@ function placeParts(sheets, parts, config, nestindex) {
       var startindex = 0
       if (clipCache[clipkey]) {
         var prevNfp = clipCache[clipkey].nfp
-        clipper.AddPaths(prevNfp, ClipperLib.PolyType.ptSubject, true)
+        // old clipper v1 code
+        //clipper.AddPaths(prevNfp, ClipperLib.PolyType.ptSubject, true)
+        clipperF64.addPaths(prevNfp, window.backend_api.clipper.PolyType.Clip)
         startindex = clipCache[clipkey].index
       }
 
@@ -945,9 +953,22 @@ function placeParts(sheets, parts, config, nestindex) {
 
         var clipperNfp = nfpToClipperCoordinates(nfp, config)
 
-        clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true)
+        // old clipper v1 code
+        //clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true)
+        clipperF64.addPaths(clipperNfp, window.backend_api.clipper.PolyType.Subject)
       }
 
+      try {
+        combinedNfp = clipperF64.execute(
+          window.backend_api.clipper.ClipType.Union,
+          window.backend_api.clipper.FillType.NonZero
+        )
+      } catch (e) {
+        console.log('clipper error', error)
+        continue
+      }
+      /*
+      old clipper v1 code
       if (
         error ||
         !clipper.Execute(
@@ -960,6 +981,7 @@ function placeParts(sheets, parts, config, nestindex) {
         console.log('clipper error', error)
         continue
       }
+      */
 
       /*var converted = [];
 			for(j=0; j<combinedNfp.length; j++){
@@ -974,7 +996,21 @@ function placeParts(sheets, parts, config, nestindex) {
       console.log('save cache', placed.length - 1)
 
       // difference with sheet polygon
-      var finalNfp = new ClipperLib.Paths()
+      var finalNfp = []
+
+      const clipperF64_2 = new window.backend_api.clipper.ClipperFloat64.new(2)
+      clipperF64_2.addPaths(combinedNfp, window.backend_api.clipper.PolyType.Clip)
+      clipperF64_2.addPaths(clipperSheetNfp, window.backend_api.clipper.PolyType.Subject)
+      try {
+        finalNfp = clipperF64_2.execute(
+          window.backend_api.clipper.ClipType.Difference,
+          window.backend_api.clipper.FillType.EvenOdd
+        )
+      } catch (e) {
+        continue
+      }
+      /*
+      // old clipper v1 code
       clipper = new ClipperLib.Clipper()
 
       clipper.AddPaths(combinedNfp, ClipperLib.PolyType.ptClip, true)
@@ -991,6 +1027,7 @@ function placeParts(sheets, parts, config, nestindex) {
       ) {
         continue
       }
+      */
 
       if (!finalNfp || finalNfp.length == 0) {
         continue
