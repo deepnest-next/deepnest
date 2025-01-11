@@ -1,7 +1,7 @@
 'use strict'
 
 import { GeometryUtil } from '@deepnest/geometryutil'
-import * as ClipperLib from './util/clipper.js'
+//import * as ClipperLib from './util/clipper.js'
 //import { ClipperFloat64, window.backend_api.clipper.PolyType, ClipType, FillType, PointFloat64 } from '@deepnest/clipper2'
 
 import './util/parallel.js'

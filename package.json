@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "^202412.22.211007",
-    "@deepnest/clipper2": "^0.0.1",
+    "@deepnest/clipper2": "^0.0.6",
     "@deepnest/geometryutil": "link:../node-geometryutil",
     "@deepnest/svg-preprocessor": "^0.1.4",
     "@electron-toolkit/preload": "^3.0.1",

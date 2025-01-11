@@ -188,71 +188,71 @@
     nan "^2.20.0"
     node-gyp-build "^4.8.4"
 
-"@deepnest/clipper2-darwin-universal@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-darwin-universal/-/clipper2-darwin-universal-0.0.1.tgz#502f13f75cf0b75dcc1fce0d01c8275fb782f65b"
-  integrity sha512-dyk+mAeZJhsy6WkvjrEjZHBKUQBP03FI8sMKuSEBnBvmeOA3VxkL2LfycasR7D+ih38KquWp+kOqGZrriYa56w==
+"@deepnest/clipper2-darwin-universal@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-darwin-universal/-/clipper2-darwin-universal-0.0.6.tgz#cc1dc2f58dddc1be8e919820f70d3bb216cb1718"
+  integrity sha512-w/9zVD0NEAMLR54phy79EE73nRS6kDDtnDU29Tlwg1w9DiJNDFsdj39wKu2UGnejEN+D+Ok28cuvfzHAuxHuVw==
 
-"@deepnest/clipper2-darwin-x64@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-darwin-x64/-/clipper2-darwin-x64-0.0.1.tgz#a304eb0b5c258ca46f73131a918d2d159fe9a858"
-  integrity sha512-7FBk4G48I21qIz0bfMhpnTp+ADPmiz/eLl94pKhrgAfK0jjc9yctdHm5iQaPl041h32KSY2UrOlMR4BWwvbTkA==
+"@deepnest/clipper2-darwin-x64@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-darwin-x64/-/clipper2-darwin-x64-0.0.6.tgz#9c8a73072aee5bf4487dc3ad0059459a68be40ae"
+  integrity sha512-R097uscEVtWW1gDgFT459QE5NWTDbe6BcZWrvJEDTn0DUe2FE1vUJkLXVOgi7xfLfhj6n9U8FlkyqLMoHls78Q==
 
-"@deepnest/clipper2-linux-arm64-gnu@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-arm64-gnu/-/clipper2-linux-arm64-gnu-0.0.1.tgz#b2d09b07b496ac7afe2661fcb558a5d54fc15eef"
-  integrity sha512-KHlfgrnir5HU6sVduxuouX+pWvdvL7WowryN/PR8EqitgRmypXnqTciJxoGXS4PQiSWk1ElFZdEXESoKIJA1pw==
+"@deepnest/clipper2-linux-arm64-gnu@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-arm64-gnu/-/clipper2-linux-arm64-gnu-0.0.6.tgz#766791d88feb674aa6a885ce22060b7af5d3dbba"
+  integrity sha512-JSBJxMyKSmAD6Wpv5Z7so2AAfpc1h7G7yjPfrZYFVJKXkyRbACuVDsTftnJS7FpubBdzvdJ1mCgsQMhIudu3+g==
 
-"@deepnest/clipper2-linux-arm64-musl@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-arm64-musl/-/clipper2-linux-arm64-musl-0.0.1.tgz#e2ad0419c6b4a6a9c81087112baf3e406b8cb2ed"
-  integrity sha512-+doZaktbhXEzsBWX2TPKSb1EK8ik8S3DJDZ8P2/gtPiAvgahA1a7L6lYhHElvYNjFIr2GlhTuWBWRXidCGJFcg==
+"@deepnest/clipper2-linux-arm64-musl@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-arm64-musl/-/clipper2-linux-arm64-musl-0.0.6.tgz#f55a3fa855ed46d0915da1233cd0d4c6a008244f"
+  integrity sha512-Dkl3NhoXwULzgSVHwUJU0XQhe+4jA2bxBrMcy/6eWBRJvATQsSKeoMlcDOJvQ0WWw4RS3BJUOk6XH492K3RYuw==
 
-"@deepnest/clipper2-linux-riscv64-gnu@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-riscv64-gnu/-/clipper2-linux-riscv64-gnu-0.0.1.tgz#ba7b355055f4432f67257edf229e275204a124e9"
-  integrity sha512-x//zP8d/CqkOADWtNWjF/tsTMvKLxfXVnc+cI1e4SEslWWw9fdhIvlPme0XnM6sTAKWU9rFH7r+46aI8AoXvLg==
+"@deepnest/clipper2-linux-riscv64-gnu@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-riscv64-gnu/-/clipper2-linux-riscv64-gnu-0.0.6.tgz#ed540ffcbd2dad77032ae670110f9c8285424c28"
+  integrity sha512-PTwEavngWvc91WRZ9+mI6T+6LJzN9EQ9a4y96NSEBaC6/9tvWLaZ9Hzgj+ubOiH8ilt0opg5wEmPPyoGySz3mA==
 
-"@deepnest/clipper2-linux-x64-gnu@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-x64-gnu/-/clipper2-linux-x64-gnu-0.0.1.tgz#7037c44ccb68270391115c56f546d435a79ff793"
-  integrity sha512-TzY4AEMexrDGpQPEEguXCYWnxOf4EkPsIbZnQtB6zllJ8CFKty9usZtk4viTZd/StoGw/R7XBPVFkadQJ5syuw==
+"@deepnest/clipper2-linux-x64-gnu@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-x64-gnu/-/clipper2-linux-x64-gnu-0.0.6.tgz#8e527c9058977abcd91cd12e500d33d0b721f8fd"
+  integrity sha512-dPf8XpHF0LDCncV5qeKDUvehoyEyyqrWIjFdSdbbO659OErRmtnj/oH4ko4ky7LzGlnT1uu0MfT454SvEyFhGQ==
 
-"@deepnest/clipper2-linux-x64-musl@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-x64-musl/-/clipper2-linux-x64-musl-0.0.1.tgz#2a91236a2a55f144b9c78ba76ae85f3bf569edb1"
-  integrity sha512-hhGuop+Nz9PqST8Yg2hrQ+N/fJ7UtfOdfGUgtMhphpeZKpLH7H5BZOwIvbYM2gNbWwzEYPn3n+6v0SnjUElP+w==
+"@deepnest/clipper2-linux-x64-musl@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-linux-x64-musl/-/clipper2-linux-x64-musl-0.0.6.tgz#d910e0eaad99a53c901f7e9cc61dc05480a5f217"
+  integrity sha512-2tLahz1FR7e5C6iRbuytDF7p/qotG1JE4dmyqFOOtXaJEoDE1n3W61iHrsZvvta/jRLw8r/UHtF5ukKfk1qftQ==
 
-"@deepnest/clipper2-win32-arm64-msvc@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-win32-arm64-msvc/-/clipper2-win32-arm64-msvc-0.0.1.tgz#b45b14fe9346e39b30bd88d1dc1f3747d79d2e6e"
-  integrity sha512-r1pGwiuX1zQWJg1/atjQPeNxO16KBPoj0w6T7ejNPR0LGLeQBl6rHGFxyiiVdR8Cw+iExjddfIKksYNQa297Zw==
+"@deepnest/clipper2-win32-arm64-msvc@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-win32-arm64-msvc/-/clipper2-win32-arm64-msvc-0.0.6.tgz#3f888b1de0730fca53ea2659b8defecbfd304abc"
+  integrity sha512-On2sS6ddXIVeHirGH2wGmjEesS7B5xfdWPvaMKqWFaJl2LVtEdlZqVX0MOqGoSDusIikm4ZEqxgZKM7K8//VlA==
 
-"@deepnest/clipper2-win32-ia32-msvc@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-win32-ia32-msvc/-/clipper2-win32-ia32-msvc-0.0.1.tgz#3bd7afd26e3aa2ad5fe73b667efdfa8de7b75d02"
-  integrity sha512-9IQ9Npko9HrFCoTNRL1fCKjTbHNv43sEYCiTy0EIHQp421ZFS0DzlNWOXh9gmpCBnpmS2oGRHiiJApMPMnSCiw==
+"@deepnest/clipper2-win32-ia32-msvc@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-win32-ia32-msvc/-/clipper2-win32-ia32-msvc-0.0.6.tgz#cdcc333c5ca2eb21fe38b230891ddfc59969817c"
+  integrity sha512-3VvBX3WM3VXuf7L2zS39Mx7TyUSzGX/U70X2OziLpNU8zVc3ogveqIdLKj/8A1VHll548JGZBLGLPtqd4Jn61Q==
 
-"@deepnest/clipper2-win32-x64-msvc@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-win32-x64-msvc/-/clipper2-win32-x64-msvc-0.0.1.tgz#b1e07ca4e27f98a59139956f2e604860f41ac6ce"
-  integrity sha512-CMN+m7FOPnM4VlfVAEB8XBBDEN9ReEGvhe+YXBBONCwrJUCYGDyvIQ0PwxDM8xBCIuJ7NLJRQ1u7wttKv1MxPA==
+"@deepnest/clipper2-win32-x64-msvc@0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2-win32-x64-msvc/-/clipper2-win32-x64-msvc-0.0.6.tgz#6226220c7c9926f8958828f763343c07ed2ee382"
+  integrity sha512-6OzM8itZVbWp9+aIjfoDtii4XL41mnsLfHj6qpviATiHRNKvdv6iS2EcabPku/DOWbvYkJrEHfqzubXEs3PVzA==
 
-"@deepnest/clipper2@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@deepnest/clipper2/-/clipper2-0.0.1.tgz#530e095bd6660600935e30149bb803d76f6eb077"
-  integrity sha512-exTbGwUtPY1u1Ad2qvqnSCh5M6CV5va1xKsx1Q8RYPU7lXQygaL+BhAUO4Y97xyXB8T0yKhUIfPu7lp9ai+Ogw==
+"@deepnest/clipper2@^0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@deepnest/clipper2/-/clipper2-0.0.6.tgz#f3adb8e5d090d9c809266b5c090926d0a1586495"
+  integrity sha512-v3InOE/0IOMOeqxuZomFYNMdl+bqupqObdH89/XHXb7Bk85nHmWOmwA19lTKbXloAJHr4JixBo9wel5SZMUqrw==
   optionalDependencies:
-    "@deepnest/clipper2-darwin-universal" "0.0.1"
-    "@deepnest/clipper2-darwin-x64" "0.0.1"
-    "@deepnest/clipper2-linux-arm64-gnu" "0.0.1"
-    "@deepnest/clipper2-linux-arm64-musl" "0.0.1"
-    "@deepnest/clipper2-linux-riscv64-gnu" "0.0.1"
-    "@deepnest/clipper2-linux-x64-gnu" "0.0.1"
-    "@deepnest/clipper2-linux-x64-musl" "0.0.1"
-    "@deepnest/clipper2-win32-arm64-msvc" "0.0.1"
-    "@deepnest/clipper2-win32-ia32-msvc" "0.0.1"
-    "@deepnest/clipper2-win32-x64-msvc" "0.0.1"
+    "@deepnest/clipper2-darwin-universal" "0.0.6"
+    "@deepnest/clipper2-darwin-x64" "0.0.6"
+    "@deepnest/clipper2-linux-arm64-gnu" "0.0.6"
+    "@deepnest/clipper2-linux-arm64-musl" "0.0.6"
+    "@deepnest/clipper2-linux-riscv64-gnu" "0.0.6"
+    "@deepnest/clipper2-linux-x64-gnu" "0.0.6"
+    "@deepnest/clipper2-linux-x64-musl" "0.0.6"
+    "@deepnest/clipper2-win32-arm64-msvc" "0.0.6"
+    "@deepnest/clipper2-win32-ia32-msvc" "0.0.6"
+    "@deepnest/clipper2-win32-x64-msvc" "0.0.6"
 
 "@deepnest/geometryutil@link:../node-geometryutil":
   version "0.0.0"

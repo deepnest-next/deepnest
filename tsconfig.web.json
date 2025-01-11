@@ -17,9 +17,9 @@
     "baseUrl": ".",
     "newLine": "LF",
     "allowSyntheticDefaultImports": true,
+    "preserveConstEnums": true,
     "esModuleInterop": true,
     "noEmit": true,
-    "isolatedModules": false,
     "types": [
       "vite/client"
     ],
