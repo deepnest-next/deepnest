@@ -7,8 +7,8 @@ import { Options, TaskInfo } from './types'
 import BackgroundWorker from './background.worker.ts?modulePath'
 
 const defaultOptions: Options = {
-  minThreads: os.availableParallelism() <= 2 ? os.availableParallelism() : 2,
-  maxThreads: os.availableParallelism() <= 16 ? os.availableParallelism() : 16,
+  minThreads: os.availableParallelism(), //<= 2 ? os.availableParallelism() : 2,
+  maxThreads: os.availableParallelism(), //<= 16 ? os.availableParallelism() : 16,
   maxQueue: 100000
 }
 const fixedOptions: Options = {

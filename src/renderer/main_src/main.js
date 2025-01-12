@@ -379,7 +379,7 @@ ready(async function () {
   }
 
   ractive.on('selecthandler', function (e, part) {
-    console.log(e, part)
+    //console.log(e, part)
     if (e.original.target.nodeName == 'INPUT') {
       return true
     }

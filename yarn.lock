@@ -344,6 +344,18 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
+"@doodle3d/clipper-js@^1.0.11":
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@doodle3d/clipper-js/-/clipper-js-1.0.11.tgz#d8709fe9bef03ceb8cc2844560ace0e7eefeda8f"
+  integrity sha512-KSVF9iOl9jGu02EGUnVS2ric4iQRSIypg3/CTM30+MuWsqkUhILIG2EPxvPASENi6483QmNIwGSogZuTE7CFQA==
+  dependencies:
+    "@doodle3d/clipper-lib" "^6.4.2-b"
+
+"@doodle3d/clipper-lib@^6.4.2-b":
+  version "6.4.2-b"
+  resolved "https://registry.yarnpkg.com/@doodle3d/clipper-lib/-/clipper-lib-6.4.2-b.tgz#792391a286ad336b7e9b453708ef11c8e71827d6"
+  integrity sha512-glELSijsD9b+/0d9iOdasBwqH3s+xPxD59tJ7aXkBx7klugygGOMXn7PB05AdhVyA1OYMj7GUCegaQa7nvLtmQ==
+
 "@electron-toolkit/eslint-config-prettier@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@electron-toolkit/eslint-config-prettier/-/eslint-config-prettier-2.0.0.tgz#a258a28fc0a09b7f910fd71e0aa18ea6ee440735"

@@ -16,6 +16,7 @@ import {
   PointFloat64
 } from '@deepnest/clipper2'
 
+import clipper from '@doodle3d/clipper-lib'
 // Custom APIs for renderer
 const backend_api = {
   calculateNFP: require('@deepnest/calculate-nfp').calculateNFP,
@@ -23,7 +24,8 @@ const backend_api = {
   url: url,
   fs: fs,
   db: cacheDB,
-  clipper: {
+  clipperV1: clipper,
+  clipperV2: {
     PolyType: PolyType,
     ClipType: ClipType,
     FillType: FillType,

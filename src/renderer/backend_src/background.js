@@ -2,13 +2,14 @@
 
 import { GeometryUtil } from '@deepnest/geometryutil'
 //import * as ClipperLib from './util/clipper.js'
-//import { ClipperFloat64, window.backend_api.clipper.PolyType, ClipType, FillType, PointFloat64 } from '@deepnest/clipper2'
-
+//import { ClipperFloat64, ClipperV2.PolyType, ClipType, FillType, PointFloat64 } from '@deepnest/clipper2'
 import './util/parallel.js'
 import * as d3 from 'd3-polygon'
 //import WorkerFile from './util/eval.js?modulePath'
 //console.log('workerfile', WorkerFile)
-console.log(window.Parallel)
+const ClipperV1 = window.backend_api.clipperV1
+console.log('clipperV1', ClipperV1)
+const ClipperV2 = window.backend_api.clipperV2
 
 window.onload = function () {
   window.electron.ipcRenderer.invoke('worker:initialize', {}).then((result) => {
@@ -248,7 +249,7 @@ add package 'filequeue 0.5.0' if you enable this
               })
             )
             .catch((error) => {
-              console.error(`Error processing pair: ${pair}`, error)
+              console.error(`Error processing pair: ${JSON.stringify(pair)}`, JSON.stringify(error))
               throw error // Optional, um den Fehler an Promise.all weiterzugeben
             })
         })
@@ -639,8 +640,8 @@ function getOuterNfp(A, B, inside) {
       Bc[i].X *= -1
       Bc[i].Y *= -1
     }
-    //var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true)
-    var solution = window.backend_api.clipper.minkowskiSumFloat(A, Bc, true)
+    var solution = ClipperV1.MinkowskiSum(A, Bc, true)
+    //var solution = ClipperV2.minkowskiSumFloat(A, Bc, true)
     //console.log(solution.length, solution);
     //var clipperNfp = toNestCoordinates(solution[0], 10000000);
     var clipperNfp
@@ -751,26 +752,36 @@ function getInnerNfp(A, B, config) {
   var clipperNfp = innerNfpToClipperCoordinates(nfp.children, config)
   var clipperHoles = innerNfpToClipperCoordinates(holes, config)
 
-  let finalNfp = []
-  /*
-  TODO: clipper lib is not available is old code
-  var finalNfp
-  var clipper = new ClipperLib.Clipper()
-  clipper.AddPaths(clipperHoles, ClipperLib.PolyType.ptClip, true)
-  clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true)
-  */
+  //let finalNfp = []
 
-  const clipperF64 = new window.backend_api.clipper.ClipperFloat64.new(2)
-  clipperF64.addPaths(clipperHoles, window.backend_api.clipper.PolyType.Clip)
-  clipperF64.addPaths(clipperNfp, window.backend_api.clipper.PolyType.Subject)
-  try {
-    finalNfp = clipperF64.execute(
-      window.backend_api.clipper.ClipType.Difference,
-      window.backend_api.clipper.FillType.NonZero
+  //TODO: clipper lib is not available is old code
+
+  var clipper = new ClipperV1.Clipper()
+  clipper.AddPaths(clipperHoles, ClipperV1.PolyType.ptClip, true)
+  clipper.AddPaths(clipperNfp, ClipperV1.PolyType.ptSubject, true)
+  let finalNfp = new ClipperV1.Paths()
+
+  if (
+    !clipper.Execute(
+      ClipperV1.ClipType.ctDifference,
+      finalNfp,
+      ClipperV1.PolyFillType.pftNonZero,
+      ClipperV1.PolyFillType.pftNonZero
     )
-  } catch (e) {
+  ) {
+    //console.log('nfp.children V1: clipper error')
     return nfp.children
   }
+
+  /*   const clipperF64 = new ClipperV2.ClipperFloat64.new(2)
+  clipperF64.addPaths(clipperHoles, ClipperV2.PolyType.Clip)
+  clipperF64.addPaths(clipperNfp, ClipperV2.PolyType.Subject)
+  try {
+    finalNfp = clipperF64.execute(ClipperV2.ClipType.Difference, ClipperV2.FillType.NonZero)
+  } catch (e) {
+    console.log('nfp.children: clipper error', e)
+    return nfp.children
+  } */
 
   if (finalNfp.length == 0) {
     return null
@@ -912,8 +923,11 @@ function placeParts(sheets, parts, config, nestindex) {
 
       var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config)
 
-      const clipperF64 = new window.backend_api.clipper.ClipperFloat64.new(2)
-      let combinedNfp = []
+      //const clipperF64 = new ClipperV2.ClipperFloat64.new(2)
+      // old clipper v1 code
+      var clipperV1Instance = new ClipperV1.Clipper()
+      //var combinedNfpV1 = new ClipperV1.Paths()
+      let combinedNfp = new ClipperV1.Paths()
 
       var error = false
 
@@ -924,8 +938,8 @@ function placeParts(sheets, parts, config, nestindex) {
       if (clipCache[clipkey]) {
         var prevNfp = clipCache[clipkey].nfp
         // old clipper v1 code
-        //clipper.AddPaths(prevNfp, ClipperLib.PolyType.ptSubject, true)
-        clipperF64.addPaths(prevNfp, window.backend_api.clipper.PolyType.Clip)
+        clipperV1Instance.AddPaths(prevNfp, ClipperV1.PolyType.ptSubject, true)
+        //clipperF64.addPaths(prevNfp, ClipperV2.PolyType.Clip)
         startindex = clipCache[clipkey].index
       }
 
@@ -954,34 +968,39 @@ function placeParts(sheets, parts, config, nestindex) {
         var clipperNfp = nfpToClipperCoordinates(nfp, config)
 
         // old clipper v1 code
-        //clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true)
-        clipperF64.addPaths(clipperNfp, window.backend_api.clipper.PolyType.Subject)
+        clipperV1Instance.AddPaths(clipperNfp, ClipperV1.PolyType.ptSubject, true)
+        // new clipper v2 code
+        //clipperF64.addPaths(clipperNfp, ClipperV2.PolyType.Subject)
       }
 
-      try {
-        combinedNfp = clipperF64.execute(
-          window.backend_api.clipper.ClipType.Union,
-          window.backend_api.clipper.FillType.NonZero
-        )
-      } catch (e) {
-        console.log('clipper error', error)
+      // new clipper v2 code
+      /* if (error) {
         continue
+      } else {
+        try {
+          combinedNfp = clipperF64.execute(ClipperV2.ClipType.Union, ClipperV2.FillType.NonZero)
+        } catch (e) {
+          console.log('clipperV2 error', error)
+          continue
+        }
       }
-      /*
-      old clipper v1 code
+ */
+      // old clipper v1 code
       if (
         error ||
-        !clipper.Execute(
-          ClipperLib.ClipType.ctUnion,
+        !clipperV1Instance.Execute(
+          ClipperV1.ClipType.ctUnion,
           combinedNfp,
-          ClipperLib.PolyFillType.pftNonZero,
-          ClipperLib.PolyFillType.pftNonZero
+          ClipperV1.PolyFillType.pftNonZero,
+          ClipperV1.PolyFillType.pftNonZero
         )
       ) {
-        console.log('clipper error', error)
-        continue
+        console.log('clipperV1 error', error)
+        //continue
       }
-      */
+
+      //console.log('combinedNfpV1', combinedNfpV1)
+      console.log('combinedNfp v2', combinedNfp)
 
       /*var converted = [];
 			for(j=0; j<combinedNfp.length; j++){
@@ -997,37 +1016,48 @@ function placeParts(sheets, parts, config, nestindex) {
 
       // difference with sheet polygon
       var finalNfp = []
-
-      const clipperF64_2 = new window.backend_api.clipper.ClipperFloat64.new(2)
-      clipperF64_2.addPaths(combinedNfp, window.backend_api.clipper.PolyType.Clip)
-      clipperF64_2.addPaths(clipperSheetNfp, window.backend_api.clipper.PolyType.Subject)
+      //let finalNfpV1 = new ClipperV1.Paths()
+      /* 
+      const clipperF64_2 = new ClipperV2.ClipperFloat64.new(2)
+      clipperF64_2.addPaths(combinedNfp, ClipperV2.PolyType.Clip)
+      clipperF64_2.addPaths(clipperSheetNfp, ClipperV2.PolyType.Subject)
       try {
-        finalNfp = clipperF64_2.execute(
-          window.backend_api.clipper.ClipType.Difference,
-          window.backend_api.clipper.FillType.EvenOdd
+        let resultEvenOdd = clipperF64_2.execute(
+          ClipperV2.ClipType.Difference,
+          ClipperV2.FillType.EvenOdd
         )
+        let resultNonZero = clipperF64_2.execute(
+          ClipperV2.ClipType.Difference,
+          ClipperV2.FillType.NonZero
+        )
+        const clipperF64_2_1 = new ClipperV2.ClipperFloat64.new(2)
+        clipperF64_2_1.addPaths(resultNonZero, ClipperV2.PolyType.Clip)
+        clipperF64_2_1.addPaths(resultEvenOdd, ClipperV2.PolyType.Subject)
+        finalNfp = clipperF64_2.execute(ClipperV2.ClipType.Union, ClipperV2.FillType.NonZero)
+        console.log('finalNfp v2', finalNfp)
       } catch (e) {
+        console.log('continue v2', e)
         continue
-      }
-      /*
+      } */
+
       // old clipper v1 code
-      clipper = new ClipperLib.Clipper()
+      let clipper = new ClipperV1.Clipper()
 
-      clipper.AddPaths(combinedNfp, ClipperLib.PolyType.ptClip, true)
+      clipper.AddPaths(combinedNfp, ClipperV1.PolyType.ptClip, true)
 
-      clipper.AddPaths(clipperSheetNfp, ClipperLib.PolyType.ptSubject, true)
-
+      clipper.AddPaths(clipperSheetNfp, ClipperV1.PolyType.ptSubject, true)
       if (
         !clipper.Execute(
-          ClipperLib.ClipType.ctDifference,
+          ClipperV1.ClipType.ctDifference,
           finalNfp,
-          ClipperLib.PolyFillType.pftEvenOdd,
-          ClipperLib.PolyFillType.pftNonZero
+          ClipperV1.PolyFillType.pftEvenOdd,
+          ClipperV1.PolyFillType.pftNonZero
         )
       ) {
+        console.log('continue v1')
         continue
       }
-      */
+      //console.log('finalNfp v1', finalNfpV1)
 
       if (!finalNfp || finalNfp.length == 0) {
         continue

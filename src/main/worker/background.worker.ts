@@ -1,7 +1,7 @@
 import { Pair } from './types'
 import { minkowskiSumF64, PointFloat64 } from '@deepnest/clipper2'
+import ClipperV1 from '@doodle3d/clipper-lib'
 import { GeometryUtil } from '@deepnest/geometryutil'
-
 interface Inputs {
   a: number
   b: number
@@ -23,7 +23,8 @@ export const process = function (pair: Pair): any {
     Bc[i].x *= -1
     Bc[i].x *= -1
   }
-  const solution = minkowskiSumF64(A, Bc, true, Math.pow(10, -7))
+  //const solution = minkowskiSumF64(A, Bc, true, Math.pow(10, -7))
+  const solution = ClipperV1.Clipper.MinkowskiSum(A, Bc, true)
   let clipperNfp
 
   let largestArea: number | null = null
