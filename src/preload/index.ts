@@ -5,8 +5,10 @@ import * as fs from 'graceful-fs'
 import * as path from 'path'
 import remote from '@electron/remote'
 import * as svgPreProcessor from '@deepnest/svg-preprocessor'
+import { GeometryUtil } from '@deepnest/geometryutil'
 import axios from 'axios'
 import FormData from 'form-data'
+import clipper from '@doodle3d/clipper-lib/_clipper.js'
 
 // Custom APIs for renderer
 const api = {
@@ -15,7 +17,9 @@ const api = {
   remote,
   svgPreProcessor,
   axios,
-  FormData
+  FormData,
+  GeometryUtil,
+  ClipperLib: clipper
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -4,10 +4,13 @@
  */
 
 'use strict'
-import '../backend_src/util/clipper.js'
-import GeometryUtil from '../backend_src/util/geometryutil.js'
+//import ClipperLib from '@doodle3d/clipper-lib/_clipper.js'
+//import GeometryUtil from '../backend_src/util/geometryutil.js'
 import './svgparser.js'
 import * as d3 from 'd3-polygon'
+
+const GeometryUtil = window.api.GeometryUtil
+const ClipperLib = window.api.ClipperLib
 
 function DeepNest(eventEmitter) {
   var svg = null
@@ -323,23 +326,23 @@ function DeepNest(eventEmitter) {
 
     //if(straightened){
     var Ac = toClipperCoordinates(offset)
-    window.ClipperLib.JS.ScaleUpPath(Ac, 10000000)
+    ClipperLib.JS.ScaleUpPath(Ac, 10000000)
     var Bc = toClipperCoordinates(polygon)
-    window.ClipperLib.JS.ScaleUpPath(Bc, 10000000)
+    ClipperLib.JS.ScaleUpPath(Bc, 10000000)
 
-    var combined = new window.ClipperLib.Paths()
-    var clipper = new window.ClipperLib.Clipper()
+    var combined = new ClipperLib.Paths()
+    var clipper = new ClipperLib.Clipper()
 
-    clipper.AddPath(Ac, window.ClipperLib.PolyType.ptSubject, true)
-    clipper.AddPath(Bc, window.ClipperLib.PolyType.ptSubject, true)
+    clipper.AddPath(Ac, ClipperLib.PolyType.ptSubject, true)
+    clipper.AddPath(Bc, ClipperLib.PolyType.ptSubject, true)
 
     // the line straightening may have made the offset smaller than the simplified
     if (
       clipper.Execute(
-        window.ClipperLib.ClipType.ctUnion,
+        ClipperLib.ClipType.ctUnion,
         combined,
-        window.ClipperLib.PolyFillType.pftNonZero,
-        window.ClipperLib.PolyFillType.pftNonZero
+        ClipperLib.PolyFillType.pftNonZero,
+        ClipperLib.PolyFillType.pftNonZero
       )
     ) {
       var largestArea = null
@@ -552,9 +555,9 @@ function DeepNest(eventEmitter) {
   this.pointInPolygon = function (point, polygon) {
     // scaling is deliberately coarse to filter out points that lie *on* the polygon
     var p = this.svgToClipper(polygon, 1000)
-    var pt = new window.ClipperLib.IntPoint(1000 * point.x, 1000 * point.y)
+    var pt = new ClipperLib.IntPoint(1000 * point.x, 1000 * point.y)
 
-    return window.ClipperLib.Clipper.PointInPolygon(pt, p) > 0
+    return ClipperLib.Clipper.PointInPolygon(pt, p) > 0
   }
 
   /*this.simplifyPolygon = function(polygon, concavehull){
@@ -691,17 +694,17 @@ function DeepNest(eventEmitter) {
           clip.push({ X: polygon[i].x, Y: polygon[i].y })
         }
 
-        window.ClipperLib.JS.ScaleUpPath(clip, config.clipperScale)
+        ClipperLib.JS.ScaleUpPath(clip, config.clipperScale)
 
         return clip
       }
       function pointInClipperPolygon(point, polygon) {
-        var pt = new window.ClipperLib.IntPoint(
+        var pt = new ClipperLib.IntPoint(
           config.clipperScale * point.x,
           config.clipperScale * point.y
         )
 
-        return window.ClipperLib.Clipper.PointInPolygon(pt, polygon) > 0
+        return ClipperLib.Clipper.PointInPolygon(pt, polygon) > 0
       }
       var parents = []
       var i, j, k
@@ -1218,13 +1221,10 @@ function DeepNest(eventEmitter) {
     var p = this.svgToClipper(polygon)
 
     var miterLimit = 4
-    var co = new window.ClipperLib.ClipperOffset(
-      miterLimit,
-      config.curveTolerance * config.clipperScale
-    )
-    co.AddPath(p, window.ClipperLib.JoinType.jtMiter, window.ClipperLib.EndType.etClosedPolygon)
+    var co = new ClipperLib.ClipperOffset(miterLimit, config.curveTolerance * config.clipperScale)
+    co.AddPath(p, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon)
 
-    var newpaths = new window.ClipperLib.Paths()
+    var newpaths = new ClipperLib.Paths()
     co.Execute(newpaths, offset * config.clipperScale)
 
     var result = []
@@ -1239,19 +1239,16 @@ function DeepNest(eventEmitter) {
   this.cleanPolygon = function (polygon) {
     var p = this.svgToClipper(polygon)
     // remove self-intersections and find the biggest polygon that's left
-    var simple = window.ClipperLib.Clipper.SimplifyPolygon(
-      p,
-      window.ClipperLib.PolyFillType.pftNonZero
-    )
+    var simple = ClipperLib.Clipper.SimplifyPolygon(p, ClipperLib.PolyFillType.pftNonZero)
 
     if (!simple || simple.length == 0) {
       return null
     }
 
     var biggest = simple[0]
-    var biggestarea = Math.abs(window.ClipperLib.Clipper.Area(biggest))
+    var biggestarea = Math.abs(ClipperLib.Clipper.Area(biggest))
     for (var i = 1; i < simple.length; i++) {
-      var area = Math.abs(window.ClipperLib.Clipper.Area(simple[i]))
+      var area = Math.abs(ClipperLib.Clipper.Area(simple[i]))
       if (area > biggestarea) {
         biggest = simple[i]
         biggestarea = area
@@ -1259,7 +1256,7 @@ function DeepNest(eventEmitter) {
     }
 
     // clean up singularities, coincident points and edges
-    var clean = window.ClipperLib.Clipper.CleanPolygon(
+    var clean = ClipperLib.Clipper.CleanPolygon(
       biggest,
       0.01 * config.curveTolerance * config.clipperScale
     )
@@ -1290,7 +1287,7 @@ function DeepNest(eventEmitter) {
       clip.push({ X: polygon[i].x, Y: polygon[i].y })
     }
 
-    window.ClipperLib.JS.ScaleUpPath(clip, scale || config.clipperScale)
+    ClipperLib.JS.ScaleUpPath(clip, scale || config.clipperScale)
 
     return clip
   }

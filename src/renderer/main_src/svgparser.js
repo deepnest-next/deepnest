@@ -6,7 +6,7 @@
 
 'use strict'
 
-import GeometryUtil from '../backend_src/util/geometryutil.js'
+import { GeometryUtil } from '@deepnest/geometryutil'
 import Matrix from '../backend_src/util/matrix.js'
 
 function SvgParser() {

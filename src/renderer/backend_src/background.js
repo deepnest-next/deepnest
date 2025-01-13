@@ -3,11 +3,11 @@
 import { GeometryUtil } from '@deepnest/geometryutil'
 //import * as ClipperLib from './util/clipper.js'
 //import { ClipperFloat64, ClipperV2.PolyType, ClipType, FillType, PointFloat64 } from '@deepnest/clipper2'
-import './util/parallel.js'
+//import './util/parallel.js'
 import * as d3 from 'd3-polygon'
 //import WorkerFile from './util/eval.js?modulePath'
 //console.log('workerfile', WorkerFile)
-const ClipperV1 = window.backend_api.clipperV1
+const ClipperV1 = window.backend_api.ClipperLib
 console.log('clipperV1', ClipperV1)
 const ClipperV2 = window.backend_api.clipperV2
 
@@ -644,7 +644,7 @@ function getOuterNfp(A, B, inside) {
     //var solution = ClipperV2.minkowskiSumFloat(A, Bc, true)
     //console.log(solution.length, solution);
     //var clipperNfp = toNestCoordinates(solution[0], 10000000);
-    var clipperNfp
+    var clipperNfp = solution[0]
 
     var largestArea = null
     for (i = 0; i < solution.length; i++) {
@@ -996,7 +996,7 @@ function placeParts(sheets, parts, config, nestindex) {
         )
       ) {
         console.log('clipperV1 error', error)
-        //continue
+        continue
       }
 
       //console.log('combinedNfpV1', combinedNfpV1)
