@@ -1,19 +1,34 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
   "include": [
-    "src/renderer/src/env.d.ts",
-    "src/renderer/src/**/*",
-    "src/renderer/src/**/*.tsx",
+    "src/renderer/*_src/env.d.ts",
+    "src/renderer/*_src/**/*",
+    "src/renderer/*_src/**/*.ts",
+    "src/renderer/*_src/**/*.tsx",
     "src/preload/*.d.ts"
   ],
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "composite": true,
     "jsxImportSource": "solid-js",
     "baseUrl": ".",
+    "newLine": "LF",
+    "allowSyntheticDefaultImports": true,
+    "preserveConstEnums": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "types": [
+      "vite/client"
+    ],
     "paths": {
       "@renderer/*": [
-        "src/renderer/src/*"
+        "src/renderer/main_src/*"
+      ],
+      "@shared/*": [
+        "src/shared/src/*"
       ]
     }
   }

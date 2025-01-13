@@ -9,6 +9,15 @@
     "composite": true,
     "types": [
       "electron-vite/node"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@renderer/*": [
+        "src/renderer/main_src/*"
+      ],
+      "@shared/*": [
+        "src/shared/src/*"
+      ]
+    }
   }
 }

@@ -1,0 +1,18 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": [
+    "playwright.config.*",
+    "src/preload/**/*.d.ts",
+    "src/renderer/**/*.d.ts",
+    "tests/**/*.spec.ts"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "composite": true,
+    "noImplicitReturns": false,
+    "types": [
+      "playwright",
+      "vite/client"
+    ]
+  }
+}
