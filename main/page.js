@@ -203,7 +203,7 @@ ready(async function () {
     // config form
 
 
-    const defaultConversionServer = 'http://convert.deepnest.io';
+    const defaultConversionServer = 'https://converter.deepnest.app/convert';
 
     var defaultconfig = {
         units: 'inch',

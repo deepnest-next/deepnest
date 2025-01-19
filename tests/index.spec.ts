@@ -99,7 +99,7 @@ test("Nest", async ({}, testInfo) => {
     };
     expect(config).toMatchObject({
       ...sharedConfig,
-      conversionServer: "http://convert.deepnest.io",
+      conversionServer: "https://converter.deepnest.app/convert",
       dxfExportScale: "72",
       dxfImportScale: "1",
       endpointTolerance: 0.36,
