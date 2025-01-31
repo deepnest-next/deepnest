@@ -36,7 +36,7 @@ body.dark-mode {
   --bg-primary: #1a1a1a;
   --bg-secondary: #2d2d2d;
   --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
+  --text-secondary: #818489;
   --border-color: #404040;
   --nav-bg: #000000;
   --button-primary: #1a98b8;
@@ -565,7 +565,7 @@ ul.dropdown li:hover {
 
 /* info page */
 #info {
-  width: 30%;
+  /*width: 30%;*/
   height: 100%;
   background-color: #fff;
   padding: 0 5%;
@@ -1595,7 +1595,7 @@ textarea:focus {
   width: 10px;
 }
 *::-webkit-scrollbar-track {
-  border-radius: 5px;
+  /*border-radius: 5px;*/
   background-color: #384F71;
 }
 
@@ -1608,7 +1608,7 @@ textarea:focus {
 }
 
 *::-webkit-scrollbar-thumb {
-  border-radius: 0px;
+  /*border-radius: 0px;*/
   background-color: #3276A4;
 }
 
@@ -1627,6 +1627,33 @@ body.dark-mode #configform dl.formgroup * {
   color: var(--text-secondary);
   background-color: var(--bg-secondary);
 }
-body.dark-mode #home * {
+/* body.dark-mode #home * {
   color: var(--text-secondary);
+} */
+
+body.dark-mode #home .topnav li.button {
+  color: var(--text-primary);
+}
+
+body.dark-mode #home .topnav li.button.disabled {
+  color: var(--text-secondary);
+}
+
+
+
+#parts .button {
+  background-color: var(--button-primary);
+  color: var(--text-primary);
+}
+
+#parts .button:hover {
+  background-color: #c6bda3;
+}
+
+#parts .button:active {
+  background-color: #404247;
+}
+
+#parts .button.disabled {
+  background-color: #999;
 }
