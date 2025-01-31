@@ -44,29 +44,42 @@
 		const svgPreProcessor = require('@deepnest/svg-preprocessor');
 
 		ready(async function () {
+			// check for dark mode preference
+		  const darkMode = localStorage.getItem('darkMode') === 'true';
+		  if (darkMode) {
+				document.body.classList.add('dark-mode');
+		  }
+
 			// main navigation
 			var tabs = document.querySelectorAll('#sidenav li');
 
 			Array.from(tabs).forEach(tab => {
 				tab.addEventListener('click', function (e) {
-					if (this.className == 'active' || this.className == 'disabled') {
+					// darkmode handler
+					if(this.id == 'darkmode_tab'){
+						document.body.classList.toggle('dark-mode');
+						localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+					} else {
+					
+						if (this.className == 'active' || this.className == 'disabled') {
+							return false;
+						}
+
+						var activetab = document.querySelector('#sidenav li.active');
+						activetab.className = '';
+
+						var activepage = document.querySelector('.page.active');
+						activepage.className = 'page';
+
+						this.className = 'active';
+						tabpage = document.querySelector('#' + this.dataset.page);
+						tabpage.className = 'page active';
+
+						if (tabpage.getAttribute('id') == 'home') {
+							resize();
+						}
 						return false;
 					}
-
-					var activetab = document.querySelector('#sidenav li.active');
-					activetab.className = '';
-
-					var activepage = document.querySelector('.page.active');
-					activepage.className = 'page';
-
-					this.className = 'active';
-					tabpage = document.querySelector('#' + this.dataset.page);
-					tabpage.className = 'page active';
-
-					if (tabpage.getAttribute('id') == 'home') {
-						resize();
-					}
-					return false;
 				});
 			});
 
@@ -1718,6 +1731,7 @@
 			<li id="config_tab" data-page="config"></li>
 			<!--<li id="account_tab" data-page="account"></li>-->
 			<li id="info_tab" data-page="info"></li>
+			<li id="darkmode_tab"></li>
 		</ul>
 
 		<div id="home" class="page active">
