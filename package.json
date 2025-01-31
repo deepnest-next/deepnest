@@ -37,8 +37,8 @@
     "electron": "32.2.7"
   },
   "dependencies": {
-    "@deepnest/calculate-nfp": "*",
-    "@deepnest/svg-preprocessor": "*",
+    "@deepnest/calculate-nfp": "^202412.22.211007",
+    "@deepnest/svg-preprocessor": "^0.1.6",
     "@electron/remote": "^2.1.2",
     "axios": "^1.7.9",
     "form-data": "^4.0.1",
