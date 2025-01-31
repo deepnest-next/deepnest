@@ -34,7 +34,7 @@
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.1",
     "cross-replace": "^0.2.0",
-    "electron": "32.2.7"
+    "electron": "32.3.0"
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "^202412.22.211007",
