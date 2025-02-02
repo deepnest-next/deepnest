@@ -11,18 +11,11 @@ deepnest is a desktop application originally based on [SVGNest](https://github.c
 - Support for DXF files (via conversion)
 - New path approximation feature for highly complex parts
 
-## Fork History
-
-- https://github.com/Jack000/SVGnest (Academic Work References)
-- https://github.com/Jack000/Deepnest
-  - https://github.com/Dogthemachine/Deepnest
-    - https://github.com/cmidgley/Deepnest
-      - https://github.com/deepnest-io/Deepnest (⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
-        - https://github.com/deepnest-next/deepnest
 
 ## This Fork
 
-The primary goal has been to get deepnest buildable again, which has been achieved.
+The primary goal has been to get deepnest buildable again, which has been achieved. Now I'm going to fix the bugs, that are reported origin to deepnest-io/Deepnest and other forks.
+
 
 ## Prerequisites
 
@@ -104,3 +97,13 @@ The main license is the MIT.
 Further Licenses:
 
 - [LICENSES](LICENSES.md)
+
+## Fork History
+
+- https://github.com/Jack000/SVGnest (Academic Work References)
+- https://github.com/Jack000/Deepnest
+  - https://github.com/Dogthemachine/Deepnest
+    - https://github.com/cmidgley/Deepnest
+      - https://github.com/deepnest-io/Deepnest (⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
+        - https://github.com/deepnest-next/deepnest
+
