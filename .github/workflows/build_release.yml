@@ -65,7 +65,7 @@ jobs:
           BUILD_DIR="deepnest-${TAG}-linux-${ARCH}"
           echo "Creating build in: $BUILD_DIR"
           # Run Electron Packager to package the application into the specified build directory
-          npx @electron/packager . "$BUILD_DIR" --overwrite
+          npx @electron/packager . "deepnest-${TAG}" --overwrite
           # Zip the build directory with the same name
           zip -r "${BUILD_DIR}.zip" "$BUILD_DIR"
 
