@@ -70,7 +70,7 @@ jobs:
           zip -r "${BUILD_DIR}.zip" "$BUILD_DIR"
 
       - name: Artefakt an letztes Release anhängen
-        uses: peter-evans/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: deepnest-${{ steps.get_release.outputs.tag }}-linux-${{ env.ARCH }}.zip
