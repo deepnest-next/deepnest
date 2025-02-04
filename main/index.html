@@ -86,7 +86,7 @@
 			// config form
 
 
-			const defaultConversionServer = 'http://convert.deepnest.io';
+			const defaultConversionServer = 'https://converter.deepnest.app/';
 
 			var defaultconfig = {
 				units: 'inch',
@@ -700,6 +700,7 @@
 
 						}
 					}).catch(err => {
+						message(err,true)
 						message('could not contact file conversion server', true);
 					});
 				}
@@ -1162,6 +1163,7 @@
 						}
 						//}
 					}).catch(err => {
+						message(err.toString(),true)
 						message('could not contact file conversion server', true);
 					});
 				};
