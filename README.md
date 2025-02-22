@@ -1,4 +1,4 @@
-<img src="https://github.com/user-attachments/assets/0f24f4c9-d1af-4db5-9570-37c89b42cdfa" alt="deepnest next" width="250">
+<img src="https://github.com/user-attachments/assets/ee0a9f81-21f6-4583-a19e-b1b528cf488d" alt="deepnest next" width="256">
 
 # **deepnest**
 
