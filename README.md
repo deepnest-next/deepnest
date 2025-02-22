@@ -1,92 +1,31 @@
 <img src="https://github.com/user-attachments/assets/0f24f4c9-d1af-4db5-9570-37c89b42cdfa" alt="deepnest next" width="250">
 
-## **deepnest**
+# **deepnest**
 
-A fast nesting tool for laser cutters and other CNC tools
+A fast open source nesting tool for plotter, laser cutters and other CNC tools
 
-deepnest is a desktop application originally based on [SVGNest](https://github.com/Jack000/SVGnest)
+deepnest is a desktop application originally based on [SVGNest](https://github.com/Jack000/SVGnest) and [deepnest](https://github.com/Jack000/Deepnest)
 
-- New nesting engine with speed critical code written in C
-- Merges common lines for laser cuts
-- Support for DXF files (via conversion)
-- New path approximation feature for highly complex parts
-
-
-## This Fork
-
-The primary goal has been to get deepnest buildable again, which has been achieved. Now I'm going to fix the bugs, that are reported origin to deepnest-io/Deepnest and other forks.
+- New nesting engine with speed-critical code, written in C (outsourced to an external NodeJs module)
+- Merging of common lines for plotter and laser cuts
+- Support for DXF files (through conversion)
+- New path approximation function for highly complex parts
 
 
-## Prerequisites
 
-- **Node 20+:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
-  - [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
-- **Python 3.7.9 and up** You can use the Python Version Manager (pyenv):
-  - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
-- **Visual Studio with Desktop Development with C++ extension**
-  - Install VS2022 from https://visualstudio.microsoft.com/vs/features/cplusplus/
-  - or, as an administrator via `npm install --global windows-build-tools` (older VS version)
+## Upcoming changes
+- more speed with code written in Rust outsourced as modules, the original code was written in JavaScript
+- some core libraries rewritten from scratch in Rust so we get even more speed and ensure memory safety
+- Save and load settings as presets
+- Load nesting projects via CSV or JSON
+- Native support of DXF file formats without online conversion
+- **Cloud nesting:** Use our cloud for fast nesting of your projects _more soon_ 
 
-For ubuntu (or when you're not sure how to build) look at the build workflow:
 
-https://github.com/deepnest-next/deepnest/blob/main/.github/workflows/build.yml#L28
+## How to Build?
 
-### Possible Problems
+Reed the [Build Docs](BUILD.md)
 
-- On Windows 10 1905 or newer, you might need to **disable the built-in Python launcher** via
-  - **Start** > "**Manage App Execution Aliases**" and turning off the "**App Installer" aliases for Python**"
-- close-and-open all command shells and your IDE to activate the latest setup
-
-## Building
-
-```sh
-git clone https://github.com/deepnest-next/deepnest
-cd deepnest
-npm install
-npm run build
-npm run start
-```
-
-### Rebuild
-
-```sh
-# If you change the electron-related files (web files, javascript), a build with
-npm run build
-
-# If you change the the Minkowski files (the `.cc` or `.h` files):
-npm run build-all
-```
-
-### Running
-
-- `npm run start`
-
-### Clean builds
-
-```sh
-
-npm run clean  && npm run build
-
-# full clean, incl. `node_modules`
-npm run clean-all && npm install && npm run build
-```
-
-### Create a Distribution
-
-```sh
-npm run dist
-
-# During development, you can combine `clean-all, build-all and dist` via:
-npm run dist-all
-```
-
-The resulting files will be located in `.\deepnest-<version>-win32-x64`.
-
-Create a zip file of this folder for a simple distribution.
-
-## Debugging
-
-If the environment variable "deepnest_debug" has a value of "1", deepnest will open the browser dev tools (debugger/inspector).
 
 ## License
 
@@ -104,6 +43,8 @@ Further Licenses:
 - https://github.com/Jack000/Deepnest
   - https://github.com/Dogthemachine/Deepnest
     - https://github.com/cmidgley/Deepnest
-      - https://github.com/deepnest-io/Deepnest (⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
+      - https://github.com/deepnest-io/Deepnest 
+      
+        (Not available anymore. ⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
         - https://github.com/deepnest-next/deepnest
 
