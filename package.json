@@ -29,20 +29,20 @@
     "Laser"
   ],
   "devDependencies": {
-    "@electron/packager": "^18.3.6",
-    "@electron/rebuild": "^3.2.9",
-    "@playwright/test": "^1.49.1",
-    "@types/node": "^22.10.1",
-    "cross-replace": "^0.2.0",
-    "electron": "32.3.0"
+    "@electron/packager": "18.3.6",
+    "@electron/rebuild": "3.7.1",
+    "@playwright/test": "1.50.1",
+    "@types/node": "22.13.5",
+    "cross-replace": "0.2.0",
+    "electron": "34.3.0"
   },
   "dependencies": {
-    "@deepnest/calculate-nfp": "^202412.22.211007",
-    "@deepnest/svg-preprocessor": "^0.1.6",
-    "@electron/remote": "^2.1.2",
-    "axios": "^1.7.9",
-    "form-data": "^4.0.1",
-    "graceful-fs": "^4.2.11"
+    "@deepnest/calculate-nfp": "202502.27.153710",
+    "@deepnest/svg-preprocessor": "0.1.6",
+    "@electron/remote": "2.1.2",
+    "axios": "1.8.1",
+    "form-data": "4.0.2",
+    "graceful-fs": "4.2.11"
   },
   "files": [
     "main.js",
