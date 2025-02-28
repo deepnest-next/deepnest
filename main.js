@@ -5,6 +5,7 @@ const path = require("path");
 const os = require("os");
 const url = require("url");
 const { loadPresets, savePreset, deletePreset } = require("./presets");
+const NotificationService = require('./notification-service');
 require("events").EventEmitter.defaultMaxListeners = 30;
 
 remote.initialize();
@@ -56,7 +57,9 @@ Menu.setApplicationMenu(menu);
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow = null;
+let notificationWindow = null;
 var backgroundWindows = [];
+const notificationService = new NotificationService();
 
 // single instance
 const gotTheLock = app.requestSingleInstanceLock();
@@ -133,6 +136,67 @@ function createMainWindow() {
     fs.mkdirSync(global.NEST_DIRECTORY);
 }
 
+function createNotificationWindow(notification) {
+  if (notificationWindow) {
+    notificationWindow.close();
+  }
+
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  
+  notificationWindow = new BrowserWindow({
+    width: 750,
+    height: 500,
+    parent: mainWindow,
+    alwaysOnTop: true,
+    type: "notification",
+    center: true,
+    maximizable: false,
+    minimizable: false,
+    resizable: false,
+    modal: true,
+    show: false,
+    webPreferences: {
+      contextIsolation: false,
+      enableRemoteModule: true,
+      nodeIntegration: true
+    }
+  });
+
+  remote.enable(notificationWindow.webContents);
+
+  notificationWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, "./main/notification.html"),
+      protocol: "file:",
+      slashes: true
+    })
+  );
+
+  notificationWindow.setMenu(null);
+  // Open the DevTools.
+  if (process.env["deepnest_debug"] === "1")
+    notificationWindow.webContents.openDevTools();
+
+  notificationWindow.once("ready-to-show", () => {
+    notificationWindow.show();
+  });
+
+  notificationWindow.on("closed", () => {
+    notificationWindow = null;
+  });
+
+  // Store the notification data for access by the renderer
+  notificationWindow.notificationData = notification;
+}
+
+async function runNotificationCheck() {
+  const notification = await notificationService.checkForNotifications();
+  if (notification) {
+    createNotificationWindow(notification);
+  }
+}
+
+
 let winCount = 0;
 
 function createBackgroundWindows() {
@@ -179,6 +243,15 @@ app.on("ready", () => {
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
     createBackgroundWindows();
+    
+    // Check for notifications after a short delay to ensure the app is fully loaded
+    setTimeout(async () => {
+      runNotificationCheck();
+    }, 3000); // 3 seconds
+
+    setInterval(async () => {
+      runNotificationCheck();
+    }, 30*60*1000); // every 30 minutes
   });
   mainWindow.on("closed", () => {
     app.quit();
@@ -297,4 +370,35 @@ ipcMain.handle("save-preset", (event, name, config) => {
 
 ipcMain.handle("delete-preset", (event, name) => {
   deletePreset(name);
+});
+
+// Handle notification window events
+ipcMain.on('get-notification-data', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && win.notificationData) {
+    event.reply('notification-data', {
+      title: win.notificationData.title,
+      content: win.notificationData.content
+    });
+  }
+});
+
+ipcMain.on('close-notification', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && win.notificationData && win.notificationData.markAsSeen) {
+    win.notificationData.markAsSeen();
+  }
+  
+  // Close the current notification window
+  if (win) {
+    win.close();
+  }
+  
+  // Check for additional notifications and show them if they exist
+  setTimeout(async () => {
+    const nextNotification = await notificationService.checkForNotifications();
+    if (nextNotification) {
+      createNotificationWindow(nextNotification);
+    }
+  }, 500); // Small delay to ensure clean transition
 });
