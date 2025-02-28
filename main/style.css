@@ -227,7 +227,7 @@ h3 {
 }
 
 .button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   list-style: none;
   margin: 0.78em 0 0 1.25em;
@@ -407,6 +407,10 @@ ul.dropdown li:hover {
   width: 100%;
   height: 100%;
   display: flex;
+  position: relative; /* Create a positioning context */
+  overflow: hidden; /* Prevent scrollbars at container level */
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 #parts {
@@ -414,48 +418,44 @@ ul.dropdown li:hover {
   border-right: 0.2em solid var(--border-color);
   width: 32em;
   height: 100%;
-  overflow: visible;
+  overflow: hidden; /* Keep hidden - this prevents double scrollbars */
   box-sizing: border-box;
   position: relative;
   z-index: 5;
   min-width: 26em;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  order: 1;
 }
 
-#parts .button {
-  background-color: #938f82;
-}
-
-#parts .button:hover {
-  background-color: #c6bda3;
-}
-
-#parts .button:active {
-  background-color: #404247;
-}
-
-#parts .button.disabled {
-  background-color: #999;
-}
-
+/* Make sure #partscroll takes available space and shows scrollbars when needed */
 #partscroll {
-  width: 100%;
-  height: calc(100% - 2 * (var(--nav-width) - 0.625em));
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
+  margin-bottom: calc(100% - calc(28em)); /* Leave space for #partstools */
+}
+
+#imports {
+  position: relative; /* Change from absolute to relative */
+  height: 100%;
+  background-color: var(--bg-primary);
+  flex: 1; /* Take remaining space */
+  order: 2; /* Place after #parts */
 }
 
 /* config */
 
 #configform {
-  width: 30%;
+  width: 40%;
   height: 100%;
   background-color: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   margin: 0;
-  padding: 0 5%;
+  padding: 0 2%;
   min-width: 23em;
   overflow: auto;
 }
@@ -568,6 +568,9 @@ ul.dropdown li:hover {
 
 .config_explain {
   display: none;
+  position: absolute;
+  top:0;
+  left: 50%;
   width: 25em;
   padding: 5em 2% 0 5%;
 }
@@ -640,6 +643,13 @@ ul.dropdown li:hover {
   font-size: 0.9em;
 }
 
+#parts table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--table-bg);
+}
+
 #parts table thead tr {
   padding: 0 1em;
 }
@@ -656,20 +666,19 @@ ul.dropdown li:hover {
   height: 3em;
   line-height: 3em;
   padding: 0;
+  border-bottom: 1px solid var(--border-color);
+
 }
 
 #parts table thead tr th span {
-  position: absolute;
-  top: calc(var(--nav-width) - 0.2em);
   display: block;
   width: 100%;
   height: 3em;
   line-height: 3em;
-  padding: 0 0.5em;
+  padding: 0 0.1em;
   box-sizing: border-box;
   background-color: var(--table-bg);
-  color: #b5b1a0;
-  border-bottom: 1px solid #dbd8cc;
+  color: var(--text-secondary);
 }
 
 #parts table thead tr th:first-child span {
@@ -760,44 +769,75 @@ ul.dropdown li:hover {
 
 /* parts tools */
 #partstools {
-  position: absolute;
-  bottom: 0;
-  left: 0;
+  position: relative;
+  bottom: calc(var(--nav-width) - 0.625em);
   width: 100%;
   height: calc(var(--nav-width) - 0.625em);
   background-color: var(--progress-bg);
   transition: height 0.5s;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+#partstools > div {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  top: -4px; /* Adjust for top border */
+}
+/* Style buttons to be side by side */
+#partstools > div > a {
+  display: flex; /* Use flex instead of inline-flex */
+  margin-right: 15px; /* More space between buttons */
 }
 
+/* When active (showing sheet dialog), switch to block layout */
 #partstools.active {
   height: 17em;
+  display: block; /* Switch to block layout when showing dialogs */
+  padding-top: 10px; /* Add some top padding when in active mode */
 }
 
-#partstools #sheet {
-  display: none;
-}
-
-#partstools.active #sheet {
-  display: block;
+/* Preserve spacing in active state */
+#partstools.active > div > a {
+  /*display: inline-block;*/ /* Display as inline-block in active state */
+  margin-left: 1.25em;
+  margin-bottom: 10px; /* Add some bottom margin in active state */
 }
 
 #sheetdialog {
   margin: 0 1.5em 1.5em 1.5em;
+  display: block; /* Change to block to match original */
+  width: auto; /* Allow natural width */
+}
+#partstools.active > a {
+  display: inline-block; /* Display as inline-block in active state */
+  margin-left: 1.25em;
+  margin-bottom: 10px; /* Add some bottom margin in active state */
+}
+#partstools #sheetdialog {
+  display: none;
+}
+
+#partstools.active #sheetdialog {
+  display: block;
+}
+
+#sheetdialog .row {
+  width: 100%;
+  margin: 0.3em 0 0 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-content: center;
 }
 
 #sheetdialog .button.add {
   margin-left: 0;
-}
-
-#sheetdialog .row {
-  margin: 0.3em 0 0 0;
-  display: flex;
-  align-items: center;
 }
 
 #sheetdialog .label {
@@ -806,6 +846,7 @@ ul.dropdown li:hover {
 }
 
 #sheetdialog .button {
+  display: inline-block;
   padding-left: 2em;
   padding-right: 2em;
   margin-top: 1em;
@@ -831,21 +872,11 @@ ul.dropdown li:hover {
 
 /* imports */
 
-#imports {
-  position: absolute;
-  top: 0;
-  left: 32.2em;
-  height: 100%;
-  background-color: var(--bg-primary);
-  flex: 1;
-}
-
 #importsnav {
   position: absolute;
   width: 100%;
   height: 2.7em;
-  top: calc(var(--nav-width) - 0.625em);
-  left: 0;
+ left: 0;
   margin: 0;
   padding: 0;
   cursor: default;
@@ -863,6 +894,11 @@ ul.dropdown li:hover {
   border-bottom: none;
   display: flex;
   align-items: center;
+  color: whitesmoke;
+}
+
+.dark-mode #importsnav li {
+  color: #404247;
 }
 
 #importsnav li:first-child {
@@ -886,15 +922,14 @@ ul.dropdown li:hover {
 
 #importsnav li .close {
   display: inline-block;
-  background: transparent url(img/close_dark.svg) no-repeat;
-  background-size: 1.5em 1.5em;
+  background: orangered url(img/close_dark.svg) no-repeat;
+  background-size: 0.75em 0.75em;
   background-position: 50%;
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 1.5em;
+  width: 0.75em;
+  height: 0.75em;
+  border-radius: 0.75em;
   margin-left: 0.5em;
   position: relative;
-  top: 0.5em;
   cursor: default;
 }
 
@@ -915,7 +950,7 @@ ul.dropdown li:hover {
 .zoomtools {
   position: absolute;
   display: flex;
-  top: calc(var(--nav-width) - 0.625em + 3.5em);
+  top: calc(var(--nav-width) - 0.625em);
   right: 1em;
   z-index: 10;
 }
@@ -1725,6 +1760,7 @@ body.dark-mode #home .topnav li.button.disabled {
   padding: 20px;
   border: 1px solid var(--border-color);
   width: 300px;
+  min-height: 150px;
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }

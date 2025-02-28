@@ -904,9 +904,9 @@
 
 				var home = document.querySelector('#home');
 
-				var imports = document.querySelector('#imports');
-				imports.style.width = home.offsetWidth - (parts.offsetWidth - 2) + 'px';
-				imports.style.left = (parts.offsetWidth - 2) + 'px';
+				// var imports = document.querySelector('#imports');
+				// imports.style.width = home.offsetWidth - (parts.offsetWidth - 2) + 'px';
+				// imports.style.left = (parts.offsetWidth - 2) + 'px';
 
 				var headers = document.querySelectorAll('#parts table th');
 				Array.from(headers).forEach(th => {
@@ -1920,17 +1920,19 @@
 					</div>
 
 					<div id="partstools">
+            <div>
 						<a href="#" class="button addsheet" id="addsheet">&nbsp;</a>
 						<a href="#" class='button delete {{ getSelected().length == 0 ? "disabled" : "" }}' on-click="delete">&nbsp;</a>
 						<a href="#" class="button {{ parts.length == 0 ? "disabled" : "" }}" id="selectall" on-click="selectall">{{ getSelected().length == parts.length ? 'Deselect' : 'Select' }} all</a>
-
+            </div>
 						<div id="sheetdialog">
 						<h2>Add Sheet</h2>
 						<span class="row"><span class="label">width</span> <input type="number" min="0" id="sheetwidth" required /> {{ getUnits }}</span>
 						<span class="row"><span class="label">height</span> <input type="number" min="0" id="sheetheight" required /> {{ getUnits }}</span>
-
+            <div>
 						<a href="#" class="button add" id="confirmsheet">Add</a>
 						<a href="#" class="button" id="cancelsheet">Cancel</a>
+            </div>
 						</div>
 					</div>
 				</div>
@@ -2129,7 +2131,7 @@
             <h2>Save Preset</h2>
             <input type="text" id="presetName" style="width: max-content;" placeholder="Enter preset name">
             <br />
-            <button id="confirmSavePreset" class="button save"></button>
+            <button id="confirmSavePreset" class="button save">Save</button>
 				  </div>
 				</div>
 
