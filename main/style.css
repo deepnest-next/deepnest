@@ -87,10 +87,11 @@ h3 {
   color: var(--text-secondary);
 }
 
+/* Sidebar navigation */
 #sidenav {
   width: var(--nav-width);
   height: 100%;
-  background-color: #404247;
+  background-color: var(--nav-bg);
   position: absolute;
   top: 0;
   left: 0;
@@ -98,16 +99,20 @@ h3 {
   margin: 0;
   padding: 0;
   -webkit-app-region: drag;
+  display: flex;
+  flex-direction: column;
 }
 
 #sidenav li {
   width: var(--nav-width);
   height: var(--nav-width);
-  float: left;
   list-style: none;
   margin: 0;
   padding: 0;
   -webkit-app-region: no-drag;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #sidenav li:hover {
@@ -174,14 +179,14 @@ h3 {
   height: calc(var(--nav-width) - 0.625em);
   background-color: var(--bg-secondary);
   border-bottom: 2px solid var(--border-color);
-  float: left;
+  display: flex;
+  align-items: center;
   margin: 0;
   padding: 0;
   overflow: hidden;
   -webkit-app-region: drag;
   position: relative;
   z-index: 10;
-  border-bottom: 2px solid #e2e8ed;
 }
 
 #progressbar_wrapper {
@@ -190,7 +195,7 @@ h3 {
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #333;
+  background-color: var(--progress-bg);
 }
 
 #progressbar {
@@ -207,7 +212,7 @@ h3 {
 }
 
 #nest .topnav .back {
-  float: right;
+  margin-left: auto;
   margin-right: 1em;
   background-color: #717377;
   background-image: url(img/arrow_right.svg);
@@ -222,12 +227,13 @@ h3 {
 }
 
 .button {
-  float: left;
+  display: flex;
+  align-items: center;
   list-style: none;
   margin: 0.78em 0 0 1.25em;
   padding: 0.6em 3em;
   color: #fff;
-  background-color: #24c7ed;
+  background-color: var(--button-primary);
   border-radius: 5em;
   cursor: default;
   font-size: 0.875em;
@@ -364,16 +370,17 @@ h3 {
 }
 
 ul.dropdown {
-  display: block;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 1em 0 0 0;
-  background-color: #2d2e30;
+  background-color: var(--bg-secondary);
   position: absolute;
   top: 1.4em;
   left: 0;
   width: 100%;
   z-index: 10;
-  color: #ccc;
+  color: var(--text-secondary);
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   cursor: default;
@@ -384,21 +391,22 @@ ul.dropdown {
 }
 
 ul.dropdown li {
-  display: block;
+  display: flex;
+  align-items: center;
   list-style: none;
   padding: 0 1em;
   height: 2.5em;
-  line-height: 2.5em;
 }
 
 ul.dropdown li:hover {
-  background-color: #5b5e63;
-  color: #fff;
+  background-color: var(--table-hover);
+  color: var(--text-primary);
 }
 
 #homecontent {
   width: 100%;
   height: 100%;
+  display: flex;
 }
 
 #parts {
@@ -411,6 +419,8 @@ ul.dropdown li:hover {
   position: relative;
   z-index: 5;
   min-width: 26em;
+  display: flex;
+  flex-direction: column;
 }
 
 #parts .button {
@@ -441,17 +451,18 @@ ul.dropdown li:hover {
 #configform {
   width: 30%;
   height: 100%;
-  background-color: #fff;
-  display: block;
+  background-color: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0 5%;
-  float: left;
   min-width: 23em;
   overflow: auto;
 }
 
 #config dl {
-  float: left;
+  display: flex;
+  flex-direction: column;
   margin: 0 0 2em 0;
   padding: 0;
   width: 100%;
@@ -460,25 +471,41 @@ ul.dropdown li:hover {
 
 #config dl dt,
 #config dl dd {
-  float: left;
   margin: 0.7em 0;
   padding: 0;
 }
 
 #config dl dt {
-  width: 50%;
-  min-height: 2em;
-  line-height: 2em;
-}
-#config dl dd {
-  width: 50%;
-  color: #7b879e;
-  background-color: #fff;
-  position: relative;
+  width: 100%;
   min-height: 2em;
   line-height: 2em;
 }
 
+#config dl dd {
+  width: 100%;
+  color: #7b879e;
+  background-color: var(--bg-secondary);
+  position: relative;
+  min-height: 2em;
+  line-height: 2em;
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  #config dl {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  #config dl dt {
+    width: 50%;
+  }
+  
+  #config dl dd {
+    width: 50%;
+  }
+}
 
 #config span,
 #config i {
@@ -514,10 +541,10 @@ ul.dropdown li:hover {
   width: 5em;
   height: 2.5em;
   line-height: 2.5em;
-  background-color: #e2e8ed;
-  border: 2px solid #c8cedb;
+  background-color: var(--input-bg);
+  border: 2px solid var(--input-border);
   border-radius: 3px;
-  color: #7b879e;
+  color: var(--input-text);
   margin-top: -0.4em;
   padding: 0 0.5em 0 1em;
 }
@@ -540,11 +567,9 @@ ul.dropdown li:hover {
 }
 
 .config_explain {
-  overflow: visible;
-  float: left;
+  display: none;
   width: 25em;
   padding: 5em 2% 0 5%;
-  display: none;
 }
 
 .config_explain.active {
@@ -568,12 +593,11 @@ ul.dropdown li:hover {
 
 /* info page */
 #info {
-  /*width: 30%;*/
   height: 100%;
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   padding: 0 5%;
-  float: left;
   min-width: 22em;
+  flex: 1;
 }
 
 #info.active svg g.logo path,
@@ -741,8 +765,11 @@ ul.dropdown li:hover {
   left: 0;
   width: 100%;
   height: calc(var(--nav-width) - 0.625em);
-  background-color: #cdd8e0;
+  background-color: var(--progress-bg);
   transition: height 0.5s;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 #partstools.active {
@@ -757,14 +784,10 @@ ul.dropdown li:hover {
   display: block;
 }
 
-#partstools .button {
-  margin-bottom: 2em;
-}
-
 #sheetdialog {
-  float: left;
-  clear: both;
   margin: 0 1.5em 1.5em 1.5em;
+  display: flex;
+  flex-direction: column;
 }
 
 #sheetdialog .button.add {
@@ -772,9 +795,9 @@ ul.dropdown li:hover {
 }
 
 #sheetdialog .row {
-  float: left;
-  width: 100%;
   margin: 0.3em 0 0 0;
+  display: flex;
+  align-items: center;
 }
 
 #sheetdialog .label {
@@ -813,7 +836,8 @@ ul.dropdown li:hover {
   top: 0;
   left: 32.2em;
   height: 100%;
-  background-color: #f5f7f9;
+  background-color: var(--bg-primary);
+  flex: 1;
 }
 
 #importsnav {
@@ -825,7 +849,8 @@ ul.dropdown li:hover {
   margin: 0;
   padding: 0;
   cursor: default;
-  background-color: #cdd8e0;
+  background-color: var(--progress-bg);
+  display: flex;
 }
 
 #importsnav li {
@@ -834,9 +859,10 @@ ul.dropdown li:hover {
   padding: 0 0.75em 0 1.5em;
   height: 2.3em;
   line-height: 2.3em;
-  background-color: #e4e8ed;
-  float: left;
+  background-color: var(--bg-secondary);
   border-bottom: none;
+  display: flex;
+  align-items: center;
 }
 
 #importsnav li:first-child {
@@ -888,7 +914,7 @@ ul.dropdown li:hover {
 
 .zoomtools {
   position: absolute;
-  display: block;
+  display: flex;
   top: calc(var(--nav-width) - 0.625em + 3.5em);
   right: 1em;
   z-index: 10;
@@ -897,12 +923,14 @@ ul.dropdown li:hover {
 .zoomtools a {
   width: 1.5em;
   height: 1.5em;
-  float: left;
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   cursor: default;
   background-position: 50%;
   background-size: 0.8em 0.8em;
   background-repeat: no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .zoomtools a:first-child {
@@ -1004,16 +1032,12 @@ ul.dropdown li:hover {
   right: 0;
   z-index: 21;
   padding: 1.2em 3em 1.2em 10em;
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    right top,
-    from(rgba(255, 255, 255, 0)),
-    to(rgba(255, 255, 255, 1))
-  );
+  background-image: linear-gradient(to right top, rgba(255, 255, 255, 0), var(--message-bg));
   opacity: 0;
   transition: opacity 0.5s;
   cursor: default;
+  display: flex;
+  align-items: center;
 }
 
 #messagewrapper.active {
@@ -1029,9 +1053,8 @@ ul.dropdown li:hover {
   background-position: 50%;
 }
 
-#messagecontent,
-#messagewrapper .close {
-  float: right;
+#messagecontent {
+  margin-right: auto;
 }
 
 #message.error {
@@ -1075,6 +1098,7 @@ ul.dropdown li:hover {
   width: 100%;
   height: calc(100% - 2 * (var(--nav-width) - 0.625em));
   position: relative;
+  display: flex;
 }
 
 #nestinfo {
@@ -1083,6 +1107,8 @@ ul.dropdown li:hover {
   padding: 5em 5%;
   position: absolute;
   left: -50%;
+  display: flex;
+  flex-direction: column;
 }
 
 #nestinfo.active {
@@ -1098,6 +1124,8 @@ ul.dropdown li:hover {
   width: 100%;
   margin-top: 1em;
   min-height: 300px;
+  display: flex;
+  flex-direction: column;
 }
 
 .nest {
@@ -1236,12 +1264,14 @@ ul.dropdown li:hover {
 /* progress */
 li.progress {
   list-style: none;
-  float: right;
-  margin: 0.15em 0.5em 0 0;
+  margin: 0.15em 0.5em 0 auto;
   width: calc(var(--nav-width) - 2.8em);
   height: calc(var(--nav-width) - 2.8em);
   opacity: 0;
   transition: opacity 1.5s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 li.progress.active {
@@ -1260,9 +1290,8 @@ li.progress svg .bar {
 /* login */
 
 .topnav .account {
-  float: right;
-  list-style: none;
-  margin: 0 3em 0 0;
+  margin-left: auto;
+  margin-right: 3em;
   padding: 0 0 0 2em;
   height: 3.7em;
   line-height: 3.7em;
@@ -1270,6 +1299,8 @@ li.progress svg .bar {
   background-size: 1.5em 1.5em;
   background-position: 0 50%;
   cursor: default;
+  display: flex;
+  align-items: center;
 }
 
 .topnav .account a {
@@ -1582,6 +1613,7 @@ ul.dropdown li:hover {
 input,
 select,
 textarea {
+  padding: 5px;
   background-color: var(--input-bg);
   border: 1px solid var(--input-border);
   color: var(--input-text);
@@ -1663,7 +1695,7 @@ body.dark-mode #home .topnav li.button.disabled {
 
 /* Preset styles */
 #presets-container {
-  display: block;
+  display: flex;
   align-items: center;
   gap: 10px;
 }
@@ -1688,10 +1720,10 @@ body.dark-mode #home .topnav li.button.disabled {
 }
 
 .modal-content {
-  background-color: #fff;
+  background-color: var(--bg-secondary);
   margin: 15% auto;
   padding: 20px;
-  border: 1px solid #888;
+  border: 1px solid var(--border-color);
   width: 300px;
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
