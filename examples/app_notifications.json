@@ -1,0 +1,36 @@
+{
+  "notifications": [
+    {
+      "uuid": "notification-2023-11-01-001",
+      "type": "important",
+      "date": "2023-11-01T01:00:00Z",
+      "title": "Important Update Information",
+      "content": "<h2>Server Maintenance</h2><p>Our cloud nesting servers will be undergoing maintenance on November 5th, 2023 from 2:00 AM to 6:00 AM UTC.</p><p>During this time, the cloud nesting feature may be unavailable. We apologize for any inconvenience this may cause.</p><p>Thank you for your understanding.</p>"
+    },
+    {
+      "uuid": "notification-2023-10-15-001",
+      "type": "preview",
+      "date": "2023-10-15T00:01:00Z",
+      "title": "New Feature Preview",
+      "content": "<h2>Coming Soon: Multiple Material Support</h2><p>We're excited to announce that in our next major update, Deepnest will support nesting across multiple materials simultaneously!</p><ul><li>Optimize material usage across different sheet types</li><li>Set material-specific constraints</li><li>Generate comprehensive reports by material</li></ul><p>Stay tuned for more information about this exciting new feature.</p>"
+    },
+    {
+      "uuid": "notification-2023-09-20-001",
+      "type": "update",
+      "date": "2023-09-20T00:00:01Z",
+      "title": "Subscription Changes",
+      "content": "<h2>Updated Subscription Plans</h2><p>Starting October 1st, 2023, we are updating our subscription plans to provide even more value:</p><table border='1' style='border-collapse: collapse; width: 100%;'><tr><th>Plan</th><th>Old Price</th><th>New Price</th></tr><tr><td>Basic</td><td>$9.99/month</td><td>$8.99/month</td></tr><tr><td>Professional</td><td>$19.99/month</td><td>$17.99/month</td></tr></table><p>Existing subscribers will automatically receive these new rates on their next billing cycle.</p><p><a href='https://www.deepnest.net/pricing'>View Full Details</a></p>"
+    },
+    {
+      "uuid": "notification-2023-09-19-001",
+      "type": "ads",
+      "date": "2023-09-19T00:00:00Z",
+      "title": "Ads for Deepnest",
+      "content": "<h2>Introducing Deepnest Pro</h2><p>Upgrade to Deepnest Pro for advanced nesting features, priority support, and ad-free experience!</p><p>Get started today and take your nesting to the next level.</p><p><a href='https://www.deepnest.net/pro'>Upgrade Now</a></p>"
+    }
+  ],
+  "meta": {
+    "lastUpdated": "2023-11-01T10:15:30Z",
+    "version": "1.0.0"
+  }
+}
