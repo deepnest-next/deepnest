@@ -6,7 +6,9 @@ on:
     types: [published]
 
 jobs:
-  build-and-release:
+  build-and-release-linux:
+    env:
+      BUILD_FOR_OS: linux
     strategy:
       matrix:
         node-version: [22.x]
