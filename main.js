@@ -5,6 +5,7 @@ const path = require("path");
 const os = require("os");
 const url = require("url");
 const { loadPresets, savePreset, deletePreset } = require("./presets");
+require("events").EventEmitter.defaultMaxListeners = 30;
 
 remote.initialize();
 
