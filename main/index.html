@@ -45,10 +45,151 @@
 
 		ready(async function () {
 			// check for dark mode preference
-		  const darkMode = localStorage.getItem('darkMode') === 'true';
-		  if (darkMode) {
+			const darkMode = localStorage.getItem('darkMode') === 'true';
+			if (darkMode) {
 				document.body.classList.add('dark-mode');
-		  }
+			}
+
+			// Preset functionality
+			{
+				// Get DOM elements
+				const savePresetBtn = document.getElementById('savePresetBtn');
+				const loadPresetBtn = document.getElementById('loadPresetBtn');
+				const deletePresetBtn = document.getElementById('deletePresetBtn');
+				const presetSelect = document.getElementById('presetSelect');
+				const presetModal = document.getElementById('preset-modal');
+				const closeModalBtn = presetModal.querySelector('.close');
+				const confirmSavePresetBtn = document.getElementById('confirmSavePreset');
+				const presetNameInput = document.getElementById('presetName');
+
+				// Load presets into dropdown
+				async function loadPresetList() {
+					const presets = await ipcRenderer.invoke('load-presets');
+
+					// Clear dropdown (except first option)
+					while (presetSelect.options.length > 1) {
+						presetSelect.remove(1);
+					}
+
+					// Add presets to dropdown
+					for (const name in presets) {
+						const option = document.createElement('option');
+						option.value = name;
+						option.textContent = name;
+						presetSelect.appendChild(option);
+					}
+				}
+
+				// Initial load of presets
+				await loadPresetList();
+
+				// Save preset button click
+				savePresetBtn.addEventListener('click', function (e) {
+					e.preventDefault();
+					presetNameInput.value = '';
+					presetModal.style.display = 'block';
+					document.body.classList.add('modal-open');
+					presetNameInput.focus();
+				});
+
+				// Close modal when clicking X
+				closeModalBtn.addEventListener('click', function (e) {
+					e.preventDefault();
+					presetModal.style.display = 'none';
+					document.body.classList.remove('modal-open');
+				});
+
+				// Close modal when clicking outside
+				window.addEventListener('click', function () {
+					if (event.target === presetModal) {
+						presetModal.style.display = 'none';
+						document.body.classList.remove('modal-open');
+					}
+				});
+
+				// Confirm save preset
+				confirmSavePresetBtn.addEventListener('click', async function (e) {
+					e.preventDefault();
+					const name = presetNameInput.value.trim();
+					if (!name) {
+						alert('Please enter a preset name');
+						return;
+					}
+
+					try {
+						await ipcRenderer.invoke('save-preset', name, JSON.stringify(config.getSync()));
+						presetModal.style.display = 'none';
+						document.body.classList.remove('modal-open');
+						await loadPresetList();
+						presetSelect.value = name; // Select the newly created preset
+						message('Preset saved successfully!');
+					} catch (error) {
+						console.error(error);
+						message('Error saving preset', true);
+					}
+				});
+
+				// Load preset button click
+				loadPresetBtn.addEventListener('click', async function (e) {
+					e.preventDefault();
+					const selectedPreset = presetSelect.value;
+					if (!selectedPreset) {
+						message('Please select a preset to load');
+						return;
+					}
+
+					try {
+						const presets = await ipcRenderer.invoke('load-presets');
+						const presetConfig = presets[selectedPreset];
+
+						if (presetConfig) {
+							// Preserve user profile
+							var tempaccess = config.getSync('access_token');
+							var tempid = config.getSync('id_token');
+
+							// Apply preset settings
+							config.setSync(JSON.parse(presetConfig));
+
+							// Restore user profile
+							config.setSync('access_token', tempaccess);
+							config.setSync('id_token', tempid);
+
+							// Update UI and notify DeepNest
+							var cfgvalues = config.getSync();
+							window.DeepNest.config(cfgvalues);
+							updateForm(cfgvalues);
+
+							message('Preset loaded successfully!');
+						} else {
+							message('Selected preset not found', true);
+						}
+					} catch (error) {
+						message('Error loading preset', true);
+					}
+				});
+			
+				// Delete preset button click
+				deletePresetBtn.addEventListener('click', async function (e) {
+					e.preventDefault();
+					const selectedPreset = presetSelect.value;
+					if (!selectedPreset) {
+						message('Please select a preset to delete');
+						return;
+					}
+
+					if (confirm(`Are you sure you want to delete the preset "${selectedPreset}"?`)) {
+						try {
+							await ipcRenderer.invoke('delete-preset', selectedPreset);
+							await loadPresetList();
+							presetSelect.selectedIndex = 0; // Reset to default option
+							message('Preset deleted successfully!');
+						} catch (error) {
+							message('Error deleting preset', true);
+						}
+					}
+				});
+			} // Preset functionality end
+
 
 			// main navigation
 			var tabs = document.querySelectorAll('#sidenav li');
@@ -141,6 +282,9 @@
 			var inputs = document.querySelectorAll('#config input, #config select');
 
 			Array.from(inputs).forEach(i => {
+				if (['presetSelect','presetName'].indexOf(i.getAttribute('id'))!=-1) {
+					return;
+				}
 				i.addEventListener('change', function (e) {
 
 					var val = i.value;
@@ -244,6 +388,9 @@
 
 				var inputs = document.querySelectorAll('#config input, #config select');
 				Array.from(inputs).forEach(i => {
+					if (['presetSelect','presetName'].indexOf(i.getAttribute('id'))!=-1) {
+						return;
+					}
 					var key = i.getAttribute('data-config');
 					if (key == 'units' || key == 'scale') {
 						return;
@@ -261,6 +408,9 @@
 			}
 
 			document.querySelectorAll('#config input, #config select').forEach(function (e) {
+				if (['presetSelect','presetName'].indexOf(e.getAttribute('id'))!=-1) {
+					return;
+				}
 				e.onmouseover = function (event) {
 					var inputid = e.getAttribute('data-config');
 					if (inputid) {
@@ -1941,7 +2091,7 @@
 
 					<dt>GA mutation rate</dt>
 					<dd>
-						<input type="number" value="10" step="1" min="1" max="50" data-config="mutationRate" required />
+						<input type="number" value="10" step="1" min="1" max="512" data-config="mutationRate" required />
 					</dd>
 				</dl>
 
@@ -1952,6 +2102,36 @@
 						<input type="checkbox" data-config="useQuantityFromFileName" />
 					</dd>
 				</dl>
+
+				<h1>Presets</h1>
+				<dl class="formgroup">
+				  <dt>Save Configuration Presets</dt>
+				  <dd id="presets-container">
+            <button id="savePresetBtn" class="button">Save Preset</button>
+				  </dd>
+				  <dt>Load/Delete Configuration Presets</dt>
+				  <dd id="presets-container">
+            <div>
+              <select id="presetSelect">
+                <option value="">-- Select a preset --</option>
+              </select>
+              <br />
+              <button id="loadPresetBtn" class="button">Load</button>
+              <button id="deletePresetBtn" class="button">Delete</button>
+            </div>
+					</dd>
+				</dl>
+				
+				<!-- Save preset modal dialog -->
+				<div id="preset-modal" class="modal">
+				  <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Save Preset</h2>
+            <input type="text" id="presetName" style="width: max-content;" placeholder="Enter preset name">
+            <br />
+            <button id="confirmSavePreset" class="button save"></button>
+				  </div>
+				</div>
 
 				<div style="padding: 0 0 5em 0">
 					<a href="#" id="setdefault">set all to default</a>
