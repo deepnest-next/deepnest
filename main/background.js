@@ -1,101 +1,5 @@
 'use strict';
 
-
-function clone(nfp){
-	var newnfp = [];
-	for(let i=0; i<nfp.length; i++){
-		newnfp.push({
-			x: nfp[i].x,
-			y: nfp[i].y
-		});
-	}
-
-	if(nfp.children && nfp.children.length > 0){
-		newnfp.children = [];
-		for(let i=0; i<nfp.children.length; i++){
-			var child = nfp.children[i];
-			var newchild = [];
-			for(let j=0; j<child.length; j++){
-				newchild.push({
-					x: child[j].x,
-					y: child[j].y
-				});
-			}
-			newnfp.children.push(newchild);
-		}
-	}
-
-	return newnfp;
-}
-
-function cloneNfp(nfp, inner){
-	if(!inner){
-		return clone(nfp);
-	}
-
-	// inner nfp is actually an array of nfps
-	var newnfp = [];
-	for(let i=0; i<nfp.length; i++){
-		newnfp.push(clone(nfp[i]));
-	}
-
-	return newnfp;
-}
-
-window.db = {
-	has: function(obj){
-		var key = 'A'+obj.A+'B'+obj.B+'Arot'+parseInt(obj.Arotation)+'Brot'+parseInt(obj.Brotation);
-		if(window.nfpcache[key]){
-			return true;
-		}
-		return false;
-	},
-
-	find : function(obj, inner){
-		var key = 'A'+obj.A+'B'+obj.B+'Arot'+parseInt(obj.Arotation)+'Brot'+parseInt(obj.Brotation);
-		//console.log('key: ', key);
-		if(window.nfpcache[key]){
-			return cloneNfp(window.nfpcache[key], inner);
-		}
-		/*var keypath = './nfpcache/'+key+'.json';
-		if(fs.existsSync(keypath)){
-			// could be partially written
-			obj = null;
-			try{
-				obj = JSON.parse(fs.readFileSync(keypath).toString());
-			}
-			catch(e){
-				return null;
-			}
-			var nfp = obj.nfp;
-			nfp.children = obj.children;
-
-			window.nfpcache[key] = clone(nfp);
-
-			return nfp;
-		}*/
-		return null;
-	},
-
-	insert : function(obj, inner){
-		var key = 'A'+obj.A+'B'+obj.B+'Arot'+parseInt(obj.Arotation)+'Brot'+parseInt(obj.Brotation);
-		if(window.performance.memory.totalJSHeapSize < 0.8*window.performance.memory.jsHeapSizeLimit){
-			window.nfpcache[key] = cloneNfp(obj.nfp, inner);
-			//console.log('cached: ',window.cache[key].poly);
-			//console.log('using', window.performance.memory.totalJSHeapSize/window.performance.memory.jsHeapSizeLimit);
-		}
-
-		/*obj.children = obj.nfp.children;
-
-		var keypath = './nfpcache/'+key+'.json';
-		fq.writeFile(keypath, JSON.stringify(obj), function (err) {
-			if (err){
-				console.log("couldn't write");
-			}
-		});*/
-	}
-}
-
 window.onload = function () {
 	const { ipcRenderer } = require('electron');
 	window.ipcRenderer = ipcRenderer;
@@ -109,7 +13,7 @@ add package 'filequeue 0.5.0' if you enable this
 	window.FileQueue = require('filequeue');
 	window.fq = new FileQueue(500);
 */
-	window.nfpcache = {};
+	window.db = require('./nfpDb.js');
 
 	ipcRenderer.on('background-start', (event, data) => {
 		var index = data.index;
@@ -258,10 +162,7 @@ add package 'filequeue 0.5.0' if you enable this
 		  function sync(){
 		  	//console.log('starting synchronous calculations', Object.keys(window.nfpCache).length);
 		  	console.log('in sync');
-		  	var c=0;
-		  	for (var key in window.nfpcache) {
-				c++;
-			}
+		  	var c=window.db.getStats();
 			console.log('nfp cached:', c);
 			console.log()
             ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
