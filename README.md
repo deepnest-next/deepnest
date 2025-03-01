@@ -48,3 +48,14 @@ Further Licenses:
         (Not available anymore. ⚠️ don't should be trusted anymore: [readme](https://github.com/deepnest-next/.github/blob/main/profile/why-we-forked-into-a-new-organisation.md))
         - https://github.com/deepnest-next/deepnest
 
+
+#  "Internet of Things""Optimized the display file name"
+<img width="816" alt="350a5647878ef621f752616d7c59988" src="https://github.com/user-attachments/assets/13498608-a2e7-46d7-8343-8a85a08270cf" />
+
+- open
+
+  ![image](https://github.com/user-attachments/assets/d8e307f5-07cd-498d-88b4-7d7e88c3d35b)
+
+
+
+
