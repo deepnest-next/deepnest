@@ -251,6 +251,7 @@
 				exportWithSheetBoundboarders: false,
 				exportWithSheetsSpace: false,
 				exportWithSheetsSpaceValue: 0.3937007874015748, // 10mm
+				Displayfilename: true,
 			};
 
 			// Removed `electron-settings` while keeping the same interface to minimize changes
@@ -296,7 +297,7 @@
 						}
 					}
 
-					if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace'].includes(key)) {
+					if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', "Displayfilename",'exportWithSheetsSpace'].includes(key)) {
 						val = i.checked;
 					}
 
@@ -398,7 +399,7 @@
 					else if (i.getAttribute('data-conversion') == 'true') {
 						i.value = c[i.getAttribute('data-config')] / scale.value;
 					}
-					else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace'].includes(key)) {
+					else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', "Displayfilename",'exportWithSheetsSpace'].includes(key)) {
 						i.checked = c[i.getAttribute('data-config')];
 					}
 					else {
@@ -677,7 +678,25 @@
 								node.parentNode.removeChild(node);
 							}
 						}
+
+						
 						DeepNest.parts.splice(i, 1);
+						let index1=i
+						DeepNest.imports.splice(index1, 1);
+						if (DeepNest.imports.length > 0) {
+							if (!DeepNest.imports[index1]) {
+								index1 = 0;
+							}
+
+							DeepNest.imports[index1].selected = true;
+						}
+
+
+						ractive.update('imports');
+    
+						if (DeepNest.imports.length > 0) {
+							applyzoom();
+						}
 						i--;
 					}
 				}
@@ -1410,6 +1429,23 @@
 								}
 								n.removeAttribute('data-href');
 							}
+
+							if (!!config.getSync("Displayfilename")) {
+						 
+						 var textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+						 textElement.setAttribute('x', 20); 
+						 // textElement.setAttribute('y', 20); 
+						 textElement.setAttribute('fill', '#000'); 
+						 textElement.setAttribute('style', 'font-size:30'); 
+						 if (p.filename.endsWith('.dxf')) {
+							 p.filename = p.filename.slice(0, p.filename.lastIndexOf('.dxf'));
+						 }
+						 textElement.textContent = p.filename; 
+
+				 
+						 partgroup.appendChild(textElement);
+					 }
+
 							partgroup.appendChild(node);
 						});
 
@@ -1549,6 +1585,23 @@
 								node.setAttribute('stroke', '#ffffff');
 								partgroup.appendChild(node);
 							});
+
+
+							if (!!config.getSync("Displayfilename")) {
+								// 创建文本元素  	// 将文本元素添加到 partgroup 中  
+								var textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+								textElement.setAttribute('x', 20); // 设置文本的 x 坐标
+								// textElement.setAttribute('y', 20); // 设置文本的 y 坐标
+								textElement.setAttribute('fill', '#000'); // 设置文本颜色
+								textElement.setAttribute('style', 'font-size:60px'); // 设置字体大小
+								if (p.filename.endsWith('.dxf')) {
+									p.filename = p.filename.slice(0, p.filename.lastIndexOf('.dxf'));
+								}
+								textElement.textContent = p.filename; // 设置文本内容
+
+								// 将文本元素添加到 partgroup 中
+								partgroup.appendChild(textElement);
+							}
 
 							svg.appendChild(partgroup);
 
@@ -2057,6 +2110,11 @@
 					<dt>Export with Sheet Boundborders?<small><br \>since v1.3.1</small></dt>
 					<dd>
 						<input id="exportWithSheetBoundboarders" type="checkbox" data-config="exportWithSheetBoundboarders" />
+					</dd>
+
+					<dt>show filename</dt>
+					<dd>
+						<input id="Displayfilename" type="checkbox" data-config="Displayfilename" />
 					</dd>
 
 					<dt>Export with Space between Sheets?<small><br \>since v1.3.1</small></dt>
