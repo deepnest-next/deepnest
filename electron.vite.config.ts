@@ -20,7 +20,7 @@ export default defineConfig({
         external: ['@deepnest/clipper2', 'piscina'],
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          'background.woker': resolve(__dirname, 'src/main/worker/index.ts')
+          //'background.woker': resolve(__dirname, 'src/main/worker/index.ts')
           //worker: resolve(__dirname, 'node_modules/piscina/src/worker.ts')
         }
       }
