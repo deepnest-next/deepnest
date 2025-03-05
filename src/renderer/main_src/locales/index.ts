@@ -4,10 +4,9 @@ import es from './es.json';
 import fr from './fr.json';
 
 const translations = {
-  en,
-  de,
-  es,
-  fr
+  en:{translation:en},
+  de:{translation:de},
+  es:{translation:es},
+  fr:{translation:fr}
 };
-
 export default translations;

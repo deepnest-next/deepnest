@@ -1,6 +1,7 @@
-import { createContext, useContext, createSignal, JSX, createEffect } from 'solid-js';
+import { createContext, useContext, JSX, createEffect, ErrorBoundary } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import translations from '../locales';
+// Import from the consolidated I18nContext
+import { I18nProvider, useI18n as useI18nHook } from './I18nContext';
 
 // Types
 export type PageType = 'main' | 'settings' | 'account' | 'privacy' | 'impressum' | 'nesting' | 'sponsors';
@@ -70,6 +71,27 @@ const initialState: AppState = {
   },
 };
 
+// Create an error fallback component
+export const ErrorFallback = (props: { error: Error; reset: () => void }) => {
+  return (
+    <div class="error-boundary p-4 m-4 bg-red-100 dark:bg-red-900 rounded-lg shadow-lg">
+      <h2 class="text-xl font-bold text-red-700 dark:text-red-300 mb-2">Something went wrong</h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4">
+        {props.error.message || "An unexpected error occurred"}
+      </p>
+      <pre class="text-sm bg-red-50 dark:bg-red-800 p-2 rounded overflow-auto max-h-48 mb-4">
+        {props.error.stack}
+      </pre>
+      <button
+        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        onClick={props.reset}
+      >
+        Try again
+      </button>
+    </div>
+  );
+};
+
 // Create the context
 const AppContext = createContext<AppContextType>();
 
@@ -95,16 +117,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-// I18n types
-type Locale = 'en' | 'de' | 'es' | 'fr'; // Add more locales as needed
-
-// i18n context
-const I18nContext = createContext<{
-  locale: () => Locale;
-  setLocale: (locale: Locale) => void;
-  t: (key: string, params?: Record<string, string>) => string;
-}>();
-
 // Provider component
 export const AppProvider = (props: { children: JSX.Element }) => {
   const [state, setState] = createStore<AppState>(initialState);
@@ -115,37 +127,14 @@ export const AppProvider = (props: { children: JSX.Element }) => {
     setState(newState);
   };
 
-  // i18n implementation
-  // Try to load from localStorage or default to 'en'
-  const storedLocale = localStorage.getItem('locale') as Locale || 'en';
-  const [locale, setLocale] = createSignal<Locale>(storedLocale);
-
-  // Save locale change to localStorage
-  createEffect(() => {
-    console.log("Language changed to:", locale());
-    localStorage.setItem('locale', locale());
-  });
-
-  // Translation function
-  const t = (key: string, params?: Record<string, string>): string => {
-    const currentLocale = locale();
-    const translationObject = translations[currentLocale] || translations['en'];
-    const translation = translationObject[key] || key;
-
-    if (!params) return translation;
-
-    return Object.entries(params).reduce(
-      (acc, [key, value]) => acc.replace(`{{${key}}}`, value),
-      translation
-    );
-  };
-
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nProvider>
       <AppContext.Provider value={{ state, dispatch }}>
-        {props.children}
+        <ErrorBoundary fallback={(props) => <ErrorFallback {...props} />}>
+          {props.children}
+        </ErrorBoundary>
       </AppContext.Provider>
-    </I18nContext.Provider>
+    </I18nProvider>
   );
 };
 
@@ -225,11 +214,5 @@ export const useThemeToggle = () => {
   };
 };
 
-// i18n hook
-export function useI18n() {
-  const context = useContext(I18nContext);
-  if (!context) {
-    throw new Error('useI18n must be used within an I18nContext.Provider');
-  }
-  return context;
-}
+// Enhanced i18n hook
+export const useI18n = useI18nHook;
