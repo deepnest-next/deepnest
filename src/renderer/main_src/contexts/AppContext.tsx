@@ -2,7 +2,7 @@ import { createContext, useContext, createSignal, JSX, createEffect } from 'soli
 import { createStore } from 'solid-js/store';
 
 // Types
-export type PageType = 'main' | 'settings' | 'account' | 'privacy' | 'impressum';
+export type PageType = 'main' | 'settings' | 'account' | 'privacy' | 'impressum' | 'nesting' | 'sponsors';
 
 // Define different state slices
 type PageState = {
@@ -23,6 +23,7 @@ type SettingsState = {
   notify_data: NotifyData;
   darkMode: boolean;
   notifications: boolean;
+  theme: 'light' | 'dark'; // Add theme property
 };
 
 // Complete AppState combining all slices
@@ -39,7 +40,8 @@ type AppAction =
   | { type: 'LOGOUT' }
   | { type: 'TOGGLE_DARK_MODE' }
   | { type: 'TOGGLE_NOTIFICATIONS' }
-  | { type: 'SET_NOTIFICATIONS'; payload: NotifyData };
+  | { type: 'SET_NOTIFICATIONS'; payload: NotifyData }
+  | { type: 'UPDATE_SETTINGS'; payload: Partial<SettingsState> }; // New action type
 
 // Context type definition
 type AppContextType = {
@@ -63,6 +65,7 @@ const initialState: AppState = {
     },
     darkMode: false,
     notifications: false,
+    theme: 'dark', // Default theme setting
   },
 };
 
@@ -84,6 +87,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, settings: { ...state.settings, notifications: !state.settings.notifications } };
     case 'SET_NOTIFICATIONS':
       return { ...state, settings: { ...state.settings, notify_data: action.payload } };
+    case 'UPDATE_SETTINGS':
+      return { ...state, settings: { ...state.settings, ...action.payload } };
     default:
       return state;
   }
@@ -182,6 +187,42 @@ export const useSettings = () => {
     toggleDarkMode: () => dispatch({ type: 'TOGGLE_DARK_MODE' }),
     toggleNotifications: () => dispatch({ type: 'TOGGLE_NOTIFICATIONS' }),
     setNotifications: (payload: NotifyData) => dispatch({ type: 'SET_NOTIFICATIONS', payload: payload }),
+    updateSettings: (settings: Partial<SettingsState>) => dispatch({ type: 'UPDATE_SETTINGS', payload: settings }),
+  };
+};
+
+// Add and export the useThemeToggle hook
+export const useThemeToggle = () => {
+  const { settings, updateSettings } = useSettings();
+
+  const toggleTheme = () => {
+    const newTheme = settings().theme === 'dark' ? 'light' : 'dark';
+    console.log(`Toggling theme to: ${newTheme}`); // Add debug logging
+    updateSettings({ theme: newTheme });
+
+    // Apply dark class to html element directly
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  // Initialize dark mode on hook usage immediately
+  createEffect(() => {
+    const theme = settings().theme;
+    console.log(`Applying initial theme: ${theme}`); // Debug logging
+
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  });
+
+  return {
+    isDark: () => settings().theme === 'dark',
+    toggleTheme
   };
 };
 

@@ -29,7 +29,8 @@ export default defineConfig({
   preload: {
     resolve: {
       alias: {
-        '@shared': resolve('src/shared/src')
+        '@shared': resolve(__dirname, '.src/shared/src'),
+        '@renderer': resolve(__dirname, './src/renderer/main_src')
       }
     },
     plugins: [externalizeDepsPlugin()],

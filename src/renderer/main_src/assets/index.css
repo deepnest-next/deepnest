@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import base CSS after Tailwind to allow custom variables */
+@import './base.css';
+@import './main.css';
+
+/* Define any dark mode overrides for your existing CSS */
+.dark {
+  --color-background: var(--ev-c-black);
+  --color-background-soft: var(--ev-c-black-soft);
+  --color-background-mute: var(--ev-c-black-mute);
+  --color-text: var(--ev-c-text-1);
+}
+
+/* Light mode defaults */
+:root:not(.dark) {
+  --color-background: var(--ev-c-white);
+  --color-background-soft: var(--ev-c-white-soft);
+  --color-background-mute: var(--ev-c-white-mute);
+  --color-text: #213547;
+}

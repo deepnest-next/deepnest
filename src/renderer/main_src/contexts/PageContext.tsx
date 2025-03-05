@@ -1,6 +1,6 @@
 import { createSignal, createContext, useContext, JSX } from "solid-js";
 
-export type PageType = "main" | "settings" | "account" | "impressum";
+export type PageType = "main" | "settings" | "account" | "impressum" | "privacy" | "404" | "nesting";
 
 type PageContextType = {
   active: () => PageType;  // Change to function to maintain reactivity

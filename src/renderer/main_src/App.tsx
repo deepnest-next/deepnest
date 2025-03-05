@@ -1,40 +1,34 @@
 import type { Component } from 'solid-js'
-import { createEffect, onMount } from 'solid-js'
+import { createEffect, onMount, Show } from 'solid-js'
 import Sidebar from './components/Sidebar'
 import MainPage from './components/pages/MainPage'
 import SettingsPage from './components/pages/SettingsPage'
 import AccountPage from './components/pages/AccountPage'
 import PrivacyPage from './components/pages/PrivacyPage'
 import ImpressumPage from './components/pages/ImpressumPage'
-import { useSettings, usePage, useI18n, AppProvider } from './contexts/AppContext';
+import SponsorsPage from './components/pages/SponsorsPage'
+import { useSettings, usePage, useI18n, AppProvider, PageType } from './contexts/AppContext';
+import NestingPage from './components/pages/NestingPage'
 
-// Notification Component
+// Notification Component - converted to use Tailwind classes
 const Notification: Component = () => {
   const { settings, toggleNotifications } = useSettings();
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: '10px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: '#333',
-        color: 'white',
-        padding: '10px 20px',
-        'border-radius': '4px',
-        'box-shadow': '0 2px 5px rgba(0,0,0,0.2)',
-        transition: 'opacity 0.3s ease',
-        opacity: settings().notifications ? '1' : '0',
-        'pointer-events': settings().notifications ? 'all' : 'none',
-        'z-index': 1000
-      }}
+      class={`
+        absolute top-3 left-1/2 transform -translate-x-1/2
+        bg-gray-800 text-white px-5 py-2.5 rounded shadow-md
+        transition-opacity duration-300 z-10
+        ${settings().notifications ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+      `}
     >
-      <div style={{ display: 'flex', 'align-items': 'center', gap: '10px' }}>
+      <div class="flex items-center gap-2.5">
         <span>{settings().notify_data.message}</span>
         <button
           onClick={toggleNotifications}
-          style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+          class="bg-transparent border-0 text-white cursor-pointer text-lg leading-none hover:text-gray-300"
+          aria-label="Close notification"
         >
           ×
         </button>
@@ -63,36 +57,50 @@ const MainContent: Component = () => {
 
     // Hide the notification after 5 seconds
     setTimeout(() => {
-
-        toggleNotifications();
-
+      toggleNotifications();
     }, 5000);
   });
 
   return (
-    <div style={{ 'flex-grow': '1', padding: '20px', 'overflow-y': 'auto', position: 'relative' }}>
+    <div class="flex-grow overflow-y-auto relative">
       <Notification />
-      {active() === 'main' && <MainPage />}
-      {active() === 'settings' && <SettingsPage />}
-      {active() === 'account' && <AccountPage />}
-      {active() === 'impressum' && <ImpressumPage />}
-      {active() === 'privacy' && <PrivacyPage />}
+      <div class="p-5 ml-16">
+        {active() === 'main' && <MainPage />}
+        {active() === 'settings' && <SettingsPage />}
+        {active() === 'account' && <AccountPage />}
+        {active() === 'impressum' && <ImpressumPage />}
+        {active() === 'privacy' && <PrivacyPage />}
+        {active() === 'sponsors' && <SponsorsPage />}
+      </div>
     </div>
   );
 };
 
-// App Layout Component
+// App Layout Component with theme management
 const AppLayout: Component = () => {
+  const { active } = usePage();
+  const { settings } = useSettings();
+
+  // Save theme preference to localStorage when it changes
+  createEffect(() => {
+    const theme = settings().theme;
+    localStorage.setItem('theme', theme);
+  });
+
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh' }}>
-      <Sidebar />
-      <MainContent />
-    </div>
+    <Show when={active() !== "nesting" as PageType} fallback={<NestingPage />}>
+      {/* Updated to use standard Tailwind classes for background */}
+      <div class="flex w-screen h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white">
+        <Sidebar />
+        <MainContent />
+      </div>
+    </Show>
   );
 };
 
 // Root App Component with Context Providers
 const App: Component = () => {
+  // No hooks used here anymore, just providing the context
   return (
     <AppProvider>
       <AppLayout />
