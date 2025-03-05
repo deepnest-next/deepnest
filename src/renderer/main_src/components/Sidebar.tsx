@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { usePage, PageType } from '../contexts/AppContext'
+import { createSignal } from 'solid-js';
 
 // Menu item component
 const MenuItem: Component<{
@@ -8,6 +9,7 @@ const MenuItem: Component<{
   active: boolean;
   page: PageType;
   onClick: (page: PageType) => void;
+  isExpanded: boolean;
 }> = (props) => {
   const handleClick = () => {
     console.log("MenuItem clicked:", props.page);
@@ -26,17 +28,33 @@ const MenuItem: Component<{
         color: props.active ? 'white' : '#374151',
         display: 'flex',
         'align-items': 'center',
-        gap: '10px'
+        gap: '10px',
+        'justify-content': 'flex-start',
+        position: 'relative',
+        overflow: 'hidden',
+        'min-height': '24px'
       }}
     >
-      <span>{props.icon}</span>
-      <span>{props.name}</span>
+      <span style={{
+        'flex-shrink': 0,
+        width: '24px',
+        'text-align': 'center'
+      }}>{props.icon}</span>
+      <span style={{
+        'white-space': 'nowrap',
+        'max-width': props.isExpanded ? '150px' : '0px',
+        'opacity': props.isExpanded ? 1 : 0,
+        'overflow': 'hidden',
+        'transition': 'max-width 0.3s ease, opacity 0.2s ease',
+        'transition-delay': props.isExpanded ? '0.1s' : '0s'
+      }}>{props.name}</span>
     </div>
   )
 }
 
 const Sidebar: Component = () => {
   const { active, setActive } = usePage();
+  const [isExpanded, setIsExpanded] = createSignal(false);
 
   // Create a local handler to ensure proper function call
   const handleSetActive = (page: PageType) => {
@@ -45,17 +63,40 @@ const Sidebar: Component = () => {
   };
 
   return (
-    <div style={{
-      width: '220px',
-      background: 'rgb(10 11 12)',
-      padding: '20px',
-      'box-shadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
-      display: 'flex',
-      'flex-direction': 'column',
-      height: '100%'
-    }}>
-      <div style={{ 'margin-bottom': '30px' }}>
-        <h1 style={{ 'font-size': '20px', 'font-weight': 'bold', margin: 0, color: 'white' }}>Deepnest</h1>
+    <div
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      style={{
+        width: isExpanded() ? '220px' : '64px',
+        background: 'rgb(10 11 12)',
+        padding: '6px',
+        'box-shadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
+        display: 'flex',
+        'flex-direction': 'column',
+        height: '100%',
+        transition: 'all 0.3s ease',
+        overflow: 'hidden'
+      }}>
+      <div style={{
+        'margin-bottom': '30px',
+        height: '24px',
+        display: 'flex',
+        'align-items': 'center',
+        position: 'relative'
+      }}>
+        <h1 style={{
+          'font-size': '20px',
+          'font-weight': 'bold',
+          margin: 0,
+          color: 'white',
+          position: 'absolute',
+          left: 0,
+          width: '100%',
+          'text-align': isExpanded() ? 'left' : 'center',
+          transition: 'all 0.3s ease'
+        }}>
+          {isExpanded() ? 'Deepnest' : 'DN'}
+        </h1>
       </div>
 
       {/* Main navigation items */}
@@ -66,6 +107,7 @@ const Sidebar: Component = () => {
           active={active() === 'main'}
           page='main'
           onClick={handleSetActive}
+          isExpanded={isExpanded()}
         />
 
         <MenuItem
@@ -74,6 +116,7 @@ const Sidebar: Component = () => {
           active={active() === 'settings'}
           page='settings'
           onClick={handleSetActive}
+          isExpanded={isExpanded()}
         />
 
         <MenuItem
@@ -82,6 +125,7 @@ const Sidebar: Component = () => {
           active={active() === 'account'}
           page='account'
           onClick={handleSetActive}
+          isExpanded={isExpanded()}
         />
       </div>
 
@@ -96,6 +140,7 @@ const Sidebar: Component = () => {
           active={active() === 'privacy'}
           page='privacy'
           onClick={handleSetActive}
+          isExpanded={isExpanded()}
         />
 
         <MenuItem
@@ -104,6 +149,7 @@ const Sidebar: Component = () => {
           active={active() === 'impressum'}
           page='impressum'
           onClick={handleSetActive}
+          isExpanded={isExpanded()}
         />
       </div>
     </div>
