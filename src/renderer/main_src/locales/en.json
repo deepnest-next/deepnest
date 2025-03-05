@@ -1,0 +1,61 @@
+{
+  "welcome": "Welcome to Deepnest!",
+  "settings": "Settings",
+  "settings.description": "Customize your application settings here.",
+  "general.settings": "General Settings",
+  "language.settings": "Language",
+  "theme.settings": "Theme",
+  "theme.light": "Switch to Light Theme",
+  "theme.dark": "Switch to Dark Theme",
+
+  "account": "Account",
+  "account.description": "Manage your account information here.",
+  "account.profile": "Profile",
+
+  "privacy": "Privacy",
+  "privacy.description": "Information about how we handle your data.",
+  "privacy.policy": "Privacy Policy",
+  "privacy.policy.text": "This is our privacy policy. We respect your data and privacy.",
+  "privacy.data.collection": "Data Collection",
+  "privacy.data.collection.text": "We collect minimal data required for the application to function.",
+  "privacy.contact": "Contact for Privacy Concerns",
+
+  "impressum": "Impressum",
+  "impressum.description": "Legal information about this application.",
+  "impressum.contact": "Contact Information",
+  "impressum.company": "Deepnest GmbH",
+  "impressum.street": "Musterstraße 123",
+  "impressum.city": "12345 Musterstadt",
+  "impressum.country": "Germany",
+
+  "sponsors": "Sponsors",
+  "sponsors.description": "We thank our sponsors for their support.",
+  "sponsors.premium": "Premium Sponsors",
+  "sponsors.supporters": "Supporters",
+  "sponsors.company1": "Company GmbH",
+  "sponsors.company2": "Technology AG",
+  "sponsors.since": "Premium Sponsor since {{year}}",
+  "sponsors.person1": "Max Mustermann",
+  "sponsors.org1": "Open Source Collective e.V.",
+  "sponsors.org2": "Developer Community Berlin",
+
+  "nesting": "Nesting",
+  "nesting.description": "Create efficient nesting layouts.",
+  "back.to.home": "Back to Home",
+
+  "main": "Home",
+  "main.description": "Welcome to the Deepnest application.",
+  "main.card.title": "Card Title",
+  "main.card.description": "This card demonstrates nested dark mode styling with Tailwind",
+  "main.text.size": "Small text ({{size}})",
+
+  "sidebar.main": "Home",
+  "sidebar.settings": "Settings",
+  "sidebar.account": "Account",
+  "sidebar.privacy": "Privacy",
+  "sidebar.impressum": "Legal",
+  "sidebar.nesting": "Nesting",
+  "sidebar.sponsors": "Sponsors",
+
+  "notification.close": "Close"
+}

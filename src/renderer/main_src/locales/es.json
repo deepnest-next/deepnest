@@ -1,0 +1,44 @@
+{
+  "welcome": "¡Bienvenido a Deepnest!",
+  "settings": "Configuración",
+  "settings.description": "Personaliza la configuración de tu aplicación aquí.",
+  "general.settings": "Configuración General",
+  "language.settings": "Idioma",
+  "theme.settings": "Tema",
+  "theme.light": "Cambiar a Tema Claro",
+  "theme.dark": "Cambiar a Tema Oscuro",
+
+  "account": "Cuenta",
+  "account.description": "Gestiona tu información de cuenta aquí.",
+  "account.profile": "Perfil",
+
+  "privacy": "Privacidad",
+  "privacy.description": "Información sobre cómo manejamos tus datos.",
+
+  "impressum": "Aviso Legal",
+  "impressum.description": "Información legal sobre esta aplicación.",
+  "impressum.contact": "Información de Contacto",
+  "impressum.company": "Deepnest GmbH",
+  "impressum.street": "Musterstraße 123",
+  "impressum.city": "12345 Musterstadt",
+  "impressum.country": "Alemania",
+
+  "sponsors": "Patrocinadores",
+  "sponsors.description": "Agradecemos a nuestros patrocinadores por su apoyo.",
+
+  "nesting": "Anidación",
+  "nesting.description": "Crea diseños de anidación eficientes.",
+
+  "main": "Inicio",
+  "main.description": "Bienvenido a la aplicación Deepnest.",
+
+  "sidebar.main": "Inicio",
+  "sidebar.settings": "Configuración",
+  "sidebar.account": "Cuenta",
+  "sidebar.privacy": "Privacidad",
+  "sidebar.impressum": "Aviso Legal",
+  "sidebar.nesting": "Anidación",
+  "sidebar.sponsors": "Patrocinadores",
+
+  "notification.close": "Cerrar"
+}

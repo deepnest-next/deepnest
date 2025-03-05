@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
-import { usePage, PageType, useThemeToggle } from '../contexts/AppContext'
-import { createSignal } from 'solid-js';
+import { usePage, PageType, useThemeToggle, useI18n } from '@renderer/contexts/AppContext'
+import { createSignal, createEffect } from 'solid-js';
 
 // Menu item component with updated Tailwind classes
 const MenuItem: Component<{
@@ -58,6 +58,7 @@ const MenuItem: Component<{
 const ThemeToggle: Component<{isExpanded: boolean}> = (props) => {
   const { isDark, toggleTheme } = useThemeToggle();
   const [isHovered, setIsHovered] = createSignal(false);
+  const { t } = useI18n();
 
   return (
     <div
@@ -87,7 +88,7 @@ const ThemeToggle: Component<{isExpanded: boolean}> = (props) => {
           ${props.isExpanded ? 'max-w-[150px] opacity-100' : 'max-w-0 opacity-0'}
         `}
       >
-        {isDark() ? 'Light Mode' : 'Dark Mode'}
+        {isDark() ? t('theme.light') : t('theme.dark')}
       </div>
     </div>
   );
@@ -96,6 +97,13 @@ const ThemeToggle: Component<{isExpanded: boolean}> = (props) => {
 const Sidebar: Component = () => {
   const { active, setActive } = usePage();
   const [isExpanded, setIsExpanded] = createSignal(false);
+  const { t, locale } = useI18n();
+
+  // Add debug effect to track language changes
+  createEffect(() => {
+    console.log("Current language in Sidebar:", locale());
+    // This will re-run when locale changes, forcing menu items to re-render
+  });
 
   // Create a local handler to ensure proper function call
   const handleSetActive = (page: PageType) => {
@@ -147,7 +155,7 @@ const Sidebar: Component = () => {
       <div>
         <MenuItem
           icon="🏠"
-          name="Main"
+          name={t('sidebar.main')}
           active={active() === 'main'}
           page='main'
           onClick={handleSetActive}
@@ -156,7 +164,7 @@ const Sidebar: Component = () => {
 
         <MenuItem
           icon="📊"
-          name="Nesting"
+          name={t('sidebar.nesting')}
           active={active() === 'nesting'}
           page='nesting'
           onClick={handleSetActive}
@@ -165,7 +173,7 @@ const Sidebar: Component = () => {
 
         <MenuItem
           icon="⚙️"
-          name="Settings"
+          name={t('sidebar.settings')}
           active={active() === 'settings'}
           page='settings'
           onClick={handleSetActive}
@@ -174,7 +182,7 @@ const Sidebar: Component = () => {
 
         <MenuItem
           icon="👤"
-          name="Account"
+          name={t('sidebar.account')}
           active={active() === 'account'}
           page='account'
           onClick={handleSetActive}
@@ -187,10 +195,9 @@ const Sidebar: Component = () => {
 
       {/* Footer navigation items */}
       <div>
-        {/* Neuer Menüpunkt für Sponsoren an erster Stelle im Footer */}
         <MenuItem
           icon="❤️"
-          name="Sponsoren"
+          name={t('sidebar.sponsors')}
           active={active() === 'sponsors'}
           page='sponsors'
           onClick={handleSetActive}
@@ -199,7 +206,7 @@ const Sidebar: Component = () => {
 
         <MenuItem
           icon="📄"
-          name="Datenschutz"
+          name={t('sidebar.privacy')}
           active={active() === 'privacy'}
           page='privacy'
           onClick={handleSetActive}
@@ -208,7 +215,7 @@ const Sidebar: Component = () => {
 
         <MenuItem
           icon="📄"
-          name="Impressum"
+          name={t('sidebar.impressum')}
           active={active() === 'impressum'}
           page='impressum'
           onClick={handleSetActive}

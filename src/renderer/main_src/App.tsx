@@ -13,6 +13,7 @@ import NestingPage from './components/pages/NestingPage'
 // Notification Component - converted to use Tailwind classes
 const Notification: Component = () => {
   const { settings, toggleNotifications } = useSettings();
+  const { t } = useI18n();
 
   return (
     <div
@@ -28,7 +29,7 @@ const Notification: Component = () => {
         <button
           onClick={toggleNotifications}
           class="bg-transparent border-0 text-white cursor-pointer text-lg leading-none hover:text-gray-300"
-          aria-label="Close notification"
+          aria-label={t('notification.close')}
         >
           ×
         </button>

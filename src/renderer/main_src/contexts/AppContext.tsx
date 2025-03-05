@@ -1,5 +1,6 @@
 import { createContext, useContext, createSignal, JSX, createEffect } from 'solid-js';
 import { createStore } from 'solid-js/store';
+import translations from '../locales';
 
 // Types
 export type PageType = 'main' | 'settings' | 'account' | 'privacy' | 'impressum' | 'nesting' | 'sponsors';
@@ -96,7 +97,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 // I18n types
 type Locale = 'en' | 'de' | 'es' | 'fr'; // Add more locales as needed
-type Translations = Record<string, Record<string, string>>;
 
 // i18n context
 const I18nContext = createContext<{
@@ -116,22 +116,21 @@ export const AppProvider = (props: { children: JSX.Element }) => {
   };
 
   // i18n implementation
-  const [locale, setLocale] = createSignal<Locale>('en');
-  const translations: Translations = {
-    en: {
-      welcome: 'Welcome to Deepnest!',
-      // Add more translations
-    },
-    de: {
-      welcome: 'Willkommen bei Deepnest!',
-      // Add more translations
-    },
-    // Add more locales
-  };
+  // Try to load from localStorage or default to 'en'
+  const storedLocale = localStorage.getItem('locale') as Locale || 'en';
+  const [locale, setLocale] = createSignal<Locale>(storedLocale);
+
+  // Save locale change to localStorage
+  createEffect(() => {
+    console.log("Language changed to:", locale());
+    localStorage.setItem('locale', locale());
+  });
 
   // Translation function
   const t = (key: string, params?: Record<string, string>): string => {
-    const translation = translations[locale()]?.[key] || key;
+    const currentLocale = locale();
+    const translationObject = translations[currentLocale] || translations['en'];
+    const translation = translationObject[key] || key;
 
     if (!params) return translation;
 

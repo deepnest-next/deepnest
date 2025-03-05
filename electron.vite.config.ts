@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin, swcPlugin } from 'electron-vite'
 import solid from 'vite-plugin-solid'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   main: {
@@ -13,13 +14,14 @@ export default defineConfig({
       externalizeDepsPlugin({
         include: ['@deepnest/clipper2', 'piscina']
       }),
-      swcPlugin()
+      swcPlugin(),
+      tsconfigPaths()
     ],
     build: {
       rollupOptions: {
         external: ['@deepnest/clipper2', 'piscina'],
         input: {
-          index: resolve(__dirname, 'src/main/index.ts'),
+          index: resolve(__dirname, 'src/main/index.ts')
           //'background.woker': resolve(__dirname, 'src/main/worker/index.ts')
           //worker: resolve(__dirname, 'node_modules/piscina/src/worker.ts')
         }
@@ -29,11 +31,11 @@ export default defineConfig({
   preload: {
     resolve: {
       alias: {
-        '@shared': resolve(__dirname, '.src/shared/src'),
+        '@shared': resolve(__dirname, './src/shared/src'),
         '@renderer': resolve(__dirname, './src/renderer/main_src')
       }
     },
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin(), tsconfigPaths()],
     build: {
       rollupOptions: {
         input: {
@@ -46,13 +48,14 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        '@shared': resolve(__dirname, './src/shared/src'),
+        '@renderer': resolve(__dirname, './src/renderer/main_src')
       }
     },
     optimizeDeps: {
       exclude: ['@deepnest/clipper2']
     },
-    plugins: [solid()],
+    plugins: [solid(), tsconfigPaths()],
     build: {
       rollupOptions: {
         input: {

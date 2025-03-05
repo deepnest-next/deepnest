@@ -1,0 +1,61 @@
+{
+  "welcome": "Willkommen bei Deepnest!",
+  "settings": "Einstellungen",
+  "settings.description": "Hier können Sie Ihre Anwendungseinstellungen anpassen.",
+  "general.settings": "Allgemeine Einstellungen",
+  "language.settings": "Sprache",
+  "theme.settings": "Farbschema",
+  "theme.light": "Zum hellen Design wechseln",
+  "theme.dark": "Zum dunklen Design wechseln",
+
+  "account": "Konto",
+  "account.description": "Verwalten Sie hier Ihre Kontoinformationen.",
+  "account.profile": "Profil",
+
+  "privacy": "Datenschutz",
+  "privacy.description": "Informationen zum Umgang mit Ihren Daten.",
+  "privacy.policy": "Datenschutzerklärung",
+  "privacy.policy.text": "Dies ist unsere Datenschutzerklärung. Wir respektieren Ihre Daten und Privatsphäre.",
+  "privacy.data.collection": "Datenerfassung",
+  "privacy.data.collection.text": "Wir erfassen nur die für die Funktion der Anwendung erforderlichen Mindestdaten.",
+  "privacy.contact": "Kontakt für Datenschutzanfragen",
+
+  "impressum": "Impressum",
+  "impressum.description": "Rechtliche Informationen über diese Anwendung.",
+  "impressum.contact": "Kontaktinformationen",
+  "impressum.company": "Deepnest GmbH",
+  "impressum.street": "Musterstraße 123",
+  "impressum.city": "12345 Musterstadt",
+  "impressum.country": "Deutschland",
+
+  "sponsors": "Sponsoren",
+  "sponsors.description": "Wir danken unseren Sponsoren für ihre Unterstützung.",
+  "sponsors.premium": "Premium Sponsoren",
+  "sponsors.supporters": "Unterstützer",
+  "sponsors.company1": "Firma GmbH",
+  "sponsors.company2": "Technology AG",
+  "sponsors.since": "Premium Sponsor seit {{year}}",
+  "sponsors.person1": "Max Mustermann",
+  "sponsors.org1": "Open Source Collective e.V.",
+  "sponsors.org2": "Entwickler Community Berlin",
+
+  "nesting": "Verschachtelung",
+  "nesting.description": "Erstellen Sie effiziente Verschachtelungslayouts.",
+  "back.to.home": "Zurück zur Startseite",
+
+  "main": "Startseite",
+  "main.description": "Willkommen bei der Deepnest Anwendung.",
+  "main.card.title": "Kartentitel",
+  "main.card.description": "Diese Karte demonstriert das verschachtelte Dark-Mode-Styling mit Tailwind",
+  "main.text.size": "Kleiner Text ({{size}})",
+
+  "sidebar.main": "Startseite",
+  "sidebar.settings": "Einstellungen",
+  "sidebar.account": "Konto",
+  "sidebar.privacy": "Datenschutz",
+  "sidebar.impressum": "Impressum",
+  "sidebar.nesting": "Verschachteln",
+  "sidebar.sponsors": "Sponsoren",
+
+  "notification.close": "Schließen"
+}

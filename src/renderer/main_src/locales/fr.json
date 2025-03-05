@@ -1,0 +1,44 @@
+{
+  "welcome": "Bienvenue à Deepnest!",
+  "settings": "Paramètres",
+  "settings.description": "Personnalisez vos paramètres d'application ici.",
+  "general.settings": "Paramètres Généraux",
+  "language.settings": "Langue",
+  "theme.settings": "Thème",
+  "theme.light": "Passer au Thème Clair",
+  "theme.dark": "Passer au Thème Sombre",
+
+  "account": "Compte",
+  "account.description": "Gérez vos informations de compte ici.",
+  "account.profile": "Profil",
+
+  "privacy": "Confidentialité",
+  "privacy.description": "Informations sur la façon dont nous traitons vos données.",
+
+  "impressum": "Mentions Légales",
+  "impressum.description": "Informations légales sur cette application.",
+  "impressum.contact": "Coordonnées",
+  "impressum.company": "Deepnest GmbH",
+  "impressum.street": "Musterstraße 123",
+  "impressum.city": "12345 Musterstadt",
+  "impressum.country": "Allemagne",
+
+  "sponsors": "Sponsors",
+  "sponsors.description": "Nous remercions nos sponsors pour leur soutien.",
+
+  "nesting": "Imbrication",
+  "nesting.description": "Créez des mises en page d'imbrication efficaces.",
+
+  "main": "Accueil",
+  "main.description": "Bienvenue dans l'application Deepnest.",
+
+  "sidebar.main": "Accueil",
+  "sidebar.settings": "Paramètres",
+  "sidebar.account": "Compte",
+  "sidebar.privacy": "Confidentialité",
+  "sidebar.impressum": "Mentions Légales",
+  "sidebar.nesting": "Imbrication",
+  "sidebar.sponsors": "Sponsors",
+
+  "notification.close": "Fermer"
+}
