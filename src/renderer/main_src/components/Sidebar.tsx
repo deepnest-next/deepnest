@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { usePage, PageType } from '../contexts/PageContext'
+import { usePage, PageType } from '../contexts/AppContext'
 
 // Menu item component
 const MenuItem: Component<{
@@ -36,14 +36,7 @@ const MenuItem: Component<{
 }
 
 const Sidebar: Component = () => {
-  const pageContext = usePage();
-
-  if (!pageContext) {
-    console.error("Page context is undefined");
-    return null;
-  }
-
-  const { active, setActive } = pageContext;
+  const { active, setActive } = usePage();
 
   // Create a local handler to ensure proper function call
   const handleSetActive = (page: PageType) => {
@@ -56,43 +49,63 @@ const Sidebar: Component = () => {
       width: '220px',
       background: 'rgb(10 11 12)',
       padding: '20px',
-      'box-shadow': '0 4px 6px rgba(0, 0, 0, 0.1)'
+      'box-shadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
+      display: 'flex',
+      'flex-direction': 'column',
+      height: '100%'
     }}>
       <div style={{ 'margin-bottom': '30px' }}>
         <h1 style={{ 'font-size': '20px', 'font-weight': 'bold', margin: 0, color: 'white' }}>Deepnest</h1>
       </div>
 
-      <MenuItem
-        icon="🏠"
-        name="Main"
-        active={active() === 'main'}
-        page='main'
-        onClick={handleSetActive}
-      />
+      {/* Main navigation items */}
+      <div>
+        <MenuItem
+          icon="🏠"
+          name="Main"
+          active={active() === 'main'}
+          page='main'
+          onClick={handleSetActive}
+        />
 
-      <MenuItem
-        icon="⚙️"
-        name="Settings"
-        active={active() === 'settings'}
-        page='settings'
-        onClick={handleSetActive}
-      />
+        <MenuItem
+          icon="⚙️"
+          name="Settings"
+          active={active() === 'settings'}
+          page='settings'
+          onClick={handleSetActive}
+        />
 
-      <MenuItem
-        icon="👤"
-        name="Account"
-        active={active() === 'account'}
-        page='account'
-        onClick={handleSetActive}
-      />
+        <MenuItem
+          icon="👤"
+          name="Account"
+          active={active() === 'account'}
+          page='account'
+          onClick={handleSetActive}
+        />
+      </div>
 
-      <MenuItem
-        icon="📄"
-        name="Impressum"
-        active={active() === 'impressum'}
-        page='impressum'
-        onClick={handleSetActive}
-      />
+      {/* Spacer to push footer items to bottom */}
+      <div style={{ 'flex-grow': 1 }}></div>
+
+      {/* Footer navigation items */}
+      <div>
+        <MenuItem
+          icon="📄"
+          name="Datenschutz"
+          active={active() === 'privacy'}
+          page='privacy'
+          onClick={handleSetActive}
+        />
+
+        <MenuItem
+          icon="📄"
+          name="Impressum"
+          active={active() === 'impressum'}
+          page='impressum'
+          onClick={handleSetActive}
+        />
+      </div>
     </div>
   )
 }

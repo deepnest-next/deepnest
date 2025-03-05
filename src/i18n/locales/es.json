@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "Deepnest",
+    "description": "Software avanzado de anidamiento"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar"
+  },
+  "nesting": {
+    "startNesting": "Iniciar Anidamiento",
+    "stopNesting": "Detener Anidamiento",
+    "efficiency": "Eficiencia",
+    "timeTaken": "Tiempo transcurrido: {{time}}s"
+  },
+  "settings": {
+    "language": "Idioma",
+    "theme": "Tema",
+    "units": "Unidades"
+  }
+}
