@@ -19,9 +19,11 @@
 
 ### MACOS
 
-- **xcode**
-- **brew** _currently not 100% sure in correct names etc._
-  - boostlib
+[Install Homebrew](https://docs.brew.sh/Installation)
+```shell
+xcode-select --install
+brew install boost
+```
 
 ### LINUX
 
