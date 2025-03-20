@@ -7,11 +7,11 @@ import { Polygon } from "./polygon";
 /// For example, using the wasted material inside the letter o, we could cut another shape if a
 /// suitable one is available.
 export class Shape {
-    source: string;
+    source: Element;
     item: Array<Polygon>;
     inner: Array<Polygon>;
   
-    constructor(source: string,
+    constructor(source: Element,
       item: Array<Polygon>,
       inner: Array<Polygon>) {
       this.source = source;

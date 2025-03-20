@@ -4,7 +4,6 @@
  * Licensed under the MIT license
  */
 import { parseSVG, makeAbsolute } from "svg-path-parser";
-import { JSDOM } from "jsdom";
 import {
   CubicBezier,
   Curve,
@@ -30,13 +29,15 @@ export interface SvgParserConfiguration {
 
 export class ModelsToPlace {
   filename: string;
+  svgroot: any;
   // key is shape (possibly including internal holes), value is desired count.
   models: Map<Shape, number>;
   // shapes (possibly with holes) of sheets of material. value is available count.
   sheets: Map<Shape, number>;
 
-  constructor(filename: string, models: Map<Shape, number>, sheets: Map<Shape, number>) {
+  constructor(filename: string, svgroot: any, models: Map<Shape, number>, sheets: Map<Shape, number>) {
     this.filename = filename;
+    this.svgroot = svgroot;
     this.models = models;
     this.sheets = sheets;
   }
@@ -123,15 +124,14 @@ export class SvgParser {
         ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns='
       );
     }
-    const dom = new JSDOM();
-    const parser = new dom.window.DOMParser();
+    var parser = new DOMParser();
     const svgRoot = parser.parseFromString(svgString, "image/svg+xml");
 
     const resultModels: Map<Shape, number> = new Map();
     const sheets: Map<Shape, number> = new Map();
 
     this.findShapes(resultModels, sheets, new Map<String, SVGElement>(), svgRoot.firstElementChild!, new Matrix());
-    return new ModelsToPlace(filename, resultModels, sheets);
+    return new ModelsToPlace(filename, svgRoot, resultModels, sheets);
   }
 
   decodeElement(
@@ -338,7 +338,7 @@ export class SvgParser {
             const holes = children.flatMap((c) =>
               this.findHoles(resultModels, sheets, defs, c, currentTransform)
             );
-            sheets.set(new Shape(e.outerHTML, [bounds], holes), availableQuantity);
+            sheets.set(new Shape(e, [bounds], holes), availableQuantity);
           },
           (currentTransform, desiredQuantity, path) => {
             console.log("findShapes: Finding holes in sheet. Element %s has %d children",
@@ -346,7 +346,7 @@ export class SvgParser {
             const holes = children.flatMap((c) =>
               this.findHoles(resultModels, sheets, defs, c, currentTransform)
             );
-            resultModels.set(new Shape(e.outerHTML, [path], holes), desiredQuantity);
+            resultModels.set(new Shape(e, [path], holes), desiredQuantity);
           }
         );
         break;

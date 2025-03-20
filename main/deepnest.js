@@ -62,10 +62,11 @@
       // scalingFactor is an absolute scaling that must be applied regardless of input svg contents
       var parts = SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
 
+      var stuff = SvgParser.toPartsAndSheets(parts);
       if (filename) {
         this.imports.push({
           filename: filename,
-          svg: svg,
+          svg: parts.svgroot,
         });
       }
 
