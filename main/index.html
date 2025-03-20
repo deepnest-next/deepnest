@@ -18,8 +18,12 @@
 	<script src="util/svgpanzoom.js"></script>
 	<script src="util/d3-polygon.js"></script>
 	<script src="util/simplify.js"></script>
-
-	<script src="svgparser.js"></script>
+	<script>
+		f = require("../dist/tsc/fontfactory.js");
+		s = require("../dist/tsc/svgparser.js");
+		window.SvgParser = new s.SvgParser(new f.FontFactory());
+		console.log(s);
+	</script>
 	<script src="deepnest.js"></script>
 
 	<script src="page.js"></script>

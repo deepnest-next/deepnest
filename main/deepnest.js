@@ -60,8 +60,7 @@
       // parse svg
       // config.scale is the default scale, and may not be applied
       // scalingFactor is an absolute scaling that must be applied regardless of input svg contents
-      svg = SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
-      svg = SvgParser.clean(dxfFlag);
+      var parts = SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
 
       if (filename) {
         this.imports.push({
@@ -70,27 +69,10 @@
         });
       }
 
-      var parts = this.getParts(svg.children, filename);
-      for (var i = 0; i < parts.length; i++) {
-        this.parts.push(parts[i]);
-      }
+      var stuff = SvgParser.toPartsAndSheets(parts);
+      this.parts.push(stuff);
 
       return parts;
-
-      // test simplification
-      /*for(i=0; i<parts.length; i++){
-				var part = parts[i];
-				this.renderPolygon(part.polygontree, svg);
-				var simple = this.simplifyPolygon(part.polygontree);
-				this.renderPolygon(simple, svg, 'active');
-				if(part.polygontree.children){
-					for(var j=0; j<part.polygontree.children.length; j++){
-						var schild = this.simplifyPolygon(part.polygontree.children[j], true);
-						//this.renderPolygon(schild, svg, 'active');
-					}
-				}
-				//this.renderPolygon(simple.exterior, svg, 'error');
-			}*/
     };
 
     // debug function
@@ -688,160 +670,10 @@
     // assuming no intersections, return a tree where odd leaves are parts and even ones are holes
     // might be easier to use the DOM, but paths can't have paths as children. So we'll just make our own tree.
     this.getParts = function (paths, filename) {
-      var i, j;
-      var polygons = [];
-
-      var numChildren = paths.length;
-      for (i = 0; i < numChildren; i++) {
-        if (SvgParser.polygonElements.indexOf(paths[i].tagName) < 0) {
-          continue;
-        }
-
-        // don't use open paths
-        if (!SvgParser.isClosed(paths[i], 2 * config.curveTolerance)) {
-          continue;
-        }
-
-        var poly = SvgParser.polygonify(paths[i]);
-        poly = this.cleanPolygon(poly);
-
-        // todo: warn user if poly could not be processed and is excluded from the nest
-        if (
-          poly &&
-          poly.length > 2 &&
-          Math.abs(GeometryUtil.polygonArea(poly)) >
-            config.curveTolerance * config.curveTolerance
-        ) {
-          poly.source = i;
-          polygons.push(poly);
-        }
-      }
-
-      // turn the list into a tree
       // root level nodes of the tree are parts
       toTree(polygons);
 
-      function toTree(list, idstart) {
-        function svgToClipper(polygon) {
-          var clip = [];
-          for (var i = 0; i < polygon.length; i++) {
-            clip.push({ X: polygon[i].x, Y: polygon[i].y });
-          }
-
-          ClipperLib.JS.ScaleUpPath(clip, config.clipperScale);
-
-          return clip;
-        }
-        function pointInClipperPolygon(point, polygon) {
-          var pt = new ClipperLib.IntPoint(
-            config.clipperScale * point.x,
-            config.clipperScale * point.y
-          );
-
-          return ClipperLib.Clipper.PointInPolygon(pt, polygon) > 0;
-        }
-        var parents = [];
-        var i, j, k;
-
-        // assign a unique id to each leaf
-        var id = idstart || 0;
-
-        for (i = 0; i < list.length; i++) {
-          var p = list[i];
-
-          var ischild = false;
-          for (j = 0; j < list.length; j++) {
-            if (j == i) {
-              continue;
-            }
-            if (p.length < 2) {
-              continue;
-            }
-            var inside = 0;
-            var fullinside = Math.min(10, p.length);
-
-            // sample about 10 points
-            var clipper_polygon = svgToClipper(list[j]);
-
-            for (k = 0; k < fullinside; k++) {
-              if (pointInClipperPolygon(p[k], clipper_polygon) === true) {
-                inside++;
-              }
-            }
-
-            //console.log(inside, fullinside);
-
-            if (inside > 0.5 * fullinside) {
-              if (!list[j].children) {
-                list[j].children = [];
-              }
-              list[j].children.push(p);
-              p.parent = list[j];
-              ischild = true;
-              break;
-            }
-          }
-
-          if (!ischild) {
-            parents.push(p);
-          }
-        }
-
-        for (i = 0; i < list.length; i++) {
-          if (parents.indexOf(list[i]) < 0) {
-            list.splice(i, 1);
-            i--;
-          }
-        }
-
-        for (i = 0; i < parents.length; i++) {
-          parents[i].id = id;
-          id++;
-        }
-
-        for (i = 0; i < parents.length; i++) {
-          if (parents[i].children) {
-            id = toTree(parents[i].children, id);
-          }
-        }
-
-        return id;
-      }
-
-      // construct part objects with metadata
-      var parts = [];
-      var svgelements = Array.prototype.slice.call(paths);
-      var openelements = svgelements.slice(); // elements that are not a part of the poly tree but may still be a part of the part (images, lines, possibly text..)
-
       for (i = 0; i < polygons.length; i++) {
-        var part = {};
-        part.polygontree = polygons[i];
-        part.svgelements = [];
-
-        var bounds = GeometryUtil.getPolygonBounds(part.polygontree);
-        part.bounds = bounds;
-        part.area = bounds.width * bounds.height;
-        part.quantity = 1;
-        part.filename = filename;
-
-        if (part.filename === "BACKGROUND.svg") {
-          part.sheet = true;
-        }
-
-        if (
-          window.config.getSync("useQuantityFromFileName") &&
-          part.filename &&
-          part.filename !== null
-        ) {
-          const fileNameParts = part.filename.split(".");
-          if (fileNameParts.length === 3) {
-            const fileNameMiddlePart = fileNameParts[1];
-            const quantity = parseInt(fileNameMiddlePart, 10);
-            if (!isNaN(quantity)) {
-              part.quantity = quantity;
-            }
-          }
-        }
 
         // load root element
         part.svgelements.push(svgelements[part.polygontree.source]);
