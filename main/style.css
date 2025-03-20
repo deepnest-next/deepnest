@@ -1106,7 +1106,7 @@ ul.dropdown li:hover {
   padding: 0;
   width: 100%;
   height: 100%;
-  transition: left 2s;
+  transition: left 0.2s;
 }
 
 #main {
