@@ -70,7 +70,7 @@
       }
 
       var stuff = SvgParser.toPartsAndSheets(parts);
-      this.parts.push(stuff);
+      this.parts.push(...stuff);
 
       return parts;
     };

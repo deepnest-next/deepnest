@@ -64,7 +64,11 @@ export class SvgParser {
   }
 
   config(c: SvgParserConfiguration) {
-    this.conf = c || this.conf;
+    this.conf.endpointTolerance = c.endpointTolerance || this.conf.endpointTolerance;
+    this.conf.scale = c.scale || this.conf.scale;
+    this.conf.scalingFactor = c.scalingFactor || this.conf.scalingFactor;
+    this.conf.tolerance = c.tolerance || this.conf.tolerance;
+    this.conf.toleranceSvg = c.toleranceSvg || this.conf.toleranceSvg;
   }
 
   // purely for backwards compatibility, delete me
@@ -88,11 +92,11 @@ export class SvgParser {
         simplePiece.area = simplePiece.bounds.width * simplePiece.bounds.height;
         simplePiece.quantity = count;
         simplePiece.filename = models.filename;
-        simplePiece.svgelements = piece.source;
+        simplePiece.svgelements = [piece.source];
           // g.appendChild(simplePiece);
+        pieces.push(simplePiece);
       })
 
-      pieces.push(g);
     }
     for (const sheet of models.sheets.keys()) {
       var g : any = document.createElementNS('http://www.w3.org/2000/svg', 'g');
