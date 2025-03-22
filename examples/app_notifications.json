@@ -27,10 +27,14 @@
       "date": "2023-09-19T00:00:00Z",
       "title": "Ads for Deepnest",
       "content": "<h2>Introducing Deepnest Pro</h2><p>Upgrade to Deepnest Pro for advanced nesting features, priority support, and ad-free experience!</p><p>Get started today and take your nesting to the next level.</p><p><a href='https://www.deepnest.net/pro'>Upgrade Now</a></p>"
+    },
+    {
+      "title": "Online converter down",
+      "type": "important",
+      "date": "2025-03-22T12:00:00.000Z",
+      "uuid": "notifications_1970-03-22_1200-002",
+      "content": "<h2>How to replace</h2>\n<p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 15px;\">\nYesterday I was informed that the converter API of <a href=\"https://convert.deepnest.io\" target=\"_blank\" style=\"color: #007bff; text-decoration: none;\">convert.deepnest.io</a> is no longer available. Since there were no changes after the usual up to 60 minutes. So I quickly put together an API for you. Actually I wasn't ready yet, but after 8 hours I could at least report a success for my tests and provide instructions on how you can overwrite the converter until the next update</p>\n<p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 15px;\">You can find more information at: <a href=\"https://github.com/deepnest-next/deepnest/issues/71#issuecomment-2744963030\" target=\"_blank\" style=\"color: #007bff; text-decoration: none;\">GitHub comment</a></p>\n<p style=\"font-size: 14px; color: #777; text-align: center; margin-top: 30px;\">Greetings, Josef<br>From your deepnest-next team!</p>\n"
     }
   ],
-  "meta": {
-    "lastUpdated": "2023-11-01T10:15:30Z",
-    "version": "1.0.0"
-  }
+  "meta": { "lastUpdated": "2025-03-22T16:56:44.630Z", "version": "1.5.0" }
 }
