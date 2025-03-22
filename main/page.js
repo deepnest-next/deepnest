@@ -739,9 +739,9 @@ ready(async function () {
         dialog.showOpenDialog({
             filters: [
 
-                { name: 'CAD formats', extensions: ['svg', 'dxf'] },
-                { name: 'SVG', extensions: ['svg'] },
-                { name: 'DXF', extensions: ['dxf'] }
+                { name: 'CAD formats', extensions: ['svg', 'ps', 'eps', 'dxf', 'dwg'] },
+                { name: 'SVG/EPS/PS', extensions: ['svg','eps','ps'] },
+                { name: 'DXF/DWG', extensions: ['dxf','dwg'] }
 
             ],
             properties: ['openFile', 'multiSelections']
@@ -1232,7 +1232,7 @@ ready(async function () {
         var fileName = dialog.showSaveDialogSync({
             title: 'Export deepnest DXF',
             filters: [
-                { name: 'DXF', extensions: ['dxf'] }
+                { name: 'DXF/DWG', extensions: ['dxf','dwg'] }
             ]
         })
 
@@ -1241,9 +1241,8 @@ ready(async function () {
         }
         else {
 
-            var fileExt = '.dxf';
             var filePathExt = fileName;
-            if (!fileName.toLowerCase().endsWith(fileExt)) {
+            if (!fileName.toLowerCase().endsWith('.dxf') && !fileName.toLowerCase().endsWith('.dwg')) {
                 fileName = fileName + fileExt;
             }
 
