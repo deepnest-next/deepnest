@@ -1,4 +1,4 @@
-const { app, ipcMain, BrowserWindow, screen } = require("electron");
+const { app, ipcMain, BrowserWindow, screen, shell } = require("electron");
 const remote = require("@electron/remote/main");
 const fs = require("graceful-fs");
 const path = require("path");
@@ -103,6 +103,11 @@ function createMainWindow() {
 
   remote.enable(mainWindow.webContents);
 
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' }
+  })
+
   // and load the index.html of the app.
   mainWindow.loadURL(
     url.format({
@@ -163,6 +168,10 @@ function createNotificationWindow(notification) {
   });
 
   remote.enable(notificationWindow.webContents);
+  notificationWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' }
+  })
 
   notificationWindow.loadURL(
     url.format({
