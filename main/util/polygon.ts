@@ -2,6 +2,9 @@
 import { Point } from "./point";
 import { AxisAlignedRectangle } from "./axisalignedrectangle";
 import { GeometryUtil } from "./geometryutil";
+var ClipperLib = require('../../main/util/clipper.js');
+import { IntPoint } from "./intpoint";
+
 
 function lexicographicOrder(a: Point, b: Point): number {
   return a.x - b.x || a.y - b.y;
@@ -39,8 +42,8 @@ function computeUpperHullIndexes(points: Array<Point>) {
 export class Polygon {
   points: Array<Point>;
 
-
   constructor(points: Array<Point>);
+  constructor(points: Array<IntPoint>, scale: number);
   constructor(...args: any[]) {
     if (args.length == 1) {
       const points : Array<Point> = args[0];
@@ -56,6 +59,21 @@ export class Polygon {
         points.pop();
       }
       this.points = points;
+    } else if (args.length == 2) {
+      const points : Array<Point> = args[0];
+      const scale = args[1];
+      if (points.length < 3) {
+        throw new RangeError(
+          "A polygon must have at least 3 sides, got " + points.length
+        );
+      }
+      if (
+        GeometryUtil.almostEqual(points[0].x, points[points.length - 1].x) &&
+        GeometryUtil.almostEqual(points[0].y, points[points.length - 1].y)
+      ) {
+        points.pop();
+      }
+      this.points = points.map(p => new Point(p.x / scale, p.y / scale));
     } else {
       throw new Error("Invalid usage: should get 1 arg but got " + args.length);
     }
@@ -75,6 +93,9 @@ export class Polygon {
     }
 
     return area / 2;
+  }
+  reverse() {
+    this.points.reverse();
   }
 
   perimeter(): number {
@@ -178,6 +199,55 @@ export class Polygon {
     return new Polygon(hull);
   }
 
+  offset(amount: number, curveTolerance: number) {
+    if (!amount || amount == 0 || GeometryUtil.almostEqual(amount, 0)) {
+      return this;
+    }
+    const scale = 1000000;
+
+    var p = this.svgToClipper(scale);
+
+    var miterLimit = 4;
+    var co = new ClipperLib.ClipperOffset(
+      miterLimit,
+      curveTolerance * scale
+    );
+    co.AddPath(
+      p,
+      ClipperLib.JoinType.jtMiter,
+      ClipperLib.EndType.etClosedPolygon
+    );
+
+    var newpaths = new ClipperLib.Paths();
+    co.Execute(newpaths, amount * scale);
+
+    var result = [];
+    for (var i = 0; i < newpaths.length; i++) {
+      result.push(Polygon.clipperToSvg(newpaths[i], scale));
+    }
+
+    return result;
+  };
+
+  simplify(_inside: boolean) : Polygon {
+    // FIXME
+    return this;
+  }
+
+  // converts a polygon from normal float coordinates to integer coordinates used by clipper, as well as x/y -> X/Y
+  svgToClipper(scale: number) : Array<IntPoint> {
+    var clip = [];
+    for (var i = 0; i < this.points.length; i++) {
+      clip.push({ X: this.points[i].x * scale, Y: this.points[i].y * scale });
+    }
+
+    return clip;
+  };
+  
+  static clipperToSvg(points: Array<IntPoint>, scale: number): Polygon {
+    return new Polygon(points, scale);
+  };
+  
   containsPoint(point: Point): boolean {
     var n = this.points.length,
       p = this.points[n - 1],

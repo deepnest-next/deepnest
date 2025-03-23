@@ -196,7 +196,7 @@
         simple = polygon;
       }
 
-      var offsets = this.polygonOffset(simple, inside ? -tolerance : tolerance);
+      var offsets = simple.offset(inside ? -tolerance : tolerance);
 
       var offset = null;
       var offsetArea = 0;
@@ -235,7 +235,7 @@
       for (j = 1; j < numshells; j++) {
         var delta = j * (tolerance / numshells);
         delta = inside ? -delta : delta;
-        var shell = this.polygonOffset(simple, delta);
+        var shell = simple.offset(delta);
         if (shell.length > 0) {
           shell = shell[0];
         }
@@ -328,10 +328,8 @@
       }
 
       //if(straightened){
-      var Ac = toClipperCoordinates(offset);
-      ClipperLib.JS.ScaleUpPath(Ac, 10000000);
-      var Bc = toClipperCoordinates(polygon);
-      ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+      var Ac = toClipperCoordinates(offset, 10000000);
+      var Bc = toClipperCoordinates(polygon, 10000000);
 
       var combined = new ClipperLib.Paths();
       var clipper = new ClipperLib.Clipper();
@@ -351,7 +349,7 @@
         var largestArea = null;
         for (i = 0; i < combined.length; i++) {
           var n = toNestCoordinates(combined[i], 10000000);
-          var sarea = -GeometryUtil.polygonArea(n);
+          var sarea = -n.area();
           if (largestArea === null || largestArea < sarea) {
             offset = n;
             largestArea = sarea;
@@ -449,30 +447,6 @@
           }
         }
         return false;
-      }
-
-      function toClipperCoordinates(polygon) {
-        var clone = [];
-        for (var i = 0; i < polygon.length; i++) {
-          clone.push({
-            X: polygon[i].x,
-            Y: polygon[i].y,
-          });
-        }
-
-        return clone;
-      }
-
-      function toNestCoordinates(polygon, scale) {
-        var clone = [];
-        for (var i = 0; i < polygon.length; i++) {
-          clone.push({
-            x: polygon[i].X / scale,
-            y: polygon[i].Y / scale,
-          });
-        }
-
-        return clone;
       }
 
       function find(v, p) {
@@ -576,260 +550,168 @@
       return ClipperLib.Clipper.PointInPolygon(pt, p) > 0;
     };
 
-    /*this.simplifyPolygon = function(polygon, concavehull){
-			function clone(p){
-				var newp = [];
-				for(var i=0; i<p.length; i++){
-					newp.push({
-						x: p[i].x,
-						y: p[i].y
-						//fuck: p[i].fuck
-					});
-				}
-				return newp;
-			}
-			if(concavehull){
-				var hull = concavehull;
-			}
-			else{
-				var hull = new ConvexHullGrahamScan();
-				for(var i=0; i<polygon.length; i++){
-					hull.addPoint(polygon[i].x, polygon[i].y);
-				}
-
-				hull = hull.getHull();
-			}
-
-			var hullarea = Math.abs(GeometryUtil.polygonArea(hull));
-
-			var concave = [];
-			var detail = [];
-
-			// fill concave[] with convex points, ensuring same order as initial polygon
-			for(i=0; i<polygon.length; i++){
-				var p = polygon[i];
-				var found = false;
-				for(var j=0; j<hull.length; j++){
-					var hp = hull[j];
-					if(GeometryUtil.almostEqual(hp.x, p.x) && GeometryUtil.almostEqual(hp.y, p.y)){
-						found = true;
-						break;
-					}
-				}
-
-				if(found){
-					concave.push(p);
-					//p.fuck = i+'yes';
-				}
-				else{
-					detail.push(p);
-					//p.fuck = i+'no';
-				}
-			}
-
-			var cindex = -1;
-			var simple = [];
-
-			for(i=0; i<polygon.length; i++){
-				var p = polygon[i];
-				if(concave.indexOf(p) > -1){
-					cindex = concave.indexOf(p);
-					simple.push(p);
-				}
-				else{
-
-					var test = clone(concave);
-					test.splice(cindex < 0 ? 0 : cindex+1,0,p);
-
-					var outside = false;
-					for(var j=0; j<detail.length; j++){
-						if(detail[j] == p){
-							continue;
-						}
-						if(!this.pointInPolygon(detail[j], test)){
-							//console.log(detail[j], test);
-							outside = true;
-							break;
-						}
-					}
-
-					if(outside){
-						continue;
-					}
-
-					var testarea =  Math.abs(GeometryUtil.polygonArea(test));
-					//console.log(testarea, hullarea);
-					if(testarea/hullarea < 0.98){
-						simple.push(p);
-					}
-				}
-			}
-
-			return simple;
-		}*/
-
     // assuming no intersections, return a tree where odd leaves are parts and even ones are holes
     // might be easier to use the DOM, but paths can't have paths as children. So we'll just make our own tree.
-    this.getParts = function (paths, filename) {
-      // root level nodes of the tree are parts
-      toTree(polygons);
+    // this.getParts = function (paths, filename) {
+    //   // root level nodes of the tree are parts
+    //   toTree(polygons);
 
-      for (i = 0; i < polygons.length; i++) {
+    //   for (i = 0; i < polygons.length; i++) {
 
-        // load root element
-        part.svgelements.push(svgelements[part.polygontree.source]);
-        var index = openelements.indexOf(svgelements[part.polygontree.source]);
-        if (index > -1) {
-          openelements.splice(index, 1);
-        }
+    //     // load root element
+    //     part.svgelements.push(svgelements[part.polygontree.source]);
+    //     var index = openelements.indexOf(svgelements[part.polygontree.source]);
+    //     if (index > -1) {
+    //       openelements.splice(index, 1);
+    //     }
 
-        // load all elements that lie within the outer polygon
-        for (j = 0; j < svgelements.length; j++) {
-          if (
-            j != part.polygontree.source &&
-            findElementById(j, part.polygontree)
-          ) {
-            part.svgelements.push(svgelements[j]);
-            index = openelements.indexOf(svgelements[j]);
-            if (index > -1) {
-              openelements.splice(index, 1);
-            }
-          }
-        }
+    //     // load all elements that lie within the outer polygon
+    //     for (j = 0; j < svgelements.length; j++) {
+    //       if (
+    //         j != part.polygontree.source &&
+    //         findElementById(j, part.polygontree)
+    //       ) {
+    //         part.svgelements.push(svgelements[j]);
+    //         index = openelements.indexOf(svgelements[j]);
+    //         if (index > -1) {
+    //           openelements.splice(index, 1);
+    //         }
+    //       }
+    //     }
 
-        parts.push(part);
-      }
+    //     parts.push(part);
+    //   }
 
-      function findElementById(id, tree) {
-        if (id == tree.source) {
-          return true;
-        }
+    //   function findElementById(id, tree) {
+    //     if (id == tree.source) {
+    //       return true;
+    //     }
 
-        if (tree.children && tree.children.length > 0) {
-          for (var i = 0; i < tree.children.length; i++) {
-            if (findElementById(id, tree.children[i])) {
-              return true;
-            }
-          }
-        }
+    //     if (tree.children && tree.children.length > 0) {
+    //       for (var i = 0; i < tree.children.length; i++) {
+    //         if (findElementById(id, tree.children[i])) {
+    //           return true;
+    //         }
+    //       }
+    //     }
 
-        return false;
-      }
+    //     return false;
+    //   }
 
-      for (i = 0; i < parts.length; i++) {
-        var part = parts[i];
-        // the elements left are either erroneous or open
-        // we want to include open segments that also lie within the part boundaries
-        for (j = 0; j < openelements.length; j++) {
-          var el = openelements[j];
-          if (el.tagName == "line") {
-            var x1 = Number(el.getAttribute("x1"));
-            var x2 = Number(el.getAttribute("x2"));
-            var y1 = Number(el.getAttribute("y1"));
-            var y2 = Number(el.getAttribute("y2"));
-            var start = { x: x1, y: y1 };
-            var end = { x: x2, y: y2 };
-            var mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+    //   for (i = 0; i < parts.length; i++) {
+    //     var part = parts[i];
+    //     // the elements left are either erroneous or open
+    //     // we want to include open segments that also lie within the part boundaries
+    //     for (j = 0; j < openelements.length; j++) {
+    //       var el = openelements[j];
+    //       if (el.tagName == "line") {
+    //         var x1 = Number(el.getAttribute("x1"));
+    //         var x2 = Number(el.getAttribute("x2"));
+    //         var y1 = Number(el.getAttribute("y1"));
+    //         var y2 = Number(el.getAttribute("y2"));
+    //         var start = { x: x1, y: y1 };
+    //         var end = { x: x2, y: y2 };
+    //         var mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
-            if (
-              this.pointInPolygon(start, part.polygontree) === true ||
-              this.pointInPolygon(end, part.polygontree) === true ||
-              this.pointInPolygon(mid, part.polygontree) === true
-            ) {
-              part.svgelements.push(el);
-              openelements.splice(j, 1);
-              j--;
-            }
-          } else if (el.tagName == "image") {
-            var x = Number(el.getAttribute("x"));
-            var y = Number(el.getAttribute("y"));
-            var width = Number(el.getAttribute("width"));
-            var height = Number(el.getAttribute("height"));
+    //         if (
+    //           this.pointInPolygon(start, part.polygontree) === true ||
+    //           this.pointInPolygon(end, part.polygontree) === true ||
+    //           this.pointInPolygon(mid, part.polygontree) === true
+    //         ) {
+    //           part.svgelements.push(el);
+    //           openelements.splice(j, 1);
+    //           j--;
+    //         }
+    //       } else if (el.tagName == "image") {
+    //         var x = Number(el.getAttribute("x"));
+    //         var y = Number(el.getAttribute("y"));
+    //         var width = Number(el.getAttribute("width"));
+    //         var height = Number(el.getAttribute("height"));
 
-            var mid = { x: x + width / 2, y: y + height / 2 };
+    //         var mid = { x: x + width / 2, y: y + height / 2 };
 
-            var transformString = el.getAttribute("transform");
-            if (transformString) {
-              var transform = SvgParser.transformParse(transformString);
-              if (transform) {
-                var transformed = transform.calc(mid.x, mid.y);
-                mid.x = transformed[0];
-                mid.y = transformed[1];
-              }
-            }
-            // just test midpoint for images
-            if (this.pointInPolygon(mid, part.polygontree) === true) {
-              part.svgelements.push(el);
-              openelements.splice(j, 1);
-              j--;
-            }
-          } else if (el.tagName == "path" || el.tagName == "polyline") {
-            var k;
-            if (el.tagName == "path") {
-              var p = SvgParser.polygonifyPath(el);
-            } else {
-              var p = [];
-              for (k = 0; k < el.points.length; k++) {
-                p.push({
-                  x: el.points[k].x,
-                  y: el.points[k].y,
-                });
-              }
-            }
+    //         var transformString = el.getAttribute("transform");
+    //         if (transformString) {
+    //           var transform = SvgParser.transformParse(transformString);
+    //           if (transform) {
+    //             var transformed = transform.calc(mid.x, mid.y);
+    //             mid.x = transformed[0];
+    //             mid.y = transformed[1];
+    //           }
+    //         }
+    //         // just test midpoint for images
+    //         if (this.pointInPolygon(mid, part.polygontree) === true) {
+    //           part.svgelements.push(el);
+    //           openelements.splice(j, 1);
+    //           j--;
+    //         }
+    //       } else if (el.tagName == "path" || el.tagName == "polyline") {
+    //         var k;
+    //         if (el.tagName == "path") {
+    //           var p = SvgParser.polygonifyPath(el);
+    //         } else {
+    //           var p = [];
+    //           for (k = 0; k < el.points.length; k++) {
+    //             p.push({
+    //               x: el.points[k].x,
+    //               y: el.points[k].y,
+    //             });
+    //           }
+    //         }
 
-            if (p.length < 2) {
-              continue;
-            }
+    //         if (p.length < 2) {
+    //           continue;
+    //         }
 
-            var found = false;
-            var next = p[1];
-            for (k = 0; k < p.length; k++) {
-              if (this.pointInPolygon(p[k], part.polygontree) === true) {
-                found = true;
-                break;
-              }
+    //         var found = false;
+    //         var next = p[1];
+    //         for (k = 0; k < p.length; k++) {
+    //           if (this.pointInPolygon(p[k], part.polygontree) === true) {
+    //             found = true;
+    //             break;
+    //           }
 
-              if (k >= p.length - 1) {
-                next = p[0];
-              } else {
-                next = p[k + 1];
-              }
+    //           if (k >= p.length - 1) {
+    //             next = p[0];
+    //           } else {
+    //             next = p[k + 1];
+    //           }
 
-              // also test for midpoints in case of single line edge case
-              var mid = {
-                x: (p[k].x + next.x) / 2,
-                y: (p[k].y + next.y) / 2,
-              };
-              if (this.pointInPolygon(mid, part.polygontree) === true) {
-                found = true;
-                break;
-              }
-            }
-            if (found) {
-              part.svgelements.push(el);
-              openelements.splice(j, 1);
-              j--;
-            }
-          } else {
-            // something went wrong
-            //console.log('part not processed: ',el);
-          }
-        }
-      }
+    //           // also test for midpoints in case of single line edge case
+    //           var mid = {
+    //             x: (p[k].x + next.x) / 2,
+    //             y: (p[k].y + next.y) / 2,
+    //           };
+    //           if (this.pointInPolygon(mid, part.polygontree) === true) {
+    //             found = true;
+    //             break;
+    //           }
+    //         }
+    //         if (found) {
+    //           part.svgelements.push(el);
+    //           openelements.splice(j, 1);
+    //           j--;
+    //         }
+    //       } else {
+    //         // something went wrong
+    //         //console.log('part not processed: ',el);
+    //       }
+    //     }
+    //   }
 
-      for (j = 0; j < openelements.length; j++) {
-        var el = openelements[j];
-        if (
-          el.tagName == "line" ||
-          el.tagName == "polyline" ||
-          el.tagName == "path"
-        ) {
-          el.setAttribute("class", "error");
-        }
-      }
+    //   for (j = 0; j < openelements.length; j++) {
+    //     var el = openelements[j];
+    //     if (
+    //       el.tagName == "line" ||
+    //       el.tagName == "polyline" ||
+    //       el.tagName == "path"
+    //     ) {
+    //       el.setAttribute("class", "error");
+    //     }
+    //   }
 
-      return parts;
-    };
+    //   return parts;
+    // };
 
     this.cloneTree = function (tree) {
       var newtree = [];
@@ -854,51 +736,29 @@
       progressCallback = p;
       displayCallback = d;
 
-      var parts = [];
-
-      /*while(this.nests.length > 0){
-				this.nests.pop();
-			}*/
-
-      // send only bare essentials through ipc
-      for (var i = 0; i < this.parts.length; i++) {
-        parts.push({
-          quantity: this.parts[i].quantity,
-          sheet: this.parts[i].sheet,
-          polygontree: this.cloneTree(this.parts[i].polygontree),
-          filename: this.parts[i].filename,
-        });
-      }
-
-      for (i = 0; i < parts.length; i++) {
-        if (parts[i].sheet) {
-          offsetTree(
-            parts[i].polygontree,
+      // TODO can we narrow down how much stuff is going through IPC?
+      var parts = this.parts.map(part => {
+        if (part.sheet) {
+          return offsetTree(
+            part,
             -0.5 * config.spacing,
-            this.polygonOffset.bind(this),
-            this.simplifyPolygon.bind(this),
             true
           );
         } else {
-          offsetTree(
-            parts[i].polygontree,
+          return offsetTree(
+            part,
             0.5 * config.spacing,
-            this.polygonOffset.bind(this),
-            this.simplifyPolygon.bind(this)
           );
         }
-      }
+      });
 
       // offset tree recursively
-      function offsetTree(t, offset, offsetFunction, simpleFunction, inside) {
-        var simple = t;
-        if (simpleFunction) {
-          simple = simpleFunction(t, !!inside);
-        }
+      function offsetTree(t, offset, inside) {
+        var simple = t.simplify(!!inside);
 
         var offsetpaths = [simple];
         if (offset > 0) {
-          offsetpaths = offsetFunction(simple, offset);
+          offsetpaths = offsetpaths.map(p => p.offset(offset));
         }
 
         if (offsetpaths.length > 0) {
@@ -1013,7 +873,7 @@
         for (i = 0; i < parts.length; i++) {
           if (!parts[i].sheet) {
             for (j = 0; j < parts[i].quantity; j++) {
-              var poly = this.cloneTree(parts[i].polygontree); // deep copy
+              var poly = this.cloneTree(parts[i].points); // deep copy
               poly.id = id; // id is the unique id of all parts that will be nested, including cloned duplicates
               poly.source = i; // source is the id of each unique part from the main part list
               poly.filename = parts[i].filename;
@@ -1027,8 +887,8 @@
         // seed with decreasing area
         adam.sort(function (a, b) {
           return (
-            Math.abs(GeometryUtil.polygonArea(b)) -
-            Math.abs(GeometryUtil.polygonArea(a))
+            Math.abs(b.area()) -
+            Math.abs(a.area())
           );
         });
 
@@ -1063,7 +923,7 @@
 
       for (i = 0; i < parts.length; i++) {
         if (parts[i].sheet) {
-          var poly = parts[i].polygontree;
+          var poly = parts[i].points;
           for (j = 0; j < parts[i].quantity; j++) {
             sheets.push(poly);
             sheetids.push(this.padNumber(sid,4)+'-'+this.padNumber(j,4));
@@ -1121,34 +981,6 @@
 
     // use the clipper library to return an offset to the given polygon. Positive offset expands the polygon, negative contracts
     // note that this returns an array of polygons
-    this.polygonOffset = function (polygon, offset) {
-      if (!offset || offset == 0 || GeometryUtil.almostEqual(offset, 0)) {
-        return polygon;
-      }
-
-      var p = this.svgToClipper(polygon);
-
-      var miterLimit = 4;
-      var co = new ClipperLib.ClipperOffset(
-        miterLimit,
-        config.curveTolerance * config.clipperScale
-      );
-      co.AddPath(
-        p,
-        ClipperLib.JoinType.jtMiter,
-        ClipperLib.EndType.etClosedPolygon
-      );
-
-      var newpaths = new ClipperLib.Paths();
-      co.Execute(newpaths, offset * config.clipperScale);
-
-      var result = [];
-      for (var i = 0; i < newpaths.length; i++) {
-        result.push(this.clipperToSvg(newpaths[i]));
-      }
-
-      return result;
-    };
 
     // returns a less complex polygon that satisfies the curve tolerance
     this.cleanPolygon = function (polygon) {
@@ -1197,31 +1029,6 @@
       }
 
       return cleaned;
-    };
-
-    // converts a polygon from normal float coordinates to integer coordinates used by clipper, as well as x/y -> X/Y
-    this.svgToClipper = function (polygon, scale) {
-      var clip = [];
-      for (var i = 0; i < polygon.length; i++) {
-        clip.push({ X: polygon[i].x, Y: polygon[i].y });
-      }
-
-      ClipperLib.JS.ScaleUpPath(clip, scale || config.clipperScale);
-
-      return clip;
-    };
-
-    this.clipperToSvg = function (polygon) {
-      var normal = [];
-
-      for (var i = 0; i < polygon.length; i++) {
-        normal.push({
-          x: polygon[i].X / config.clipperScale,
-          y: polygon[i].Y / config.clipperScale,
-        });
-      }
-
-      return normal;
     };
 
     // returns an array of SVG elements that represent the placement, for export or rendering

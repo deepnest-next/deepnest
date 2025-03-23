@@ -85,23 +85,15 @@ add package 'filequeue 0.5.0' if you enable this
 			var A = rotatePolygon(pair.A, pair.Arotation);
 			var B = rotatePolygon(pair.B, pair.Brotation);
 
-			var clipper = new ClipperLib.Clipper();
-
-			var Ac = toClipperCoordinates(A);
-			ClipperLib.JS.ScaleUpPath(Ac, 10000000);
-			var Bc = toClipperCoordinates(B);
-			ClipperLib.JS.ScaleUpPath(Bc, 10000000);
-			for(let i=0; i<Bc.length; i++){
-				Bc[i].X *= -1;
-				Bc[i].Y *= -1;
-			}
+			var Ac = A.toClipperCoordinates(10000000);
+			var Bc = B.toClipperCoordinates(-10000000);
 			var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true);
 			var clipperNfp;
 
 			var largestArea = null;
 			for(let i=0; i<solution.length; i++){
 				var n = toNestCoordinates(solution[i], 10000000);
-				var sarea = -GeometryUtil.polygonArea(n);
+				var sarea = -solution.area();
 				if(largestArea === null || largestArea < sarea){
 					clipperNfp = n;
 					largestArea = sarea;
@@ -117,45 +109,6 @@ add package 'filequeue 0.5.0' if you enable this
 			pair.B = null;
 			pair.nfp = clipperNfp;
 			return pair;
-
-			function toClipperCoordinates(polygon){
-				var clone = [];
-				for(let i=0; i<polygon.length; i++){
-					clone.push({
-						X: polygon[i].x,
-						Y: polygon[i].y
-					});
-				}
-
-				return clone;
-			};
-
-			function toNestCoordinates(polygon, scale){
-				var clone = [];
-				for(let i=0; i<polygon.length; i++){
-					clone.push({
-						x: polygon[i].X/scale,
-						y: polygon[i].Y/scale
-					});
-				}
-
-				return clone;
-			};
-
-			function rotatePolygon(polygon, degrees){
-				var rotated = [];
-				var angle = degrees * Math.PI / 180;
-				for(let i=0; i<polygon.length; i++){
-					var x = polygon[i].x;
-					var y = polygon[i].y;
-					var x1 = x*Math.cos(angle)-y*Math.sin(angle);
-					var y1 = x*Math.sin(angle)+y*Math.cos(angle);
-
-					rotated.push({x:x1, y:y1});
-				}
-
-				return rotated;
-			};
 		  }
 
 		  // run the placement synchronously
@@ -409,18 +362,6 @@ function shiftPolygon(p, shift){
 
 	return shifted;
 }
-// jsClipper uses X/Y instead of x/y...
-function toClipperCoordinates(polygon){
-	var clone = [];
-	for(let i=0; i<polygon.length; i++){
-		clone.push({
-			X: polygon[i].x,
-			Y: polygon[i].y
-		});
-	}
-
-	return clone;
-};
 
 // returns clipper nfp. Remember that clipper nfp are a list of polygons, not a tree!
 function nfpToClipperCoordinates(nfp, config){
@@ -429,26 +370,19 @@ function nfpToClipperCoordinates(nfp, config){
 	// children first
 	if(nfp.children && nfp.children.length > 0){
 		for(let j=0; j<nfp.children.length; j++){
-			if(GeometryUtil.polygonArea(nfp.children[j]) < 0){
+			if(nfp.children[j].area() < 0){
 				nfp.children[j].reverse();
 			}
-			var childNfp = toClipperCoordinates(nfp.children[j]);
-			ClipperLib.JS.ScaleUpPath(childNfp, config.clipperScale);
+			var childNfp = nfp.children[j].toClipperCoordinates(config.clipperScale);
 			clipperNfp.push(childNfp);
 		}
 	}
 
-	if(GeometryUtil.polygonArea(nfp) > 0){
+	if(nfp.area() > 0){
 		nfp.reverse();
 	}
 
-	var outerNfp = toClipperCoordinates(nfp);
-
-	// clipper js defines holes based on orientation
-
-	ClipperLib.JS.ScaleUpPath(outerNfp, config.clipperScale);
-	//var cleaned = ClipperLib.Clipper.CleanPolygon(outerNfp, 0.00001*config.clipperScale);
-
+	var outerNfp = nfp.toClipperCoordinates(nfp, config.clipperScale);
 	clipperNfp.push(outerNfp);
 	//var area = Math.abs(ClipperLib.Clipper.Area(cleaned));
 
@@ -467,15 +401,7 @@ function innerNfpToClipperCoordinates(nfp, config){
 }
 
 function toNestCoordinates(polygon, scale){
-	var clone = [];
-	for(let i=0; i<polygon.length; i++){
-		clone.push({
-			x: polygon[i].X/scale,
-			y: polygon[i].Y/scale
-		});
-	}
-
-	return clone;
+	return new Polygon(polygon, scale);
 };
 
 function getHull(polygon){
@@ -559,14 +485,8 @@ function getOuterNfp(A, B, inside){
 		console.log('minkowski', A.length, B.length, A.source, B.source);
 		console.time('clipper');
 
-		var Ac = toClipperCoordinates(A);
-		ClipperLib.JS.ScaleUpPath(Ac, 10000000);
-		var Bc = toClipperCoordinates(B);
-		ClipperLib.JS.ScaleUpPath(Bc, 10000000);
-		for(let i=0; i<Bc.length; i++){
-			Bc[i].X *= -1;
-			Bc[i].Y *= -1;
-		}
+		var Ac = A.toClipperCoordinates(10000000);
+		var Bc = B.toClipperCoordinates(-10000000);
 		var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true);
 		//console.log(solution.length, solution);
 		//var clipperNfp = toNestCoordinates(solution[0], 10000000);
@@ -575,7 +495,7 @@ function getOuterNfp(A, B, inside){
 		var largestArea = null;
 		for(let i=0; i<solution.length; i++){
 			var n = toNestCoordinates(solution[i], 10000000);
-			var sarea = -GeometryUtil.polygonArea(n);
+			var sarea = -n.area();
 			if(largestArea === null || largestArea < sarea){
 				clipperNfp = n;
 				largestArea = sarea;
@@ -740,7 +660,6 @@ function placeParts(sheets, parts, config, nestindex){
 
 	var allplacements = [];
 	var fitness = 0;
-	//var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
 
 	var key, nfp;
 	var part;
@@ -752,7 +671,7 @@ function placeParts(sheets, parts, config, nestindex){
 
 		// open a new sheet
 		var sheet = sheets.shift();
-		var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
+		var sheetarea = Math.abs(sheet.area());
 		totalsheetarea += sheetarea;
 
 		fitness += sheetarea; // add 1 for each new sheet opened (lower fitness is better)
@@ -1111,7 +1030,7 @@ function placeParts(sheets, parts, config, nestindex){
 	// there were parts that couldn't be placed
 	// scale this value high - we really want to get all the parts in, even at the cost of opening new sheets
 	for(let i=0; i<parts.length; i++){
-		fitness += 100000000*(Math.abs(GeometryUtil.polygonArea(parts[i]))/totalsheetarea);
+		fitness += 100000000*(Math.abs(parts[i].area())/totalsheetarea);
 	}
 	// send finish progerss signal
 	ipcRenderer.send('background-progress', {index: nestindex, progress: -1});
