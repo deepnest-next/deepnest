@@ -15,7 +15,7 @@
   "scripts": {
     "start": "electron .",
     "test": "playwright test",
-    "build": "electron-rebuild",
+    "build": "tsc && electron-rebuild",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
     "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
     "dist": "cross-replace npx @electron/packager . deepnest-v${npm_package_version} --overwrite",
@@ -33,8 +33,11 @@
     "@electron/rebuild": "3.7.1",
     "@playwright/test": "1.50.1",
     "@types/node": "22.13.5",
+    "@types/opentype.js": "^1.3.4",
+    "@types/svg-path-parser": "^1.1.3",
     "cross-replace": "0.2.0",
-    "electron": "34.3.0"
+    "electron": "34.3.0",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "202502.27.153710",
@@ -43,7 +46,9 @@
     "axios": "1.8.1",
     "form-data": "4.0.2",
     "graceful-fs": "4.2.11",
-    "marked": "^15.0.7"
+    "marked": "^15.0.7",
+    "opentype.js": "^1.3.4",
+    "svg-path-parser": "^1.1.0"
   },
   "files": [
     "main.js",
