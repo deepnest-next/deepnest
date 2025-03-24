@@ -60,20 +60,21 @@
       // parse svg
       // config.scale is the default scale, and may not be applied
       // scalingFactor is an absolute scaling that must be applied regardless of input svg contents
-      var parts = SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
+      const result = SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
+      this.parts.push(...  result[1]);
 
-      var stuff = SvgParser.toPartsAndSheets(parts);
+      // var stuff = SvgParser.toPartsAndSheets(parts);
       if (filename) {
         this.imports.push({
           filename: filename,
-          svg: parts.svgroot,
+          svg: result[0],
         });
       }
 
-      var stuff = SvgParser.toPartsAndSheets(parts);
-      this.parts.push(...stuff);
+      // var stuff = SvgParser.toPartsAndSheets(parts);
+      // this.parts.push(...stuff);
 
-      return parts;
+      return this.parts;
     };
 
     // debug function
@@ -550,169 +551,6 @@
       return ClipperLib.Clipper.PointInPolygon(pt, p) > 0;
     };
 
-    // assuming no intersections, return a tree where odd leaves are parts and even ones are holes
-    // might be easier to use the DOM, but paths can't have paths as children. So we'll just make our own tree.
-    // this.getParts = function (paths, filename) {
-    //   // root level nodes of the tree are parts
-    //   toTree(polygons);
-
-    //   for (i = 0; i < polygons.length; i++) {
-
-    //     // load root element
-    //     part.svgelements.push(svgelements[part.polygontree.source]);
-    //     var index = openelements.indexOf(svgelements[part.polygontree.source]);
-    //     if (index > -1) {
-    //       openelements.splice(index, 1);
-    //     }
-
-    //     // load all elements that lie within the outer polygon
-    //     for (j = 0; j < svgelements.length; j++) {
-    //       if (
-    //         j != part.polygontree.source &&
-    //         findElementById(j, part.polygontree)
-    //       ) {
-    //         part.svgelements.push(svgelements[j]);
-    //         index = openelements.indexOf(svgelements[j]);
-    //         if (index > -1) {
-    //           openelements.splice(index, 1);
-    //         }
-    //       }
-    //     }
-
-    //     parts.push(part);
-    //   }
-
-    //   function findElementById(id, tree) {
-    //     if (id == tree.source) {
-    //       return true;
-    //     }
-
-    //     if (tree.children && tree.children.length > 0) {
-    //       for (var i = 0; i < tree.children.length; i++) {
-    //         if (findElementById(id, tree.children[i])) {
-    //           return true;
-    //         }
-    //       }
-    //     }
-
-    //     return false;
-    //   }
-
-    //   for (i = 0; i < parts.length; i++) {
-    //     var part = parts[i];
-    //     // the elements left are either erroneous or open
-    //     // we want to include open segments that also lie within the part boundaries
-    //     for (j = 0; j < openelements.length; j++) {
-    //       var el = openelements[j];
-    //       if (el.tagName == "line") {
-    //         var x1 = Number(el.getAttribute("x1"));
-    //         var x2 = Number(el.getAttribute("x2"));
-    //         var y1 = Number(el.getAttribute("y1"));
-    //         var y2 = Number(el.getAttribute("y2"));
-    //         var start = { x: x1, y: y1 };
-    //         var end = { x: x2, y: y2 };
-    //         var mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-
-    //         if (
-    //           this.pointInPolygon(start, part.polygontree) === true ||
-    //           this.pointInPolygon(end, part.polygontree) === true ||
-    //           this.pointInPolygon(mid, part.polygontree) === true
-    //         ) {
-    //           part.svgelements.push(el);
-    //           openelements.splice(j, 1);
-    //           j--;
-    //         }
-    //       } else if (el.tagName == "image") {
-    //         var x = Number(el.getAttribute("x"));
-    //         var y = Number(el.getAttribute("y"));
-    //         var width = Number(el.getAttribute("width"));
-    //         var height = Number(el.getAttribute("height"));
-
-    //         var mid = { x: x + width / 2, y: y + height / 2 };
-
-    //         var transformString = el.getAttribute("transform");
-    //         if (transformString) {
-    //           var transform = SvgParser.transformParse(transformString);
-    //           if (transform) {
-    //             var transformed = transform.calc(mid.x, mid.y);
-    //             mid.x = transformed[0];
-    //             mid.y = transformed[1];
-    //           }
-    //         }
-    //         // just test midpoint for images
-    //         if (this.pointInPolygon(mid, part.polygontree) === true) {
-    //           part.svgelements.push(el);
-    //           openelements.splice(j, 1);
-    //           j--;
-    //         }
-    //       } else if (el.tagName == "path" || el.tagName == "polyline") {
-    //         var k;
-    //         if (el.tagName == "path") {
-    //           var p = SvgParser.polygonifyPath(el);
-    //         } else {
-    //           var p = [];
-    //           for (k = 0; k < el.points.length; k++) {
-    //             p.push({
-    //               x: el.points[k].x,
-    //               y: el.points[k].y,
-    //             });
-    //           }
-    //         }
-
-    //         if (p.length < 2) {
-    //           continue;
-    //         }
-
-    //         var found = false;
-    //         var next = p[1];
-    //         for (k = 0; k < p.length; k++) {
-    //           if (this.pointInPolygon(p[k], part.polygontree) === true) {
-    //             found = true;
-    //             break;
-    //           }
-
-    //           if (k >= p.length - 1) {
-    //             next = p[0];
-    //           } else {
-    //             next = p[k + 1];
-    //           }
-
-    //           // also test for midpoints in case of single line edge case
-    //           var mid = {
-    //             x: (p[k].x + next.x) / 2,
-    //             y: (p[k].y + next.y) / 2,
-    //           };
-    //           if (this.pointInPolygon(mid, part.polygontree) === true) {
-    //             found = true;
-    //             break;
-    //           }
-    //         }
-    //         if (found) {
-    //           part.svgelements.push(el);
-    //           openelements.splice(j, 1);
-    //           j--;
-    //         }
-    //       } else {
-    //         // something went wrong
-    //         //console.log('part not processed: ',el);
-    //       }
-    //     }
-    //   }
-
-    //   for (j = 0; j < openelements.length; j++) {
-    //     var el = openelements[j];
-    //     if (
-    //       el.tagName == "line" ||
-    //       el.tagName == "polyline" ||
-    //       el.tagName == "path"
-    //     ) {
-    //       el.setAttribute("class", "error");
-    //     }
-    //   }
-
-    //   return parts;
-    // };
-
     this.cloneTree = function (tree) {
       var newtree = [];
       tree.forEach(function (t) {
@@ -789,6 +627,7 @@
             );
           }
         }
+        return offsetpaths;
       }
 
       var self = this;

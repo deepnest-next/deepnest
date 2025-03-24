@@ -446,6 +446,8 @@ ready(async function () {
         }
     });
 
+    Ractive.DEBUG = true;
+
     var ractive = new Ractive({
         el: '#homecontent',
         //magic: true,
@@ -473,10 +475,7 @@ ready(async function () {
                 svg.setAttribute('width', (part.bounds.width + 10) + 'px');
                 svg.setAttribute('height', (part.bounds.height + 10) + 'px');
                 svg.setAttribute('viewBox', (part.bounds.x - 5) + ' ' + (part.bounds.y - 5) + ' ' + (part.bounds.width + 10) + ' ' + (part.bounds.height + 10));
-
-                part.svgelements.forEach(function (e) {
-                    svg.appendChild(e.cloneNode(false));
-                });
+                svg.appendChild(part.svgelement.cloneNode(false));
                 return (new XMLSerializer()).serializeToString(svg);
             }
         },
@@ -1015,110 +1014,37 @@ ready(async function () {
     };
 
     var startnest = function () {
-        /*function toClipperCoordinates(polygon){
-            var clone = [];
-            for(var i=0; i<polygon.length; i++){
-                clone.push({
-                    X: polygon[i].x*10000000,
-                    Y: polygon[i].y*10000000
-                });
-            }
-
-            return clone;
-        };
-
-        function toNestCoordinates(polygon, scale){
-            var clone = [];
-            for(var i=0; i<polygon.length; i++){
-                clone.push({
-                    x: polygon[i].X/scale,
-                    y: polygon[i].Y/scale
-                });
-            }
-
-            return clone;
-        };
-
-
-        var Ac = toClipperCoordinates(DeepNest.parts[0].polygontree);
-        var Bc = toClipperCoordinates(DeepNest.parts[1].polygontree);
-        for(var i=0; i<Bc.length; i++){
-            Bc[i].X *= -1;
-            Bc[i].Y *= -1;
-        }
-        var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true);
-        //console.log(solution.length, solution);
-
-        var clipperNfp = toNestCoordinates(solution[0], 10000000);
-        for(i=0; i<clipperNfp.length; i++){
-            clipperNfp[i].x += DeepNest.parts[1].polygontree[0].x;
-            clipperNfp[i].y += DeepNest.parts[1].polygontree[0].y;
-        }
-        //console.log(solution);
-        cpoly = clipperNfp;
-
-        //cpoly =  .calculateNFP({A: DeepNest.parts[0].polygontree, B: DeepNest.parts[1].polygontree}).pop();
-        gpoly =  GeometryUtil.noFitPolygon(DeepNest.parts[0].polygontree, DeepNest.parts[1].polygontree, false, false).pop();
-
-        var svg = DeepNest.imports[0].svg;
-        var polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        var polyline2 = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-
-        for(var i=0; i<cpoly.length; i++){
-            var p = svg.createSVGPoint();
-            p.x = cpoly[i].x;
-            p.y = cpoly[i].y;
-            polyline.points.appendItem(p);
-        }
-        for(i=0; i<gpoly.length; i++){
-            var p = svg.createSVGPoint();
-            p.x = gpoly[i].x;
-            p.y = gpoly[i].y;
-            polyline2.points.appendItem(p);
-        }
-        polyline.setAttribute('class', 'active');
-        svg.appendChild(polyline);
-        svg.appendChild(polyline2);
-
-        ractive.update('imports');
-        applyzoom();
-
-        return false;*/
-
-
         for (var i = 0; i < DeepNest.parts.length; i++) {
-            if (DeepNest.parts[i].sheet) {
-                // need at least one sheet
-                document.querySelector('#main').className = '';
-                document.querySelector('#nest').className = 'active';
+            // need at least one sheet
+            document.querySelector('#main').className = '';
+            document.querySelector('#nest').className = 'active';
 
-                var displayCallback = function () {
-                    // render latest nest if none are selected
-                    var selected = this.DeepNest.nests.filter(function (n) {
-                        return n.selected;
+            var displayCallback = function () {
+                // render latest nest if none are selected
+                var selected = this.DeepNest.nests.filter(function (n) {
+                    return n.selected;
+                });
+
+                // only change focus if latest nest is selected
+                if (selected.length == 0 || (this.DeepNest.nests.length > 1 && this.DeepNest.nests[1].selected)) {
+                    this.DeepNest.nests.forEach(function (n) {
+                        n.selected = false;
                     });
-
-                    // only change focus if latest nest is selected
-                    if (selected.length == 0 || (this.DeepNest.nests.length > 1 && this.DeepNest.nests[1].selected)) {
-                        this.DeepNest.nests.forEach(function (n) {
-                            n.selected = false;
-                        });
-                        displayNest(this.DeepNest.nests[0]);
-                        this.DeepNest.nests[0].selected = true;
-                    }
-
-                    this.nest.update('nests');
-
-                    // enable export button
-                    document.querySelector('#export_wrapper').className = 'active';
-                    document.querySelector('#export').className = 'button export';
+                    displayNest(this.DeepNest.nests[0]);
+                    this.DeepNest.nests[0].selected = true;
                 }
 
-                deleteCache();
+                this.nest.update('nests');
 
-                DeepNest.start(null, displayCallback.bind(window));
-                return;
+                // enable export button
+                document.querySelector('#export_wrapper').className = 'active';
+                document.querySelector('#export').className = 'button export';
             }
+
+            deleteCache();
+
+            DeepNest.start(null, displayCallback.bind(window));
+            return;
         }
 
         if (DeepNest.parts.length == 0) {
@@ -1636,9 +1562,7 @@ ready(async function () {
 
                 var total = 0;
                 for (i = 0; i < DeepNest.parts.length; i++) {
-                    if (!DeepNest.parts[i].sheet) {
                         total += DeepNest.parts[i].quantity;
-                    }
                 }
 
                 return num + '/' + total;

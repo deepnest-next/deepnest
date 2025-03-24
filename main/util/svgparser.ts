@@ -27,27 +27,9 @@ export interface SvgParserConfiguration {
   endpointTolerance: number;
 }
 
-export class ModelsToPlace {
-  filename: string;
-  svgroot: any;
-  // key is shape (possibly including internal holes), value is desired count.
-  models: Map<Shape, number>;
-  // shapes (possibly with holes) of sheets of material. value is available count.
-  sheets: Map<Shape, number>;
-
-  constructor(filename: string, svgroot: any, models: Map<Shape, number>, sheets: Map<Shape, number>) {
-    this.filename = filename;
-    this.svgroot = svgroot;
-    this.models = models;
-    this.sheets = sheets;
-  }
-}
-
 export class SvgParser {
   conf: SvgParserConfiguration;
   fontFactory: FontFactory;
-  // purely for backwards compatibility, delete me
-  resultcache: ModelsToPlace | null;
 
   constructor(
     fontFactory: FontFactory,
@@ -73,46 +55,27 @@ export class SvgParser {
   }
 
   // purely for backwards compatibility, delete me
-  load(dirpath: string, svgstring: string, scale: number, scalingFactor: number) : ModelsToPlace {
+  load(dirpath: string, svgstring: string, scale: number, scalingFactor: number) : [Document, Array<Shape>] {
     this.conf.scale = scale;
     this.conf.scalingFactor = scalingFactor;
-    this.resultcache = this.parse(dirpath, svgstring);
-    return this.resultcache;
+    return this.parse(dirpath, svgstring);
   }
-  // purely for backwards compatibility, delete me
-  toPartsAndSheets(models: ModelsToPlace) : any {
-    let pieces : any[] = [];
-    for (const entry of models.models.entries()) {
-      const piece = entry[0];
-      const count = entry[1];
-      // var g : any = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      piece.item.map(chunk => {
-        let simplePiece : any = document.createElementNS('http://www.w3.org/2000/svg', 'poly');
-        simplePiece.setAttribute("points", chunk.points.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" "));
-        simplePiece.bounds = chunk.getBounds();
-        simplePiece.area = simplePiece.bounds.width * simplePiece.bounds.height;
-        simplePiece.quantity = count;
-        simplePiece.filename = models.filename;
-        simplePiece.svgelements = [piece.source];
-          // g.appendChild(simplePiece);
-        pieces.push(simplePiece);
-      })
+  // // purely for backwards compatibility, delete me
+  // toPartsAndSheets(models: ModelsToPlace) : any {
+  //   let pieces : any[] = [];
+  //   for (const piece of models.models) {
+  //     // var g : any = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  //     piece.item.map(chunk => {
+  //       let simplePiece : SVGElement = document.createElementNS('http://www.w3.org/2000/svg', 'poly');
+  //       simplePiece.setAttribute("points", chunk.points.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" "));
+  //         // g.appendChild(simplePiece);
+  //       pieces.push(simplePiece);
+  //     })
+  //   }
+  //   return pieces;
+  // }
 
-    }
-    for (const sheet of models.sheets.keys()) {
-      var g : any = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      sheet.item.map(chunk => {
-        let simpleSheet = document.createElementNS('http://www.w3.org/2000/svg', 'poly');
-        simpleSheet.setAttribute("points", chunk.points.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" "));
-        g.appendChild(simpleSheet);
-      })
-      g.sheet = true;
-      pieces.push(g);
-    }
-    return pieces;
-  }
-
-  parse(filename: string, svgString: string): ModelsToPlace {
+  parse(filename: string, svgString: string): [Document, Array<Shape>] {
     if (!svgString || typeof svgString !== "string") {
       throw Error("invalid SVG string");
     }
@@ -125,13 +88,12 @@ export class SvgParser {
       );
     }
     var parser = new DOMParser();
-    const svgRoot = parser.parseFromString(svgString, "image/svg+xml");
+    const svgRoot : Document = parser.parseFromString(svgString, "image/svg+xml");
 
-    const resultModels: Map<Shape, number> = new Map();
-    const sheets: Map<Shape, number> = new Map();
+    const resultModels: Array<Shape> = [];
 
-    this.findShapes(resultModels, sheets, new Map<String, SVGElement>(), svgRoot.firstElementChild!, new Matrix());
-    return new ModelsToPlace(filename, svgRoot, resultModels, sheets);
+    this.findShapes(resultModels, new Map<String, SVGElement>(), svgRoot.firstElementChild! as unknown as SVGElement, new Matrix(), filename);
+    return [svgRoot, resultModels];
   }
 
   decodeElement(
@@ -307,11 +269,11 @@ export class SvgParser {
   }
 
   private findShapes(
-    resultModels: Map<Shape, number>,
-    sheets: Map<Shape, number>,
+    resultModels: Array<Shape>,
     defs: Map<String, SVGElement>,
-    e: Element,
-    transform: Matrix
+    e: SVGElement,
+    transform: Matrix,
+    filename: String
   ) {
     const newTransform = transform
       .clone().applyTransformString(e.getAttribute("transform") ?? "");
@@ -321,9 +283,10 @@ export class SvgParser {
       case "image":
       case "g":
       case "svg":
+        // HTMLCollection doesn't have an iterator, hence the yucky iteration.
         for (let index = 0; index < e.children.length; index++) {
-          const c = e.children[index];
-          this.findShapes(resultModels, sheets, new Map<String, SVGElement>(defs), c, transform);
+          const c = e.children[index] as SVGElement;
+          this.findShapes(resultModels, new Map<String, SVGElement>(defs), c, transform, filename);
         }
         break;
       case "defs":
@@ -336,28 +299,28 @@ export class SvgParser {
             console.log("findShapes: Finding holes in part. Element %s has %d children",
               e.tagName, children.length);
             const holes = children.flatMap((c) =>
-              this.findHoles(resultModels, sheets, defs, c, currentTransform)
+              this.findHoles(resultModels, defs, c, currentTransform, filename)
             );
-            sheets.set(new Shape(e, [bounds], holes), availableQuantity);
+            resultModels.push(new Shape(e, [bounds], holes, availableQuantity, filename, e, false, true));
           },
           (currentTransform, desiredQuantity, path) => {
             console.log("findShapes: Finding holes in sheet. Element %s has %d children",
               e.tagName, children.length);
             const holes = children.flatMap((c) =>
-              this.findHoles(resultModels, sheets, defs, c, currentTransform)
+              this.findHoles(resultModels, defs, c, currentTransform, filename)
             );
-            resultModels.set(new Shape(e, [path], holes), desiredQuantity);
+            resultModels.push(new Shape(e, [path], holes, desiredQuantity, filename, e, false, false));
           }
         );
         break;
     }
   }
   private findHoles(
-    resultModels: Map<Shape, number>,
-    sheets: Map<Shape, number>,
+    resultModels: Array<Shape>,
     defs: Map<String, SVGElement>,
     e: Element,
-    transform: Matrix
+    transform: Matrix,
+    filename: String
   ): Array<Polygon> {
     const children: SVGElement[] = Array.prototype.slice.call(e.children);
     console.log("findHoles: Element %s has %d children", e.tagName, children.length);
@@ -374,7 +337,7 @@ export class SvgParser {
         holes.push(path);
       }
     );
-    children.forEach((c) => this.findShapes(resultModels, sheets, new Map<String, SVGElement>(defs), c, transform));
+    children.forEach((c) => this.findShapes(resultModels, new Map<String, SVGElement>(defs), c, transform, filename));
     return holes;
   }
   private parsePathString(
