@@ -219,7 +219,7 @@ ready(async function () {
         timeRatio: 0.5, // ratio of material reduction to laser time. 0 = optimize material only, 1 = optimize laser time only
         simplify: false,
         dxfImportScale: "1",
-        dxfExportScale: "72",
+        dxfExportScale: "1",
         endpointTolerance: 0.36,
         conversionServer: defaultConversionServer,
         useSvgPreProcessor: false,
@@ -1409,7 +1409,7 @@ ready(async function () {
         });
 
         var scale = config.getSync('scale');
-
+        
         if (dxf) {
             scale /= Number(config.getSync('dxfExportScale')); // inkscape on server side
         }
