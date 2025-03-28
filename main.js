@@ -1,4 +1,5 @@
 const { app, ipcMain, BrowserWindow, screen, shell } = require("electron");
+if (require('electron-squirrel-startup')) app.quit();
 const remote = require("@electron/remote/main");
 const fs = require("graceful-fs");
 const path = require("path");
