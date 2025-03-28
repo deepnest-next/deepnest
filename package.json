@@ -22,7 +22,7 @@
     "test": "playwright test",
     "build": "electron-rebuild",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
-    "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
+    "clean-all": "rmdir /s /q build dist node_modules bin out >nul 2>&1|echo . >nul",
     "dist": "cross-replace npx @electron/packager . deepnest-v1.5.1 --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore'",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
     "package": "electron-forge package",
@@ -53,9 +53,11 @@
     "@electron/fuses": "^1.8.0",
     "@electron/rebuild": "3.7.1",
     "@playwright/test": "1.50.1",
+    "@types/electron-squirrel-startup": "^1.0.2",
     "@types/node": "22.13.5",
     "cross-replace": "0.2.0",
-    "electron": "34.4.1"
+    "electron": "34.4.1",
+    "glob": "^11.0.1"
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "202503.13.155300",

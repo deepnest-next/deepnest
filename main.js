@@ -1,5 +1,6 @@
 const { app, ipcMain, BrowserWindow, screen, shell } = require("electron");
-if (require('electron-squirrel-startup')) app.quit();
+const started = require('electron-squirrel-startup');
+if (started) app.quit();
 const remote = require("@electron/remote/main");
 const fs = require("graceful-fs");
 const path = require("path");
@@ -148,7 +149,7 @@ function createNotificationWindow(notification) {
   }
 
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  
+
   notificationWindow = new BrowserWindow({
     width: 750,
     height: 500,
@@ -253,7 +254,7 @@ app.on("ready", () => {
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
     createBackgroundWindows();
-    
+
     // Check for notifications after a short delay to ensure the app is fully loaded
     setTimeout(async () => {
       runNotificationCheck();
@@ -261,7 +262,7 @@ app.on("ready", () => {
 
     setInterval(async () => {
       runNotificationCheck();
-    }, 30*60*1000); // every 30 minutes
+    }, 30 * 60 * 1000); // every 30 minutes
   });
   mainWindow.on("closed", () => {
     app.quit();
@@ -398,12 +399,12 @@ ipcMain.on('close-notification', async (event) => {
   if (win && win.notificationData && win.notificationData.markAsSeen) {
     win.notificationData.markAsSeen();
   }
-  
+
   // Close the current notification window
   if (win) {
     win.close();
   }
-  
+
   // Check for additional notifications and show them if they exist
   setTimeout(async () => {
     const nextNotification = await notificationService.checkForNotifications();

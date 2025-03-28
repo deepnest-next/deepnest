@@ -1,35 +1,91 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
-const { net } = require('electron');
+const { rmSync } = require('fs');
+const { globSync } = require('glob');
+const path = require('path');
 
+
+
+let includeFiles = [
+  // we need to make sure the project root directory is included
+  '.',
+  'main.js',
+  'presets.js',
+  'notification-service.js',
+  ...globSync('main/**'),
+  'LICENSE',
+  'LICENSE.md',
+  'package.json',
+  // per electron-packager's docs, a set of files in the node_modules directory are always ignored
+  // unless we are providing an IgnoreFunction. Because we want to ignore a lot more files than
+  // packager does by default, we need to ensure that we're including the relevant node_modules
+  // while ignoring what packager normally would.
+  // See https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html#ignore.
+  ...globSync('node_modules/**', {
+    ignore: [
+      'node_modules/.bin/**',
+      'node_modules/electron/**',
+      'node_modules/electron-prebuilt/**',
+      'node_modules/electron-prebuilt-compile/**',
+      'node_modules/@deepnest/calculate-nfp/rust-minkowski/**',
+      'node_modules/@deepnest/calculate-nfp/prebuilt/**',
+    ],
+  }),
+];
+// Fix: Use startsWith instead of includes to match node_modules paths
+//console.log('Include files:', includeFiles.filter((f) => f.startsWith('node_modules')));
 module.exports = {
+  hooks: {
+    packageAfterPrune: async (config, buildPath, electronVersion, platform, arch) => {
+      const cwd = path.resolve(buildPath, 'node_modules', '@deepnest', 'calculate-nfp');
+      const includeFiles = [
+        'rust-minkowski',
+        'bin',
+        'src',
+        'build',
+        'node_modules',
+      ];
+      //console.log('packageAfterPrune', cwd);
+      
+      // Use for...of loop instead of forEach for async operations
+      for (const file of includeFiles) {
+        const filePath = path.join(cwd, file);
+        //console.log('includeFiles', filePath);
+        rmSync(filePath, { recursive: true, force: true });
+      }
+      
+      //console.log('includeFiles', includeFiles);
+      //console.log('ignoreFiles', ignoreFiles);
+      const delay = ms => new Promise(res => setTimeout(res, ms));
+      await delay(2000);
+      return void 0;
+    },
+  },
   packagerConfig: {
     appCategoryType: "public.app-category.productivity",
     appBundleId: "net.deepnest.app",
     appCopyright: "Copyright © 2025 Josef Fröhle - www.deepnest.net",
     asar: true,
-    ignore: [
-      'tests',
-      'examples',
-      'debug',
-      '.vscode',
-      '.github',
-      /\.zip$/i,
-      /\.exe$/i,
-      'playwright.config.ts',
-      'renovate.json',
-      'forge.config.js',
-      /deepnest-v\d+\.\d+\.\d+-[a-z0-9]+-[a-z0-9]+/i,
-      // ...ignoredPaths,
-    ],
+    ignore: (p) => {
+      if (p === '') {
+        return false;
+      }
+      let pResult = !includeFiles.includes(path.normalize(p.replace('/', '')));
+      // if (pResult) {
+      //   console.log('Checking path:', '"' + p.replace('/', '') + '"', '"' + path.normalize(p.replace('/', '')) + '"', pResult);
+      // }
+      return pResult;
+    },
     prune: true,
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    force: false
+  },
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
       config: {},
-    },
+    },/*
     {
       name: '@electron-forge/maker-appx',
       config: {
@@ -42,7 +98,7 @@ module.exports = {
         // and are ignored when building for Windows Desktop
         makeVersionWinStoreCompatible: true,
       }
-    },/* 
+    }, 
     {
       name: '@electron-forge/maker-wix',
       config: {
