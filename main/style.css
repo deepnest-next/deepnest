@@ -728,22 +728,34 @@ ul.dropdown li:hover {
 #parts table input[type="number"] {
   background-color: transparent;
   border: none;
-  color: #404247;
+  color: var(--text-primary);
   padding: 0.2em 0.3em;
   font-size: 1em;
 }
 
 #parts table input[type="text"]:focus,
 #parts table input[type="number"]:focus {
-  background-color: #fff;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
-#parts table input[type="text"] {
-  width: 7em;
+/* Fix for dark mode input visibility in non-active rows */
+body.dark-mode #parts table tbody tr:not(.active) td input[type="text"],
+body.dark-mode #parts table tbody tr:not(.active) td input[type="number"] {
+  color: var(--text-primary);
 }
 
-#parts table input[type="number"] {
-  width: 2.5em;
+body.dark-mode #parts table tbody tr.active td input {
+  color: #fff;
+}
+
+/* Improved focus styles for both active and non-active rows in dark mode */
+body.dark-mode #parts table tbody tr td input[type="text"]:focus,
+body.dark-mode #parts table tbody tr td input[type="number"]:focus {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--button-primary);
+  outline: none;
 }
 
 /* parts table svg */
