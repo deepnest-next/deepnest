@@ -27,6 +27,8 @@
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "publish:dry": "electron-forge publish --dry-run",
+    "publish:fromdry": "electron-forge publish --from-dry-run",
     "publish": "electron-forge publish"
   },
   "repository": "https://github.com/deepnest-next/deepnest",
@@ -50,6 +52,9 @@
     "@electron-forge/maker-zip": "^7.8.0",
     "@electron-forge/plugin-auto-unpack-natives": "^7.8.0",
     "@electron-forge/plugin-fuses": "^7.8.0",
+    "@electron-forge/publisher-github": "^7.8.0",
+    "@electron-forge/publisher-s3": "^7.8.0",
+    "@electron-forge/publisher-snapcraft": "^7.8.0",
     "@electron/fuses": "^1.8.0",
     "@electron/rebuild": "3.7.1",
     "@playwright/test": "1.50.1",

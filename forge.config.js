@@ -4,7 +4,18 @@ const { rmSync } = require('fs');
 const { globSync } = require('glob');
 const path = require('path');
 
+// Get the package version from package.json
+const packageJson = require('./package.json');
+const packageVersion = packageJson.version;
 
+// There is probably a better way to do this, such as fetching it directly from forge
+let makerArch = null;
+for (let i = 0; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  if (arg === "--arch") {
+    makerArch = process.argv[i + 1];
+  }
+}
 
 let includeFiles = [
   // we need to make sure the project root directory is included
@@ -46,14 +57,14 @@ module.exports = {
         'node_modules',
       ];
       //console.log('packageAfterPrune', cwd);
-      
+
       // Use for...of loop instead of forEach for async operations
       for (const file of includeFiles) {
         const filePath = path.join(cwd, file);
         //console.log('includeFiles', filePath);
         rmSync(filePath, { recursive: true, force: true });
       }
-      
+
       //console.log('includeFiles', includeFiles);
       //console.log('ignoreFiles', ignoreFiles);
       const delay = ms => new Promise(res => setTimeout(res, ms));
@@ -65,6 +76,7 @@ module.exports = {
     appCategoryType: "public.app-category.productivity",
     appBundleId: "net.deepnest.app",
     appCopyright: "Copyright © 2025 Josef Fröhle - www.deepnest.net",
+    executableName: "deepnest",
     asar: true,
     ignore: (p) => {
       if (p === '') {
@@ -84,7 +96,12 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        name: `deepnest-${makerArch}`,
+        setupExe: `deepnest-v${packageVersion}-${makerArch}-setup.exe`,
+        // setupIcon: path.resolve(__dirname, '_assets', 'icon.ico'),
+        // loadingGif: path.resolve(__dirname, '_assets', 'loading.gif'),
+      },
     },/*
     {
       name: '@electron-forge/maker-appx',
@@ -111,23 +128,23 @@ module.exports = {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin', 'win32', 'linux'],
       config: (arch) => ({
-        macUpdateManifestBaseUrl: `https://dl.deepnest.app/deepnest-next/darwin/${arch}`
+        //macUpdateManifestBaseUrl: `https://dl.deepnest.app/deepnest-next/darwin/${arch}`
       }),
     },
     {
       name: '@electron-forge/maker-dmg',
       config: {
-        background: './assets/dmg-background.png',
+        background: path.resolve(__dirname, '_assets', 'dmg-background.png'),
         format: 'ULFO'
       }
-    },
+    },/*
     {
       name: '@electron-forge/maker-pkg',
       config: {
         //keychain: 'my-secret-ci-keychain'
         // other configuration options
       }
-    },
+    },*/
     {
       name: '@electron-forge/maker-flatpak',
       config: {
@@ -156,7 +173,7 @@ module.exports = {
           categories: ['Education', 'Graphics', 'Utility'],
         }
       }
-    },
+    },/*
     {
       name: '@electron-forge/maker-snap',
       config: {
@@ -164,9 +181,41 @@ module.exports = {
           webgl: true,
           network: true,
         },
-        summary: 'Pretty Awesome'
+        base: "core24",
+        summary: '2d nesting application',
+        description: 'Deepnest is a 2D nesting application that helps you optimize the layout of your designs, reducing material waste and improving efficiency.',
+        grade: 'stable',
       }
     },
+    */
+  ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'Dexus',
+          name: 'Deepnest',
+        },
+        draft: true,
+        prerelease: false,
+      },
+    },
+    /*
+    {
+      name: '@electron-forge/publisher-snapcraft',
+      config: {
+        release: '[latest/edge, insider/stable]'
+      }
+    },*/
+    /*
+    {
+      name: '@electron-forge/publisher-s3',
+      config: {
+        bucket: 'my-bucket',
+        public: true
+      }
+    },*/
   ],
   plugins: [
     {
@@ -177,6 +226,7 @@ module.exports = {
     // at package time, before code signing the application
     new FusesPlugin({
       version: FuseVersion.V1,
+      resetAdHocDarwinSignature: process.platform === "darwin" && makerArch == "arm64",
       [FuseV1Options.RunAsNode]: true,
       [FuseV1Options.EnableCookieEncryption]: true,
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
