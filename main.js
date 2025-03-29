@@ -1,4 +1,5 @@
 const { app, ipcMain, BrowserWindow, screen, shell } = require("electron");
+app.setAppUserModelId("net.deepnest.app");
 const started = require('electron-squirrel-startup');
 if (started) app.quit();
 const remote = require("@electron/remote/main");
