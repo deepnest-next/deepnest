@@ -60,6 +60,7 @@
     "@electron/fuses": "^1.8.0",
     "@electron/rebuild": "3.7.1",
     "@playwright/test": "1.50.1",
+    "@reforged/maker-appimage": "^5.0.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/node": "22.13.5",
     "cross-replace": "0.2.0",

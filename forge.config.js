@@ -289,6 +289,15 @@ const config = {
   },
   makers: [
     {
+      name: "@reforged/maker-appimage",
+      config: {
+        options: {
+          categories: ["Graphics", "Utility", "VectorGraphics", "2DGraphics", "ImageProcessing"],
+          icon: path.resolve(__dirname, "_assets", "icon.svg")
+        }
+      }
+    },
+    {
       name: "@electron-forge/maker-squirrel",
       config: {
         name: `deepnest-${makerArch}`,
