@@ -22,8 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
       - name: Install dependencies
         run: |
-          # yarn v1
-          yarn install --frozen-lockfile
+          # npm install
+          npm ci
       - name: Fix Ubuntu 24.04 issue https://github.com/electron/electron/issues/17972
         run: |
           file=node_modules/electron/dist/chrome-sandbox
