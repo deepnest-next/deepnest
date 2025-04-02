@@ -160,6 +160,6 @@ jobs:
         uses: actions/upload-artifact@v4
         #if: ${{ ((matrix.os == 'ubuntu-24.04' && matrix.arch == 'x64') || (matrix.os == 'ubuntu-24.04-arm' && matrix.arch == 'arm64') || (matrix.os == 'windows' && (matrix.arch == 'x64' || matrix.arch == 'arm64')) || (matrix.os == 'macos_x64' && matrix.arch == 'x64') || (matrix.os == 'macos' && matrix.arch == 'arm64')) }}
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.arch }}
+          name: dist-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.target == 'mas' && '-mas' || '' }}
           path: |
             out/make/
