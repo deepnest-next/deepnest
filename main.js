@@ -346,7 +346,7 @@ ipcMain.on("background-stop", function (event) {
 const configPath = path.resolve(app.getPath("userData"), "settings.json");
 ipcMain.handle("read-config", () => {
   return fs.existsSync(configPath)
-    ? JSON.parse(fs.readFileSync(configPath).toString())
+    ? JSON.parse(fs.readFileSync(configPath).toString().replaceAll("http://convert.deepnest.io", "https://converter.deepnest.app/convert").replaceAll("https://convert.deepnest.io", "https://converter.deepnest.app/convert"))
     : {};
 });
 ipcMain.handle("write-config", (event, stringifiedConfig) => {

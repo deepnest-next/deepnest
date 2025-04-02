@@ -6,7 +6,7 @@ const presetsPath = path.resolve(app.getPath("userData"), "presets.json");
 
 function loadPresets() {
   if (fs.existsSync(presetsPath)) {
-    return JSON.parse(fs.readFileSync(presetsPath).toString());
+    return JSON.parse(fs.readFileSync(presetsPath).toString().replaceAll("http://convert.deepnest.io", "https://converter.deepnest.app/convert").replaceAll("https://convert.deepnest.io", "https://converter.deepnest.app/convert"));
   }
   return {};
 }
