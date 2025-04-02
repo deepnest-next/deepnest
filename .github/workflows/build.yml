@@ -44,11 +44,11 @@ jobs:
             target: "mas"
           - os: "windows-latest"
             target: "mas"
-          # Include only one target for each macOS build to avoid duplicates
-          - os: "macos-13"
-            target: ""
-          - os: "macos-latest"
-            target: ""
+          # # Include only one target for each macOS build to avoid duplicates
+          # - os: "macos-13"
+          #   target: ""
+          # - os: "macos-latest"
+          #   target: ""
       fail-fast: true
 
     runs-on: ${{ matrix.os }}
