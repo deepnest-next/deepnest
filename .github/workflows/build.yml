@@ -129,7 +129,21 @@ jobs:
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
 
       - name: Build (${{ matrix.arch }})
-        shell: bash
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          retry_wait_seconds: 120
+          command: |
+            mkdir -p out/make/
+            if [[ "${{ matrix.target }}" == "mas" && ("${{ matrix.os }}" == "macos-13" || "${{ matrix.os }}" == "macos-latest") ]]; then
+              npm run make -- --arch ${{ matrix.arch }} || find ./out -type f
+              npm run make -- --arch universal --platform mas || find ./out -type f
+            else
+              npm run make -- --arch ${{ matrix.arch }}
+            fi
+            find ./out -type f
+          shell: bash
         env:
           NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
@@ -144,15 +158,6 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
           MAKER_ARCH: ${{ matrix.arch }}
           MAKER_PLATFORM: ${{ matrix.target == 'mas' && 'mas' || '' }}
-        run: |
-          mkdir -p out/make/
-          if [[ "${{ matrix.target }}" == "mas" && ("${{ matrix.os }}" == "macos-13" || "${{ matrix.os }}" == "macos-latest") ]]; then
-            npm run make -- --arch ${{ matrix.arch }} || find ./out -type f
-            npm run make -- --arch universal --platform mas || find ./out -type f
-          else
-            npm run make -- --arch ${{ matrix.arch }}
-          fi
-          find ./out -type f
 
       # TODO: add AppImage for linux if we can get snap and/or flatpak to work
 
