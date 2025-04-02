@@ -586,6 +586,7 @@ if (process.env.CI) {
   config.packagerConfig.osxSign = {
     hardenedRuntime: true,
     gatekeeperAssess: false,
+    keychain: process.env.APPLE_KEYCHAIN_PATH,
     entitlements: path.join(__dirname, "_assets", "entitlements.plist"),
     "entitlements-inherit": path.join(
       __dirname,
@@ -599,13 +600,14 @@ if (process.env.CI) {
     config.packagerConfig.osxSign = {
       hardenedRuntime: true,
       gatekeeperAssess: false,
+      keychain: process.env.APPLE_KEYCHAIN_PATH,
       entitlements: path.join(__dirname, "_assets", "entitlements.mas.plist"),
-      "entitlements-inherit": path.join(
+      entitlementsInherit: path.join(
         __dirname,
         "_assets",
         "entitlements.mas.inherit.plist"
       ),
-      "signature-flags": "library",
+      signatureFlags: "library",
     };
 
     for (const maker of config.makers) {
