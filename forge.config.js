@@ -636,4 +636,8 @@ if (process.env.CI) {
   }
 }
 
+
+console.log("Final config:", config);
+console.log("Final config packagerConfig:", config.packagerConfig);
+console.log("Final config makers:", config.makers);
 module.exports = config;
