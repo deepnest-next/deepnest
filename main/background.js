@@ -921,6 +921,8 @@ function placeParts(sheets, parts, config, nestindex) {
 
 			var allbounds;
 			var partbounds;
+			var hull = null;
+			
 			if (config.placementType == 'gravity' || config.placementType == 'box') {
 				allbounds = GeometryUtil.getPolygonBounds(allpoints);
 
@@ -930,14 +932,15 @@ function placeParts(sheets, parts, config, nestindex) {
 				}
 				partbounds = GeometryUtil.getPolygonBounds(partpoints);
 			}
-			else {
-				allpoints = getHull(allpoints);
+			else if (config.placementType == 'convexhull' && allpoints.length > 0) {
+				// Calculate the hull of all already placed parts once
+				hull = getHull(allpoints);
 			}
+			
 			for (let j = 0; j < finalNfp.length; j++) {
 				nf = finalNfp[j];
-				//console.log('evalnf',nf.length);
+				
 				for (let k = 0; k < nf.length; k++) {
-
 					shiftvector = {
 						x: nf[k].x - part[0].x,
 						y: nf[k].y - part[0].y,
@@ -947,8 +950,7 @@ function placeParts(sheets, parts, config, nestindex) {
 						filename: part.filename
 					};
 
-					// ENHANCEMENT: Add a more rigorous overlap check before considering this position
-					// First, create a theoretical placement of the part at this position
+					 // ENHANCEMENT: Add a more rigorous overlap check before considering this position
 					const theoreticPlacement = [];
 					for (let m = 0; m < part.length; m++) {
 						theoreticPlacement.push({
@@ -957,7 +959,6 @@ function placeParts(sheets, parts, config, nestindex) {
 						});
 					}
 
-					// Then check for overlaps with all previously placed parts
 					let hasOverlap = false;
 					for (let m = 0; m < placed.length; m++) {
 						const placedPart = [];
@@ -968,21 +969,16 @@ function placeParts(sheets, parts, config, nestindex) {
 							});
 						}
 
-						// Use our enhanced overlap detector with additional safety margin
 						if (checkPlacementOverlap(theoreticPlacement, placedPart, config.overlapTolerance || 0.0001)) {
 							hasOverlap = true;
 							break;
 						}
 					}
 
-					// Skip this position if any overlap was detected
 					if (hasOverlap) {
 						continue;
 					}
 
-					/*for(m=0; m<part.length; m++){
-						localpoints.push({x: part[m].x+shiftvector.x, y:part[m].y+shiftvector.y});
-					}*/
 					//console.time('evalbounds');
 
 					if (config.placementType == 'gravity' || config.placementType == 'box') {
@@ -1008,21 +1004,39 @@ function placeParts(sheets, parts, config, nestindex) {
 							area = rectbounds.width * rectbounds.height;
 						}
 					}
-					else {
-						// must be convex hull
-						var localpoints = clone(allpoints);
-
+					else if (config.placementType == 'convexhull') {
+						// Create points for the part at this candidate position
+						var partPoints = [];
 						for (let m = 0; m < part.length; m++) {
-							localpoints.push({ x: part[m].x + shiftvector.x, y: part[m].y + shiftvector.y });
+							partPoints.push({ 
+								x: part[m].x + shiftvector.x, 
+								y: part[m].y + shiftvector.y 
+							});
 						}
-
-						area = Math.abs(GeometryUtil.polygonArea(getHull(localpoints)));
-						shiftvector.hull = getHull(localpoints);
-						shiftvector.hullsheet = getHull(sheet);
+						
+						var combinedHull;
+						
+						// If this is the first part, the hull is just the part itself
+						if (allpoints.length === 0) {
+							combinedHull = getHull(partPoints);
+						} else {
+							// Merge the points of the part with the points of the hull
+							// and recalculate the combined hull (more efficient than using all points)
+							var hullPoints = hull.concat(partPoints);
+							combinedHull = getHull(hullPoints);
+						}
+						
+						if (!combinedHull) {
+							console.warn("Failed to calculate convex hull");
+							continue;
+						}
+						
+						// Calculate area of the convex hull
+						area = Math.abs(GeometryUtil.polygonArea(combinedHull));
+						
+						// Store for later use
+						shiftvector.hull = combinedHull;
 					}
-
-					//console.timeEnd('evalbounds');
-					//console.time('evalmerge');
 
 					if (config.mergeLines) {
 						// if lines can be merged, subtract savings from area calculation
@@ -1039,8 +1053,6 @@ function placeParts(sheets, parts, config, nestindex) {
 						area -= merged.totalLength * config.timeRatio;
 					}
 
-					//console.timeEnd('evalmerge');
-
 					if (
 						minarea === null ||
 						(config.placementType == 'gravity' && (
@@ -1053,7 +1065,9 @@ function placeParts(sheets, parts, config, nestindex) {
 						// ENHANCEMENT: Add final verification before accepting position
 						if (!hasOverlap) {
 							minarea = area;
-							minwidth = rectbounds.width;
+							if (config.placementType == 'gravity' || config.placementType == 'box') {
+								minwidth = rectbounds.width;
+							}
 							position = shiftvector;
 							minx = shiftvector.x;
 							miny = shiftvector.y;
