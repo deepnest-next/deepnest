@@ -160,3 +160,74 @@ jobs:
           asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
           asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
           asset_content_type: application/zip
+
+  build-and-release-windows:
+    env:
+      BUILD_FOR_OS: win32
+    strategy:
+      matrix:
+        node-version: [22.x]
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Set architecture
+        id: set_arch
+        run: |
+          echo "ARCH=x64" >> $env:GITHUB_ENV
+          echo "Architecture set to: x64"
+        shell: pwsh
+
+      - name: Get latest release
+        id: get_release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Retrieve the latest release information using the GitHub API
+            const release = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            core.setOutput("upload_url", release.data.upload_url);
+            core.setOutput("release_id", release.data.id);
+            core.setOutput("tag", release.data.tag_name);
+            console.log("Found release:", release.data.tag_name);
+
+      - name: Build project
+        run: |
+          # Install dependencies and run the build script
+          npm install
+          npm run build
+        shell: bash
+
+      - name: Package build
+        run: |
+          # Retrieve the release tag from the previous step
+          TAG=${{ steps.get_release.outputs.tag }}
+          # Set the build directory name using the release tag and architecture
+          BUILD_DIR="deepnest-${TAG}-${BUILD_FOR_OS}-${ARCH}"
+          echo "Creating build in: $BUILD_DIR"
+          # Run Electron Packager to package the application into the specified build directory
+          npx @electron/packager . "deepnest-${TAG}" --overwrite
+          # Zip the build directory with the same name
+          7z a "${BUILD_DIR}.zip" "$BUILD_DIR"
+        shell: bash
+
+      - name: Artefakt an letztes Release anhängen
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
+          asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
+          asset_content_type: application/zip
