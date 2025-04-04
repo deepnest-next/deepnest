@@ -79,10 +79,10 @@ jobs:
             flatpak update --appstream -y;
             flatpak install -y --user flathub org.freedesktop.Sdk//24.08;
             flatpak install -y --user flathub org.freedesktop.Platform//24.08;
-            sudo apt-get install -y flatpak flatpak-builder elfutils ;
+            # sudo apt-get install -y flatpak flatpak-builder elfutils ;
             git config --global --add protocol.file.allow always
-            #sudo snap install snapcraft --classic;
-            #sudo snap install core22 --classic;
+            # sudo snap install snapcraft --classic;
+            # sudo snap install core22 --classic;
           fi
           # if [ "${{ matrix.os.name }}" == "windows" ]; then
           #   choco install -y nsis;

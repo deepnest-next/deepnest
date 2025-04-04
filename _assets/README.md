@@ -34,7 +34,7 @@ Set these secrets in your repository under *Settings > Secrets and variables > A
 
 ## Identity Secrets
 
-Define these secrets explicitly (ohne Fallbacks):
+Define these secrets explicitly (without fallbacks):
 
 | Secret Name                      | Description                                                                                      | Example Value                                                  |
 |----------------------------------|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
