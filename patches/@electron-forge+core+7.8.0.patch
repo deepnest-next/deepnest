@@ -1,0 +1,25 @@
+diff --git a/node_modules/@electron-forge/core/dist/api/package.js b/node_modules/@electron-forge/core/dist/api/package.js
+index 817b98e..126b72a 100644
+--- a/node_modules/@electron-forge/core/dist/api/package.js
++++ b/node_modules/@electron-forge/core/dist/api/package.js
+@@ -282,6 +282,10 @@ const listrPackage = (childTrace, { dir: providedDir = process.cwd(), interactiv
+                             extraDetails: { arch: target.arch, platform: target.platform },
+                             newRoot: true,
+                         }, async (childTrace, _, task) => {
++                            const originalConfigArch = process.env.npm_config_arch;
++                            if (target.forUniversal) {
++                                process.env.npm_config_arch = target.arch;
++                            }
+                             return (0, tracer_1.delayTraceTillSignal)(childTrace, task.newListr([
+                                 {
+                                     title: 'Copying files',
+@@ -305,6 +309,9 @@ const listrPackage = (childTrace, { dir: providedDir = process.cwd(), interactiv
+                                     title: 'Finalizing package',
+                                     task: childTrace({ name: 'finalize-package', category: '@electron-forge/core' }, async () => {
+                                         await addSignalAndWait(signalPackageDone, target);
++                                        if (target.forUniversal) {
++                                            process.env.npm_config_arch = originalConfigArch;
++                                        }
+                                     }),
+                                 },
+                             ], { rendererOptions: { collapseSubtasks: true, collapseErrors: false } }), 'run');

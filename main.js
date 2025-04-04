@@ -1,4 +1,5 @@
 const { app, ipcMain, BrowserWindow, screen, shell, crashReporter  } = require("electron");
+app.setAppUserModelId("net.deepnest.app");
 const remote = require("@electron/remote/main");
 const fs = require("graceful-fs");
 const path = require("path");
@@ -8,9 +9,24 @@ const { loadPresets, savePreset, deletePreset } = require("./presets");
 const NotificationService = require('./notification-service');
 require("events").EventEmitter.defaultMaxListeners = 30;
 
+
 app.on('render-process-gone', (event, webContents, details) => { console.error('Render process gone:', event, webContents, details); });
 
+
 remote.initialize();
+
+const { VelopackApp/*, UpdateManager */} = require("velopack");
+
+// VelopackApp should be the first thing to run in startup
+// as it may need to quit / restart the application at certain points
+VelopackApp.build()
+  .onFirstRun(() => { console.log("Show welcome to new user on first run?"); })
+  .run();
+
+
+// TODO: replace me with correct URL
+//const updateUrl = "C:\\Source\\velopack\\samples\\NodeJSElectron\\releases";
+
 
 app.commandLine.appendSwitch("--enable-precise-memory-info");
 crashReporter.start({ uploadToServer : false });
@@ -151,7 +167,7 @@ function createNotificationWindow(notification) {
   }
 
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  
+
   notificationWindow = new BrowserWindow({
     width: 750,
     height: 500,
@@ -258,7 +274,7 @@ app.on("ready", () => {
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
     createBackgroundWindows();
-    
+
     // Check for notifications after a short delay to ensure the app is fully loaded
     setTimeout(async () => {
       runNotificationCheck();
@@ -266,7 +282,7 @@ app.on("ready", () => {
 
     setInterval(async () => {
       runNotificationCheck();
-    }, 30*60*1000); // every 30 minutes
+    }, 30 * 60 * 1000); // every 30 minutes
   });
   mainWindow.on("closed", () => {
     app.quit();
@@ -403,12 +419,12 @@ ipcMain.on('close-notification', async (event) => {
   if (win && win.notificationData && win.notificationData.markAsSeen) {
     win.notificationData.markAsSeen();
   }
-  
+
   // Close the current notification window
   if (win) {
     win.close();
   }
-  
+
   // Check for additional notifications and show them if they exist
   setTimeout(async () => {
     const nextNotification = await notificationService.checkForNotifications();
@@ -417,3 +433,34 @@ ipcMain.on('close-notification', async (event) => {
     }
   }, 500); // Small delay to ensure clean transition
 });
+
+
+
+// TOOD: Uncomment and implement Velopack update manager if needed - will be done later
+// // Configure IPC listener for Velopack update messages
+// ipcMain.handle("velopack:get-version", () => {
+//   try {
+//     const updateManager = new UpdateManager(updateUrl);
+//     return updateManager.getCurrentVersion();
+//   } catch (e) {
+//     return `Not Installed (${e})`;
+//   }
+// });
+
+// ipcMain.handle("velopack:check-for-update", async () => {
+//   const updateManager = new UpdateManager(updateUrl);
+//   return await updateManager.checkForUpdatesAsync();
+// });
+
+// ipcMain.handle("velopack:download-update", async (_, updateInfo) => {
+//   const updateManager = new UpdateManager(updateUrl);
+//   await updateManager.downloadUpdateAsync(updateInfo);
+//   return true;
+// });
+
+// ipcMain.handle("velopack:apply-update", async (_, updateInfo) => {
+//   const updateManager = new UpdateManager(updateUrl);
+//   await updateManager.waitExitThenApplyUpdate(updateInfo);
+//   app.quit();
+//   return true;
+// });
