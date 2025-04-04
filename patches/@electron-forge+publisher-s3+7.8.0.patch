@@ -1,0 +1,13 @@
+diff --git a/node_modules/@electron-forge/publisher-s3/dist/PublisherS3.js b/node_modules/@electron-forge/publisher-s3/dist/PublisherS3.js
+index 346a390..935f4a4 100644
+--- a/node_modules/@electron-forge/publisher-s3/dist/PublisherS3.js
++++ b/node_modules/@electron-forge/publisher-s3/dist/PublisherS3.js
+@@ -37,6 +37,8 @@ class PublisherS3 extends publisher_static_1.PublisherStatic {
+             region: this.config.region,
+             endpoint: this.config.endpoint,
+             forcePathStyle: !!this.config.s3ForcePathStyle,
++            requestChecksumCalculation: "WHEN_REQUIRED",
++            responseChecksumValidation: "WHEN_REQUIRED",
+         });
+         d('creating s3 client with options:', this.config);
+         let uploaded = 0;

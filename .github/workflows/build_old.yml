@@ -1,0 +1,44 @@
+name: build (old version)
+
+on:
+  workflow_dispatch:
+  push:
+    # enable next line to limit branches to run
+    branches: ["main"]
+  pull_request:
+    # enable next line to limit branches to run
+    # branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+        os: [windows-2022, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      #    not needed currently, but leaving here for future use
+      #    - uses: actions/setup-python@v4
+      #      with:
+      #        python-version: '2.7.18'
+
+      - name: boost
+        if: startsWith(matrix.os,'ubuntu')
+        run: sudo apt-get update && sudo apt-get install -yq libboost-dev
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Build
+        run: |
+          npm install
+          npm run build
+      - name: Package
+        run: |
+          npm run dist
