@@ -95,7 +95,7 @@ jobs:
           # Create temporary keychain
           security create-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
           security set-keychain-settings -lut 3600 "$APPLE_KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
           security default-keychain -s "$APPLE_KEYCHAIN_PATH"
 
           # Import signing certificate (using one p12 for both app and installer)
@@ -121,7 +121,7 @@ jobs:
           APPLE_MAC_CERT: ${{ secrets.APPLE_MAC_CERT }}
           APPLE_SIGN_CERT_PASS: ${{ secrets.APPLE_MAC_CERT_PASS }}
           APPLE_KEYCHAIN: ${{ secrets.APPLE_KEYCHAIN }}
-          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}"
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
           APPLE_KEYCHAIN_PASS: ${{ secrets.APPLE_KEYCHAIN_PASS }}
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
 
@@ -136,7 +136,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
-          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}"
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
           APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}
@@ -170,7 +170,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
-          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}"
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
           APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}

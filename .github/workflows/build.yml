@@ -72,7 +72,7 @@ jobs:
       - name: Install distribution dependencies
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-24.04" || "${{ matrix.os }}" = "ubuntu-24.04-arm" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-24.04" || "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then
             sudo apt-get update && sudo apt-get upgrade && sudo apt-get install -y flatpak flatpak-builder elfutils snapd libgl1 libglx-mesa0;
             flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo ;
             flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo ;
@@ -98,7 +98,7 @@ jobs:
           # Create temporary keychain
           security create-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
           security set-keychain-settings -lut 3600 "$APPLE_KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
           security default-keychain -s "$APPLE_KEYCHAIN_PATH"
 
           # Import signing certificate (using one p12 for both app and installer)
@@ -158,7 +158,7 @@ jobs:
         env:
           NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}"
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
           APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
           APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}
           APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
