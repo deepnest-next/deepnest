@@ -166,7 +166,6 @@ ready(async function () {
         });
     } // Preset functionality end
 
-
     // main navigation
     var tabs = document.querySelectorAll('#sidenav li');
 
@@ -201,7 +200,6 @@ ready(async function () {
     });
 
     // config form
-
 
     const defaultConversionServer = 'https://converter.deepnest.app/convert';
 
@@ -315,7 +313,6 @@ ready(async function () {
         updateForm(cfgvalues);
         return false;
     }
-
 
     function saveJSON() {
         var filePath = remote.getGlobal("NEST_DIRECTORY") + "exports.json";
@@ -636,7 +633,6 @@ ready(async function () {
             DeepNest.imports[index].selected = true;
         }
 
-
         ractive.update('imports');
 
         if (DeepNest.imports.length > 0) {
@@ -740,8 +736,8 @@ ready(async function () {
             filters: [
 
                 { name: 'CAD formats', extensions: ['svg', 'ps', 'eps', 'dxf', 'dwg'] },
-                { name: 'SVG/EPS/PS', extensions: ['svg','eps','ps'] },
-                { name: 'DXF/DWG', extensions: ['dxf','dwg'] }
+                { name: 'SVG/EPS/PS', extensions: ['svg', 'eps', 'ps'] },
+                { name: 'DXF/DWG', extensions: ['dxf', 'dwg'] }
 
             ],
             properties: ['openFile', 'multiSelections']
@@ -791,6 +787,9 @@ ready(async function () {
                 const body = resp.data;
                 if (body.substring(0, 5) == 'error') {
                     message(body, true);
+                } else if (body.includes('"error"') && body.includes('"error_id"')) {
+                    let jsonErr = JSON.parse(body);
+                    message(`There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
                 } else {
                     // expected input dimensions on server is points
                     // scale based on unit preferences
@@ -814,11 +813,15 @@ ready(async function () {
                     // dirpath is used for loading images embedded in svg files
                     // converted svgs will not have images
                     if (config.getSync('useSvgPreProcessor')) {
-                        const svgResult = svgPreProcessor.loadSvgString(body);
-                        if (!svgResult.success) {
-                            message(svgResult.result, true);
-                        } else {
-                            importData(svgResult.result, filename, null, con, dxfFlag);
+                        try {
+                            const svgResult = svgPreProcessor.loadSvgString(body, Number(config.getSync('scale')));
+                            if (!svgResult.success) {
+                                message(svgResult.result, true);
+                            } else {
+                                importData(svgResult.result, filename, null, con, dxfFlag);
+                            }
+                        } catch (e) {
+                            message('Error processing SVG: ' + e.message, true);
                         }
                     } else {
                         importData(body, filename, null, con, dxfFlag);
@@ -826,7 +829,13 @@ ready(async function () {
 
                 }
             }).catch(err => {
-                message('could not contact file conversion server', true);
+                const error = err.response ? err.response.data : err.message;
+                if (error.includes('"error"') && error.includes('"error_id"')) {
+                    let jsonErr = JSON.parse(error);
+                    message(`There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
+                } else {
+                    message('could not contact file conversion server', true);
+                }
             });
         }
     }
@@ -840,11 +849,15 @@ ready(async function () {
             var filename = path.basename(filepath);
             var dirpath = path.dirname(filepath);
             if (config.getSync('useSvgPreProcessor')) {
-                const svgResult = svgPreProcessor.loadSvgString(data);
-                if (!svgResult.success) {
-                    message(svgResult.result, true);
-                } else {
-                    importData(svgResult.result, filename, null);
+                try {
+                    const svgResult = svgPreProcessor.loadSvgString(data, Number(config.getSync('scale')));
+                    if (!svgResult.success) {
+                        message(svgResult.result, true);
+                    } else {
+                        importData(svgResult.result, filename, null);
+                    }
+                } catch (e) {
+                    message('Error processing SVG: ' + e.message, true);
                 }
             } else {
                 importData(data, filename, dirpath, null);
@@ -977,13 +990,10 @@ ready(async function () {
     const path = require('path');
     const url = require('url');*/
 
-
-
     /*window.nestwindow = windowManager.createNew('nestwindow', 'Windows #2');
     nestwindow.loadURL('./main/nest.html');
     nestwindow.setAlwaysOnTop(true);
     nestwindow.open();*/
-
 
     /*window.nestwindow = new BrowserWindow({width: window.outerWidth*0.8, height: window.outerHeight*0.8, frame: true});
 
@@ -1039,7 +1049,6 @@ ready(async function () {
             return clone;
         };
 
-
         var Ac = toClipperCoordinates(DeepNest.parts[0].polygontree);
         var Bc = toClipperCoordinates(DeepNest.parts[1].polygontree);
         for(var i=0; i<Bc.length; i++){
@@ -1084,7 +1093,6 @@ ready(async function () {
         applyzoom();
 
         return false;*/
-
 
         for (var i = 0; i < DeepNest.parts.length; i++) {
             if (DeepNest.parts[i].sheet) {
@@ -1232,7 +1240,7 @@ ready(async function () {
         var fileName = dialog.showSaveDialogSync({
             title: 'Export deepnest DXF',
             filters: [
-                { name: 'DXF/DWG', extensions: ['dxf','dwg'] }
+                { name: 'DXF/DWG', extensions: ['dxf', 'dwg'] }
             ]
         })
 
@@ -1282,12 +1290,22 @@ ready(async function () {
                 //} else {
                 if (body.substring(0, 5) == 'error') {
                     message(body, true);
+                } else if (body.includes('"error"') && body.includes('"error_id"')) {
+                    let jsonErr = JSON.parse(body);
+                    message(`There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
                 } else {
                     fs.writeFileSync(fileName, body);
                 }
                 //}
             }).catch(err => {
-                message('could not contact file conversion server', true);
+                const error = err.response ? err.response.data : err.message;
+                console.log('error', err);
+                if (error.includes('"error"') && error.includes('"error_id"')) {
+                    let jsonErr = JSON.parse(error);
+                    message(`There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
+                } else {
+                    message('could not contact file conversion server', true);
+                }
             });
         };
     };
@@ -1409,7 +1427,7 @@ ready(async function () {
         });
 
         var scale = config.getSync('scale');
-        
+
         if (dxf) {
             scale /= Number(config.getSync('dxfExportScale')); // inkscape on server side
         }
