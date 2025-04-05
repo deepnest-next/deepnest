@@ -9,6 +9,7 @@ const path = require("path");
 // Get the package version from package.json
 const packageJson = require("./package.json");
 const { type, version } = require("os");
+const { get } = require("http");
 const packageVersion = packageJson.version;
 // Extract major.minor version without patch
 const shortVersion = packageVersion.replace(/\.\d+$/, '');
@@ -16,7 +17,7 @@ const shortVersion = packageVersion.replace(/\.\d+$/, '');
 // Extract platform and arch from command line arguments
 let makerArch =
   process.env.MAKER_ARCH || process.platform == "win32" ? "x64" : "arm64";
-let makerPlatform = process.env.MAKER_PLATFORM || "darwin";
+let makerPlatform = process.env.MAKER_PLATFORM || process.platform;
 console.log("Maker Arch:", makerArch);
 console.log("Maker Platform:", makerPlatform);
 for (let i = 0; i < process.argv.length; i++) {
@@ -56,6 +57,7 @@ const includeFiles = [
       "node_modules/@deepnest/calculate-nfp/rust-minkowski/**",
       "node_modules/@deepnest/calculate-nfp/prebuilt/**",
     ],
+
   }),
 ];
 
@@ -177,7 +179,7 @@ const packageAfterPruneHook = async (
       const filePath = path.join(cwd, file);
       try {
         rmSync(filePath, { recursive: true, force: true });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const cwd2 = path.resolve(buildPath, "node_modules", "fs-xattr");
@@ -255,6 +257,7 @@ const packageAfterPruneHook = async (
     });
     const prebuildDirs = globSync(`${buildPath}/**/prebuilds`);
     prebuildDirs.forEach((dir) =>
+      console.log("Deleting directory:", dir) &&
       rmSync(dir, { recursive: true, force: true })
     );
   }
@@ -268,6 +271,41 @@ const packageAfterPruneHook = async (
   }
   await delay(1000);
 
+  const cwd_91019 = path.resolve(
+    buildPath,
+    "node_modules",
+    "@deepnest",
+    "calculate-nfp"
+  );
+  const includeFiles_cwd91019 = [
+    "rust-minkowski",
+    "build",
+    "node_modules",
+    "prebuilds",
+  ];
+
+  // Use for...of loop instead of forEach for async operations
+  for (const file of includeFiles_cwd91019) {
+    const filePath = path.join(cwd_91019, file);
+    try {
+      rmSync(filePath, { recursive: true, force: true });
+    } catch (e) { }
+  }
+
+  globSync(`${buildPath}/**/velopack_nodeffi_*`).forEach(function (fpath) {
+    if (!fpath.endsWith(".node")) return;
+    if (process.platform == "darwin" && fpath.includes("_osx.node")) return;
+    if (process.platform == "linux" && fpath.includes("_linux")) return;
+    if (process.platform == "win32" && fpath.includes("_win_")) return;
+    console.log(
+      "Delete file:",
+      fpath
+    );
+    try {
+      rmSync(fpath, { recursive: true, force: true });
+    } catch (e) { }
+
+  });
   // Start checking for empty node_modules folders
   deleteEmptyNodeModules(path.join(buildPath, "node_modules"));
 
@@ -279,9 +317,11 @@ const getPackagerConfig = () => {
   const basePackagerConfig = {
     appCategoryType: "public.app-category.productivity",
     appBundleId: "net.deepnest.app",
-    appCopyright: "Copyright © 2025 Josef Fröhle - www.deepnest.net", 
+    appId: "net.deepnest.app",
+    appName: "deepnest",
+    appCopyright: "Copyright © 2025 Josef Fröhle - www.deepnest.net",
     appVersion: `${packageVersion}`,
-    buildVersion: `${shortVersion}.${process.env.GITHUB_RUN_ID}`,
+    buildVersion: `${shortVersion}.${process.env.GITHUB_RUN_ID || (new Date).getDate()}`,
     executableName: "deepnest",
     icon: path.resolve(__dirname, "_assets", "icon"),
     asar: true,
@@ -479,7 +519,7 @@ const getMakers = () => {
           icon: path.resolve(__dirname, "_assets", "icon.svg"),
         },
       },
-    },
+    },/*
     {
       name: "@electron-forge/maker-squirrel",
       platforms: ["win32"],
@@ -487,11 +527,31 @@ const getMakers = () => {
         name: `deepnest-${makerArch}`,
         setupExe: `deepnest-v${packageVersion}-${makerArch}-setup.exe`,
         setupIcon: path.resolve(__dirname, "_assets", "icon.ico"),
+        loadingGif: path.resolve(
+          __dirname,
+          "_assets",
+          "deepnest-loading.gif"
+        ),
+        iconUrl: `https://raw.githubusercontent.com/deepnest-next/deepnest/refs/heads/v1/devel/build-system/_assets/icon.ico`,
+      },
+    },*/
+    {
+      name: 'electron-maker-velopack',
+      config: {
+        allowInteraction: false,
+        shortcuts: ["StartMenuRoot", "Desktop"],
+        splashImage: path.resolve(
+          __dirname,
+          "_assets",
+          "deepnest-loading.gif"
+        ),
+        icon: path.resolve(__dirname, "_assets", "icon.ico"),
+        signSkipDll: false,
       },
     },
     {
       name: "@electron-forge/maker-zip",
-      platforms: ["win32", "linux"],
+      platforms: ["linux"],
       config: (arch) => ({
         //macUpdateManifestBaseUrl: `https://dl.deepnest.app/deepnest-next/darwin/${arch}`
       }),
@@ -542,9 +602,8 @@ const getMakers = () => {
         name: "@electron-forge/maker-dmg",
         platforms: ["darwin"],
         config: {
-          name: `deepnest-${
-            makerPlatform == "darwin" ? "mac" : "mas"
-          }-${makerArch}`,
+          name: `deepnest-${makerPlatform == "darwin" ? "mac" : "mas"
+            }-${makerArch}`,
           background: path.resolve(__dirname, "_assets", "dmg-background.png"),
           icon: path.join(__dirname, "_assets", "icon.icns"),
           format: "ULFO",
@@ -581,9 +640,8 @@ const getMakers = () => {
       name: "@electron-forge/maker-pkg",
       platforms: ["mas"],
       config: {
-        name: `deepnest-${
-          makerPlatform == "darwin" ? "mac" : "mas"
-        }-${makerArch}`,
+        name: `deepnest-${makerPlatform == "darwin" ? "mac" : "mas"
+          }-${makerArch}`,
         identity: isMas
           ? process.env.APPLE_MAS_INSTALLER_IDENTITY
           : process.env.APPLE_INSTALLER_IDENTITY,
@@ -671,6 +729,22 @@ const buildConfig = () => {
       ...config.packagerConfig,
       ...signingConfig,
     };
+  }
+  if (!process.env.CI && (makerPlatform === "win32" || process.platform === "win32")) {
+    console.log("Windows Sign Config");
+    const windowsSignData = {
+      signToolPath: 'C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22621.0\\x64\\signtool.exe',
+      signWithParams: "/sha1 e0cdd96f315959b8d333807585c4868f22d4f396 /v /debug",
+    };
+    config.windowsSign = windowsSignData
+    if (config.makers.find(m => m.name === "@electron-forge/maker-squirrel")) {
+      const squirrelMaker = config.makers.find(m => m.name === "@electron-forge/maker-squirrel");
+      squirrelMaker.config.windowsSign = windowsSignData;
+    }
+    if (config.makers.find(m => m.name === "electron-maker-velopack")) {
+      const squirrelMaker = config.makers.find(m => m.name === "electron-maker-velopack");
+      squirrelMaker.config.signParams = "/sha1 e0cdd96f315959b8d333807585c4868f22d4f396 /tr http://time.certum.pl /td sha256 /fd sha256 /v /debug";
+    }
   }
 
   return config;

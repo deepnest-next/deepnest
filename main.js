@@ -1,7 +1,5 @@
 const { app, ipcMain, BrowserWindow, screen, shell } = require("electron");
 app.setAppUserModelId("net.deepnest.app");
-const started = require('electron-squirrel-startup');
-if (started) app.quit();
 const remote = require("@electron/remote/main");
 const fs = require("graceful-fs");
 const path = require("path");
@@ -10,8 +8,20 @@ const url = require("url");
 const { loadPresets, savePreset, deletePreset } = require("./presets");
 const NotificationService = require('./notification-service');
 require("events").EventEmitter.defaultMaxListeners = 30;
-
 remote.initialize();
+
+const { VelopackApp/*, UpdateManager */} = require("velopack");
+
+// VelopackApp should be the first thing to run in startup
+// as it may need to quit / restart the application at certain points
+VelopackApp.build()
+  .onFirstRun(() => { console.log("Show welcome to new user on first run?"); })
+  .run();
+
+
+// TODO: replace me with correct URL
+//const updateUrl = "C:\\Source\\velopack\\samples\\NodeJSElectron\\releases";
+
 
 app.commandLine.appendSwitch("--enable-precise-memory-info");
 
@@ -414,3 +424,34 @@ ipcMain.on('close-notification', async (event) => {
     }
   }, 500); // Small delay to ensure clean transition
 });
+
+
+
+// TOOD: Uncomment and implement Velopack update manager if needed - will be done later
+// // Configure IPC listener for Velopack update messages
+// ipcMain.handle("velopack:get-version", () => {
+//   try {
+//     const updateManager = new UpdateManager(updateUrl);
+//     return updateManager.getCurrentVersion();
+//   } catch (e) {
+//     return `Not Installed (${e})`;
+//   }
+// });
+
+// ipcMain.handle("velopack:check-for-update", async () => {
+//   const updateManager = new UpdateManager(updateUrl);
+//   return await updateManager.checkForUpdatesAsync();
+// });
+
+// ipcMain.handle("velopack:download-update", async (_, updateInfo) => {
+//   const updateManager = new UpdateManager(updateUrl);
+//   await updateManager.downloadUpdateAsync(updateInfo);
+//   return true;
+// });
+
+// ipcMain.handle("velopack:apply-update", async (_, updateInfo) => {
+//   const updateManager = new UpdateManager(updateUrl);
+//   await updateManager.waitExitThenApplyUpdate(updateInfo);
+//   app.quit();
+//   return true;
+// });
