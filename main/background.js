@@ -100,7 +100,7 @@ window.onload = function () {
 
 			var largestArea = null;
 			for (let i = 0; i < solution.length; i++) {
-				var n = toNestCoordinates(solution[i], 10000000);
+				var n = toNestCoordinates(solution[i]);
 				var sarea = -GeometryUtil.polygonArea(n);
 				if (largestArea === null || largestArea < sarea) {
 					clipperNfp = n;
@@ -756,6 +756,21 @@ function placeParts(sheets, parts, config, nestindex) {
 		totalsheetarea += sheetarea;
 
 		fitness += sheetarea; // add 1 for each new sheet opened (lower fitness is better)
+        
+		// Sortiere die Teile nach Priorität für dieses Blatt
+		parts = sortPartsByPriority(parts, sheet);
+		
+		console.log(`Sortierte Teile für neues Blatt - Anzahl: ${parts.length}`);
+		// Log Informationen über die ersten drei Teile für Debugging
+		if (parts.length > 0) {
+			for (let i = 0; i < Math.min(3, parts.length); i++) {
+				const part = parts[i];
+				const bounds = GeometryUtil.getPolygonBounds(part);
+				const area = Math.abs(GeometryUtil.polygonArea(part));
+				const hasHoles = part.children && part.children.length > 0;
+				console.log(`Teil ${i+1}: ID=${part.id}, Größe=${bounds.width.toFixed(2)}x${bounds.height.toFixed(2)}, Fläche=${area.toFixed(2)}, Hat Löcher=${hasHoles}`);
+			}
+		}
 
 		var clipCache = [];
 		//console.log('new sheet');
@@ -958,6 +973,21 @@ function placeParts(sheets, parts, config, nestindex) {
 							y: part[m].y + shiftvector.y
 						});
 					}
+                    
+                    // Preserve children information if present
+                    if (part.children && part.children.length > 0) {
+                        theoreticPlacement.children = [];
+                        for (let m = 0; m < part.children.length; m++) {
+                            const shiftedChild = [];
+                            for (let n = 0; n < part.children[m].length; n++) {
+                                shiftedChild.push({
+                                    x: part.children[m][n].x + shiftvector.x,
+                                    y: part.children[m][n].y + shiftvector.y
+                                });
+                            }
+                            theoreticPlacement.children.push(shiftedChild);
+                        }
+                    }
 
 					let hasOverlap = false;
 					for (let m = 0; m < placed.length; m++) {
@@ -968,6 +998,21 @@ function placeParts(sheets, parts, config, nestindex) {
 								y: placed[m][n].y + placements[m].y
 							});
 						}
+                        
+                        // Preserve children information for placed parts as well
+                        if (placed[m].children && placed[m].children.length > 0) {
+                            placedPart.children = [];
+                            for (let n = 0; n < placed[m].children.length; n++) {
+                                const shiftedChild = [];
+                                for (let p = 0; p < placed[m].children[n].length; p++) {
+                                    shiftedChild.push({
+                                        x: placed[m].children[n][p].x + placements[m].x,
+                                        y: placed[m].children[n][p].y + placements[m].y
+                                    });
+                                }
+                                placedPart.children.push(shiftedChild);
+                            }
+                        }
 
 						if (checkPlacementOverlap(theoreticPlacement, placedPart, config.overlapTolerance || 0.0001)) {
 							hasOverlap = true;
@@ -1136,46 +1181,156 @@ function placeParts(sheets, parts, config, nestindex) {
 }
 
 /**
- * Enhanced overlap checker with safety margin
- * @param {Array} poly1 - First polygon
- * @param {Array} poly2 - Second polygon
+ * Enhanced overlap checker that allows placement in holes
+ * @param {Array} poly1 - First polygon (part to be placed)
+ * @param {Array} poly2 - Second polygon (with potential holes)
  * @param {number} tolerance - Small safety margin to prevent microscopic overlaps
- * @returns {boolean} - True if polygons overlap
+ * @returns {boolean} - True if polygons overlap in a way that's not allowed
  */
 function checkPlacementOverlap(poly1, poly2, tolerance = 0.0001) {
-	// Push polygons slightly apart by the tolerance to avoid microscopic overlaps
-	const expandedPoly1 = expandPolygon(poly1, -tolerance);
+    // Höhere Toleranz für die Loch-Platzierung
+    const holePlacementTolerance = 0.01; // 0.01mm Toleranz für Loch-Platzierung
+    
+    // Check if poly2 has children (holes)
+    if (poly2.children && poly2.children.length > 0) {
+        // For each hole in poly2
+        for (let i = 0; i < poly2.children.length; i++) {
+            const hole = poly2.children[i];
+            
+            // Berechne die Größe des Lochs und des zu platzierenden Teils
+            const holeSize = calculatePolygonSize(hole);
+            const partSize = calculatePolygonSize(poly1);
+            
+            console.log(`Prüfe Loch: ${holeSize.toFixed(2)}mm mit Teil: ${partSize.toFixed(2)}mm`);
+            
+            // Wenn das Teil nur knapp kleiner ist als das Loch, verwenden wir eine spezielle Logik
+            if (partSize < holeSize + holePlacementTolerance) {
+                // Prüfe, ob die Mittelpunkte nahe beieinander sind (für zentrierte Platzierung)
+                const holeCentroid = calculateCentroid(hole);
+                const partCentroid = calculateCentroid(poly1);
+                
+                // Berechne die Distanz zwischen den Mittelpunkten
+                const dx = holeCentroid.x - partCentroid.x;
+                const dy = holeCentroid.y - partCentroid.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < holePlacementTolerance * 5) {
+                    console.log(`Teil passt in Loch! (Entfernung der Mittelpunkte: ${distance.toFixed(4)}mm)`);
+                    return false; // Keine Überlappung, Platzierung erlauben
+                }
+            }
+            
+            // Standard-Prüfung: Alle Punkte müssen innerhalb des Lochs sein
+            let allPointsInside = true;
+            for (let j = 0; j < poly1.length; j++) {
+                if (!isPointInPolygon(poly1[j], hole)) {
+                    allPointsInside = false;
+                    break;
+                }
+            }
+            
+            if (allPointsInside) {
+                // Zusätzlich prüfen wir noch auf Kantenüberschneidungen mit erweiterter Toleranz
+                let hasIntersection = false;
+                
+                // Leicht verkleinertes Teil für die Schnittprüfung
+                const shrunkPoly1 = expandPolygon(poly1, -holePlacementTolerance);
+                
+                for (let j = 0; j < shrunkPoly1.length; j++) {
+                    const p1 = shrunkPoly1[j];
+                    const p2 = shrunkPoly1[(j + 1) % shrunkPoly1.length];
+                    
+                    for (let k = 0; k < hole.length; k++) {
+                        const p3 = hole[k];
+                        const p4 = hole[(k + 1) % hole.length];
+                        
+                        if (doLinesIntersect(p1, p2, p3, p4)) {
+                            hasIntersection = true;
+                            break;
+                        }
+                    }
+                    if (hasIntersection) break;
+                }
+                
+                if (!hasIntersection) {
+                    console.log('Teil passt in ein Loch!');
+                    return false; // Keine Überlappung, die Platzierung ist erlaubt
+                }
+            }
+        }
+    }
+    
+    // Push polygons slightly apart by the tolerance to avoid microscopic overlaps
+    const expandedPoly1 = expandPolygon(poly1, -tolerance);
 
-	// Check if any point of poly1 is inside poly2
-	for (let i = 0; i < expandedPoly1.length; i++) {
-		if (isPointInPolygon(expandedPoly1[i], poly2)) {
-			return true;
-		}
-	}
+    // Check if any point of poly1 is inside the outer shape of poly2
+    for (let i = 0; i < expandedPoly1.length; i++) {
+        if (isPointInPolygon(expandedPoly1[i], poly2)) {
+            return true;
+        }
+    }
 
-	// Check if any point of poly2 is inside poly1
-	for (let i = 0; i < poly2.length; i++) {
-		if (isPointInPolygon(poly2[i], expandedPoly1)) {
-			return true;
-		}
-	}
+    // Check if any point of poly2 is inside poly1
+    for (let i = 0; i < poly2.length; i++) {
+        if (isPointInPolygon(poly2[i], expandedPoly1)) {
+            return true;
+        }
+    }
 
-	// Check for edge intersections
-	for (let i = 0; i < expandedPoly1.length; i++) {
-		const p1 = expandedPoly1[i];
-		const p2 = expandedPoly1[(i + 1) % expandedPoly1.length];
+    // Check for edge intersections
+    for (let i = 0; i < expandedPoly1.length; i++) {
+        const p1 = expandedPoly1[i];
+        const p2 = expandedPoly1[(i + 1) % expandedPoly1.length];
 
-		for (let j = 0; j < poly2.length; j++) {
-			const p3 = poly2[j];
-			const p4 = poly2[(j + 1) % poly2.length];
+        for (let j = 0; j < poly2.length; j++) {
+            const p3 = poly2[j];
+            const p4 = poly2[(j + 1) % poly2.length];
 
-			if (doLinesIntersect(p1, p2, p3, p4)) {
-				return true;
-			}
-		}
-	}
+            if (doLinesIntersect(p1, p2, p3, p4)) {
+                return true;
+            }
+        }
+    }
 
-	return false;
+    return false;
+}
+
+/**
+ * Berechnet den Durchmesser eines Polygons (ungefähr)
+ */
+function calculatePolygonSize(polygon) {
+    // Wir verwenden die Bounding Box als Annäherung
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    for (const point of polygon) {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+    }
+    
+    // Bei einer kreisförmigen Form ist der Durchmesser ungefähr das Maximum von Breite und Höhe
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    return Math.max(width, height);
+}
+
+/**
+ * Berechnet den Schwerpunkt eines Polygons
+ */
+function calculateCentroid(polygon) {
+    let sumX = 0, sumY = 0;
+    
+    for (const point of polygon) {
+        sumX += point.x;
+        sumY += point.y;
+    }
+    
+    return {
+        x: sumX / polygon.length,
+        y: sumY / polygon.length
+    };
 }
 
 /**
@@ -1255,4 +1410,47 @@ function doLinesIntersect(p1, p2, p3, p4) {
 // clipperjs uses alerts for warnings
 function alert(message) {
 	console.log('alert: ', message);
+}
+
+/**
+ * Sortiert die Teile basierend auf ihrer Größe, ob sie Löcher haben und im Verhältnis zur Blattgröße
+ * @param {Array} parts - Die zu sortierenden Teile
+ * @param {Object} sheet - Das Blatt, auf dem die Teile platziert werden sollen
+ * @returns {Array} Sortierte Teile
+ */
+function sortPartsByPriority(parts, sheet) {
+    // Berechne Blattabmessungen
+    const sheetBounds = GeometryUtil.getPolygonBounds(sheet);
+    const sheetWidth = sheetBounds.width;
+    const sheetHeight = sheetBounds.height;
+    const sheetArea = Math.abs(GeometryUtil.polygonArea(sheet));
+    
+    // Berechne für jedes Teil seine Priorität
+    return [...parts].sort((a, b) => {
+        const boundsA = GeometryUtil.getPolygonBounds(a);
+        const boundsB = GeometryUtil.getPolygonBounds(b);
+        
+        // Fläche der Teile berechnen
+        const areaA = Math.abs(GeometryUtil.polygonArea(a));
+        const areaB = Math.abs(GeometryUtil.polygonArea(b));
+        
+        // Prüfe, ob die Teile Löcher haben
+        const hasHolesA = a.children && a.children.length > 0;
+        const hasHolesB = b.children && b.children.length > 0;
+        
+        // Prüfe, ob die Teile mehr als 50% der Blattgröße einnehmen
+        const isLargeA = boundsA.width > sheetWidth * 0.5 || boundsA.height > sheetHeight * 0.5;
+        const isLargeB = boundsB.width > sheetWidth * 0.5 || boundsB.height > sheetHeight * 0.5;
+        
+        // 1. Priorität: Große Teile (>50% der Blattgröße)
+        if (isLargeA && !isLargeB) return -1;
+        if (!isLargeA && isLargeB) return 1;
+        
+        // 2. Priorität: Teile mit Löchern
+        if (hasHolesA && !hasHolesB) return -1;
+        if (!hasHolesA && hasHolesB) return 1;
+        
+        // 3. Sonstige Teile nach Größe (absteigend)
+        return areaB - areaA;
+    });
 }
