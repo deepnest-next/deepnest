@@ -1,5 +1,4 @@
 'use strict';
-
 window.onload = function () {
 	const { ipcRenderer } = require('electron');
 	window.ipcRenderer = ipcRenderer;
@@ -927,6 +926,8 @@ function placeParts(sheets, parts, config, nestindex) {
 
 	// total length of merged lines
 	var totalMerged = 0;
+	// Count of parts placed in holes - used for fitness calculation
+	var partsPlacedInHoles = 0;
 
 	// rotate paths by given rotation
 	var rotated = [];
@@ -997,473 +998,486 @@ function placeParts(sheets, parts, config, nestindex) {
 		
 		// Process parts in their new sorted order
 		for (let i = 0; i < sortedParts.length; i++) {
-			console.time('placement');
-			part = sortedParts[i];
+			// Use unique timer names to avoid "Timer already exists" error
+			const timerName = `placement_${i}`;
+			console.time(timerName);
 			
-			// Before placing on the sheet, check if this part can fit into any hole of already placed parts
-			var fitsInHole = false;
-			var holePosition = null;
-			var holePart = null;
-
-			if (placed.length > 0) {
-				// Track parts placed in holes for each parent part with holes
-				var partsInHoles = {};
+			try {
+				part = sortedParts[i];
 				
-				// Look at all placed parts with holes
-				for (let j = 0; j < placed.length; j++) {
-					if (!placed[j].children || placed[j].children.length === 0) {
-						continue;
-					}
+				// Before placing on the sheet, check if this part can fit into any hole of already placed parts
+				var fitsInHole = false;
+				var holePosition = null;
+				var holePart = null;
+
+				if (placed.length > 0) {
+					// Track parts placed in holes for each parent part with holes
+					var partsInHoles = {};
 					
-					var placedPos = placements[j];
-					var placedPartId = placed[j].id;
-					
-					// Initialize tracking for this part's holes if needed
-					if (!partsInHoles[placedPartId]) {
-						partsInHoles[placedPartId] = {
-							holeParts: [],
-							holePlacements: []
-						};
-					}
-					
-					// Find parts that have already been placed in this part's holes
-					for (let p = 0; p < placed.length; p++) {
-						if (p === j) continue; // Skip the part itself
-						
-						var placement = placements[p];
-						if (placement.placedInHole && placement.holeParentId === placedPartId) {
-							partsInHoles[placedPartId].holeParts.push(placed[p]);
-							partsInHoles[placedPartId].holePlacements.push({
-								x: placement.x - placedPos.x,
-								y: placement.y - placedPos.y,
-							});
+					// Look at all placed parts with holes
+					for (let j = 0; j < placed.length; j++) {
+						if (!placed[j].children || placed[j].children.length === 0) {
+							continue;
 						}
+						
+						var placedPos = placements[j];
+						var placedPartId = placed[j].id;
+						
+						// Initialize tracking for this part's holes if needed
+						if (!partsInHoles[placedPartId]) {
+							partsInHoles[placedPartId] = {
+								holeParts: [],
+								holePlacements: []
+							};
+						}
+						
+						// Find parts that have already been placed in this part's holes
+						for (let p = 0; p < placed.length; p++) {
+							if (p === j) continue; // Skip the part itself
+							
+							var placement = placements[p];
+							if (placement.placedInHole && placement.holeParentId === placedPartId) {
+								partsInHoles[placedPartId].holeParts.push(placed[p]);
+								partsInHoles[placedPartId].holePlacements.push({
+									x: placement.x - placedPos.x,
+									y: placement.y - placedPos.y,
+								});
+							}
+						}
+						
+						// Try all holes in this part
+						for (let k = 0; k < placed[j].children.length; k++) {
+							var hole = placed[j].children[k];
+							
+							// Try to place the part in this hole
+							var result = placePartsInHole(
+								hole,
+								partsInHoles[placedPartId].holeParts,
+								partsInHoles[placedPartId].holePlacements,
+								placedPos,
+								part,
+								config
+							);
+							
+							if (result.fits) {
+								fitsInHole = true;
+								result.position.holeParentId = placedPartId;
+								holePosition = result.position;
+								holePart = result.part;
+								break;
+							}
+						}
+						
+						if (fitsInHole) break;
 					}
+				}
+				
+				// If the part fits in a hole, place it there and continue
+				if (fitsInHole && holePosition && holePart) {
+					placements.push(holePosition);
+					placed.push(holePart);
 					
-					// Try all holes in this part
-					for (let k = 0; k < placed[j].children.length; k++) {
-						var hole = placed[j].children[k];
-						
-						// Try to place the part in this hole
-						var result = placePartsInHole(
-							hole,
-							partsInHoles[placedPartId].holeParts,
-							partsInHoles[placedPartId].holePlacements,
-							placedPos,
-							part,
-							config
-						);
-						
-						if (result.fits) {
-							fitsInHole = true;
-							result.position.holeParentId = placedPartId;
-							holePosition = result.position;
-							holePart = result.part;
+						// Increment counter for parts placed in holes
+					partsPlacedInHoles++;
+					
+					// Update sortedParts with the rotated part
+					sortedParts[i] = holePart;
+					
+					// Remove from original parts array
+					for (let j = 0; j < parts.length; j++) {
+						if (parts[j].id === holePart.id && parts[j].source === holePart.source) {
+							parts.splice(j, 1);
 							break;
 						}
 					}
 					
-					if (fitsInHole) break;
+					continue;
 				}
-			}
-			
-			// If the part fits in a hole, place it there and continue
-			if (fitsInHole && holePosition && holePart) {
-				placements.push(holePosition);
-				placed.push(holePart);
-				
-				// Update sortedParts with the rotated part
-				sortedParts[i] = holePart;
-				
-				// Remove from original parts array
-				for (let j = 0; j < parts.length; j++) {
-					if (parts[j].id === holePart.id && parts[j].source === holePart.source) {
-						parts.splice(j, 1);
+
+				// inner NFP
+				var sheetNfp = null;
+				// try all possible rotations until it fits
+				// (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
+				for (let j = 0; j < config.rotations; j++) {
+					sheetNfp = getInnerNfp(sheet, part, config);
+
+					if (sheetNfp) {
 						break;
 					}
-				}
-				
-				continue;
-			}
 
-			// inner NFP
-			var sheetNfp = null;
-			// try all possible rotations until it fits
-			// (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
-			for (let j = 0; j < config.rotations; j++) {
-				sheetNfp = getInnerNfp(sheet, part, config);
+					var r = rotatePolygon(part, 360 / config.rotations);
+					r.rotation = part.rotation + (360 / config.rotations);
+					r.source = part.source;
+					r.id = part.id;
+					r.filename = part.filename
 
-				if (sheetNfp) {
-					break;
-				}
+					// rotation is not in-place
+					part = r;
+					sortedParts[i] = r;
 
-				var r = rotatePolygon(part, 360 / config.rotations);
-				r.rotation = part.rotation + (360 / config.rotations);
-				r.source = part.source;
-				r.id = part.id;
-				r.filename = part.filename
-
-				// rotation is not in-place
-				part = r;
-				sortedParts[i] = r;
-
-				if (part.rotation > 360) {
-					part.rotation = part.rotation % 360;
-				}
-			}
-			// part unplaceable, skip
-			if (!sheetNfp || sheetNfp.length == 0) {
-				continue;
-			}
-
-			var position = null;
-
-			if (placed.length == 0) {
-				// first placement, put it on the top left corner
-				for (let j = 0; j < sheetNfp.length; j++) {
-					for (let k = 0; k < sheetNfp[j].length; k++) {
-						if (position === null || sheetNfp[j][k].x - part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) && sheetNfp[j][k].y - part[0].y < position.y)) {
-							position = {
-								x: sheetNfp[j][k].x - part[0].x,
-								y: sheetNfp[j][k].y - part[0].y,
-								id: part.id,
-								rotation: part.rotation,
-								source: part.source,
-								filename: part.filename
-							}
-						}
+					if (part.rotation > 360) {
+						part.rotation = part.rotation % 360;
 					}
 				}
-				if (position === null) {
-					console.log(sheetNfp);
-				}
-				placements.push(position);
-				placed.push(part);
-
-				// Remove from original parts array
-				for (let j = 0; j < parts.length; j++) {
-					if (parts[j].id === part.id && parts[j].source === part.source) {
-						parts.splice(j, 1);
-						break;
-					}
+				// part unplaceable, skip
+				if (!sheetNfp || sheetNfp.length == 0) {
+					continue;
 				}
 
-				continue;
-			}
+				var position = null;
 
-			var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config);
-
-			var clipper = new ClipperLib.Clipper();
-			var combinedNfp = new ClipperLib.Paths();
-
-			var error = false;
-
-			// check if stored in clip cache
-			var clipkey = 's:' + part.source + 'r:' + part.rotation;
-			var startindex = 0;
-			if (clipCache[clipkey]) {
-				var prevNfp = clipCache[clipkey].nfp;
-				clipper.AddPaths(prevNfp, ClipperLib.PolyType.ptSubject, true);
-				startindex = clipCache[clipkey].index;
-			}
-
-			for (let j = startindex; j < placed.length; j++) {
-				nfp = getOuterNfp(placed[j], part);
-				// minkowski difference failed. very rare but could happen
-				if (!nfp) {
-					error = true;
-					break;
-				}
-				// shift to placed location
-				for (let m = 0; m < nfp.length; m++) {
-					nfp[m].x += placements[j].x;
-					nfp[m].y += placements[j].y;
-				}
-
-				if (nfp.children && nfp.children.length > 0) {
-					for (let n = 0; n < nfp.children.length; n++) {
-						for (let o = 0; o < nfp.children[n].length; o++) {
-							nfp.children[n][o].x += placements[j].x;
-							nfp.children[n][o].y += placements[j].y;
-						}
-					}
-				}
-
-				var clipperNfp = nfpToClipperCoordinates(nfp, config);
-
-				clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true);
-			}
-
-			if (error || !clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-				console.log('clipper error', error);
-				continue;
-			}
-
-			clipCache[clipkey] = {
-				nfp: combinedNfp,
-				index: placed.length - 1
-			};
-
-			console.log('save cache', placed.length - 1);
-
-			// difference with sheet polygon
-			var finalNfp = new ClipperLib.Paths();
-			clipper = new ClipperLib.Clipper();
-
-			clipper.AddPaths(combinedNfp, ClipperLib.PolyType.ptClip, true);
-
-			clipper.AddPaths(clipperSheetNfp, ClipperLib.PolyType.ptSubject, true);
-
-			if (!clipper.Execute(ClipperLib.ClipType.ctDifference, finalNfp, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftNonZero)) {
-				continue;
-			}
-
-			if (!finalNfp || finalNfp.length == 0) {
-				continue;
-			}
-
-			var f = [];
-			for (let j = 0; j < finalNfp.length; j++) {
-				// back to normal scale
-				f.push(toNestCoordinates(finalNfp[j], config.clipperScale));
-			}
-			finalNfp = f;
-
-			// choose placement that results in the smallest bounding box/hull etc
-			// todo: generalize gravity direction
-			var minwidth = null;
-			var minarea = null;
-			var minx = null;
-			var miny = null;
-			var nf, area, shiftvector;
-
-			var allpoints = [];
-			for (let m = 0; m < placed.length; m++) {
-				for (let n = 0; n < placed[m].length; n++) {
-					allpoints.push({ x: placed[m][n].x + placements[m].x, y: placed[m][n].y + placements[m].y });
-				}
-			}
-
-			var allbounds;
-			var partbounds;
-			var hull = null;
-			
-			if (config.placementType == 'gravity' || config.placementType == 'box') {
-				allbounds = GeometryUtil.getPolygonBounds(allpoints);
-
-				var partpoints = [];
-				for (let m = 0; m < part.length; m++) {
-					partpoints.push({ x: part[m].x, y: part[m].y });
-				}
-				partbounds = GeometryUtil.getPolygonBounds(partpoints);
-			}
-			else if (config.placementType == 'convexhull' && allpoints.length > 0) {
-				// Calculate the hull of all already placed parts once
-				hull = getHull(allpoints);
-			}
-			
-			for (let j = 0; j < finalNfp.length; j++) {
-				nf = finalNfp[j];
-				
-				for (let k = 0; k < nf.length; k++) {
-					shiftvector = {
-						x: nf[k].x - part[0].x,
-						y: nf[k].y - part[0].y,
-						id: part.id,
-						source: part.source,
-						rotation: part.rotation,
-						filename: part.filename
-					};
-
-					// Check if the placement would cause overlap with other parts
-					var hasOverlap = false;
-					// Create shifted part for overlap test
-					var shiftedPart = shiftPolygon(part, shiftvector);
-					
-					for (let m = 0; m < placed.length; m++) {
-						var placedPart = placed[m];
-						var placedPos = placements[m];
-						
-						// Skip if the placed part has no children (holes)
-						if (!placedPart.children || placedPart.children.length === 0) {
-							continue;
-						}
-						
-						// Create a shifted copy of the placed part for overlap testing
-						var shiftedPlacedPart = shiftPolygon(placedPart, placedPos);
-						
-						// Check if the part being placed falls entirely inside any hole of an already placed part
-						var fallsInHole = false;
-						for (let n = 0; n < shiftedPlacedPart.children.length; n++) {
-							var hole = shiftedPlacedPart.children[n];
-							
-							// Check if part is inside this hole
-							if (GeometryUtil.pointInPolygon({ x: shiftedPart[0].x, y: shiftedPart[0].y }, hole)) {
-								// Further check if entire part is inside hole (simplified check)
-								var partBBox = GeometryUtil.getPolygonBounds(shiftedPart);
-								var holeBBox = GeometryUtil.getPolygonBounds(hole);
-								
-								// Very simplified check - if part's bounds are contained within hole's bounds
-								if (partBBox.x >= holeBBox.x && 
-									partBBox.y >= holeBBox.y && 
-									partBBox.x + partBBox.width <= holeBBox.x + holeBBox.width && 
-									partBBox.y + partBBox.height <= holeBBox.y + holeBBox.height) {
-									fallsInHole = true;
-									break;
+				if (placed.length == 0) {
+					// first placement, put it on the top left corner
+					for (let j = 0; j < sheetNfp.length; j++) {
+						for (let k = 0; k < sheetNfp[j].length; k++) {
+							if (position === null || sheetNfp[j][k].x - part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) && sheetNfp[j][k].y - part[0].y < position.y)) {
+								position = {
+									x: sheetNfp[j][k].x - part[0].x,
+									y: sheetNfp[j][k].y - part[0].y,
+									id: part.id,
+									rotation: part.rotation,
+									source: part.source,
+									filename: part.filename
 								}
 							}
 						}
-						
-						if (fallsInHole) {
-							continue; // This placement is valid as part falls in a hole
-						}
-						
-						// We need to check if parts overlap
-						// We'll use ClipperLib for this check to be consistent with the rest of the code
-						var c = new ClipperLib.Clipper();
-						var part1 = toClipperCoordinates(shiftedPart);
-						var part2 = toClipperCoordinates(shiftedPlacedPart);
-						
-						ClipperLib.JS.ScaleUpPath(part1, config.clipperScale);
-						ClipperLib.JS.ScaleUpPath(part2, config.clipperScale);
-						
-						var solution = new ClipperLib.Paths();
-						c.AddPaths([part1], ClipperLib.PolyType.ptSubject, true);
-						c.AddPaths([part2], ClipperLib.PolyType.ptClip, true);
-						
-						c.Execute(ClipperLib.ClipType.ctIntersection, solution, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
-						
-						if (solution.length > 0) {
-							hasOverlap = true;
+					}
+					if (position === null) {
+						console.log(sheetNfp);
+					}
+					placements.push(position);
+					placed.push(part);
+
+					// Remove from original parts array
+					for (let j = 0; j < parts.length; j++) {
+						if (parts[j].id === part.id && parts[j].source === part.source) {
+							parts.splice(j, 1);
 							break;
 						}
 					}
 
-					// Skip this position if overlap was detected
-					if (hasOverlap) {
-						continue;
-					}
-
-					if (config.placementType == 'gravity' || config.placementType == 'box') {
-						var rectbounds = GeometryUtil.getPolygonBounds([
-							// allbounds points
-							{ x: allbounds.x, y: allbounds.y },
-							{ x: allbounds.x + allbounds.width, y: allbounds.y },
-							{ x: allbounds.x + allbounds.width, y: allbounds.y + allbounds.height },
-							{ x: allbounds.x, y: allbounds.y + allbounds.height },
-
-							// part points
-							{ x: partbounds.x + shiftvector.x, y: partbounds.y + shiftvector.y },
-							{ x: partbounds.x + partbounds.width + shiftvector.x, y: partbounds.y + shiftvector.y },
-							{ x: partbounds.x + partbounds.width + shiftvector.x, y: partbounds.y + partbounds.height + shiftvector.y },
-							{ x: partbounds.x + shiftvector.x, y: partbounds.y + partbounds.height + shiftvector.y }
-						]);
-
-						// weigh width more, to help compress in direction of gravity
-						if (config.placementType == 'gravity') {
-							area = rectbounds.width * 5 + rectbounds.height;
-						}
-						else {
-							area = rectbounds.width * rectbounds.height;
-						}
-					}
-					else if (config.placementType == 'convexhull') {
-						// Create points for the part at this candidate position
-						var partPoints = [];
-						for (let m = 0; m < part.length; m++) {
-							partPoints.push({ 
-								x: part[m].x + shiftvector.x, 
-								y: part[m].y + shiftvector.y 
-							});
-						}
-						
-						var combinedHull;
-						
-						// If this is the first part, the hull is just the part itself
-						if (allpoints.length === 0) {
-							combinedHull = getHull(partPoints);
-						} else {
-							// Merge the points of the part with the points of the hull
-							// and recalculate the combined hull (more efficient than using all points)
-							var hullPoints = hull.concat(partPoints);
-							combinedHull = getHull(hullPoints);
-						}
-						
-						if (!combinedHull) {
-							console.warn("Failed to calculate convex hull");
-							continue;
-						}
-						
-						// Calculate area of the convex hull
-						area = Math.abs(GeometryUtil.polygonArea(combinedHull));
-						
-						// Store for later use
-						shiftvector.hull = combinedHull;
-					}
-
-					if (config.mergeLines) {
-						// if lines can be merged, subtract savings from area calculation
-						var shiftedpart = shiftPolygon(part, shiftvector);
-						var shiftedplaced = [];
-
-						for (let m = 0; m < placed.length; m++) {
-							shiftedplaced.push(shiftPolygon(placed[m], placements[m]));
-						}
-
-						// don't check small lines, cut off at about 1/2 in
-						var minlength = 0.5 * config.scale;
-						var merged = mergedLength(shiftedplaced, shiftedpart, minlength, 0.1 * config.curveTolerance);
-						area -= merged.totalLength * config.timeRatio;
-					}
-
-					if (
-					minarea === null ||
-					(config.placementType == 'gravity' && (
-						rectbounds.width < minwidth ||
-						(GeometryUtil.almostEqual(rectbounds.width, minwidth) && area < minarea)
-					)) ||
-					(config.placementType != 'gravity' && area < minarea) ||
-					(GeometryUtil.almostEqual(minarea, area) && shiftvector.x < minx)
-					) {
-						minarea = area;
-						if (config.placementType == 'gravity' || config.placementType == 'box') {
-							minwidth = rectbounds.width;
-						}
-						position = shiftvector;
-						minx = shiftvector.x;
-						miny = shiftvector.y;
-
-						if (config.mergeLines) {
-							position.mergedLength = merged.totalLength;
-							position.mergedSegments = merged.segments;
-						}
-					}
+					continue;
 				}
-			}
 
-			if (position) {
-				placed.push(part);
-				placements.push(position);
-				if (position.mergedLength) {
-					totalMerged += position.mergedLength;
+				var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config);
+
+				var clipper = new ClipperLib.Clipper();
+				var combinedNfp = new ClipperLib.Paths();
+
+				var error = false;
+
+				// check if stored in clip cache
+				var clipkey = 's:' + part.source + 'r:' + part.rotation;
+				var startindex = 0;
+				if (clipCache[clipkey]) {
+					var prevNfp = clipCache[clipkey].nfp;
+					clipper.AddPaths(prevNfp, ClipperLib.PolyType.ptSubject, true);
+					startindex = clipCache[clipkey].index;
 				}
-				
-				// Remove from original parts array
-				for (let j = 0; j < parts.length; j++) {
-					if (parts[j].id === part.id && parts[j].source === part.source) {
-						parts.splice(j, 1);
+
+				for (let j = startindex; j < placed.length; j++) {
+					nfp = getOuterNfp(placed[j], part);
+					// minkowski difference failed. very rare but could happen
+					if (!nfp) {
+						error = true;
 						break;
 					}
-				}
-			}
+					// shift to placed location
+					for (let m = 0; m < nfp.length; m++) {
+						nfp[m].x += placements[j].x;
+						nfp[m].y += placements[j].y;
+					}
 
-			// send placement progress signal
-			var placednum = placed.length;
-			for (let j = 0; j < allplacements.length; j++) {
-				placednum += allplacements[j].sheetplacements.length;
+					if (nfp.children && nfp.children.length > 0) {
+						for (let n = 0; n < nfp.children.length; n++) {
+							for (let o = 0; o < nfp.children[n].length; o++) {
+								nfp.children[n][o].x += placements[j].x;
+								nfp.children[n][o].y += placements[j].y;
+							}
+						}
+					}
+
+					var clipperNfp = nfpToClipperCoordinates(nfp, config);
+
+					clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true);
+				}
+
+				if (error || !clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
+					console.log('clipper error', error);
+					continue;
+				}
+
+				clipCache[clipkey] = {
+					nfp: combinedNfp,
+					index: placed.length - 1
+				};
+
+				console.log('save cache', placed.length - 1);
+
+				// difference with sheet polygon
+				var finalNfp = new ClipperLib.Paths();
+				clipper = new ClipperLib.Clipper();
+
+				clipper.AddPaths(combinedNfp, ClipperLib.PolyType.ptClip, true);
+
+				clipper.AddPaths(clipperSheetNfp, ClipperLib.PolyType.ptSubject, true);
+
+				if (!clipper.Execute(ClipperLib.ClipType.ctDifference, finalNfp, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftNonZero)) {
+					continue;
+				}
+
+				if (!finalNfp || finalNfp.length == 0) {
+					continue;
+				}
+
+				var f = [];
+				for (let j = 0; j < finalNfp.length; j++) {
+					// back to normal scale
+					f.push(toNestCoordinates(finalNfp[j], config.clipperScale));
+				}
+				finalNfp = f;
+
+				// choose placement that results in the smallest bounding box/hull etc
+				// todo: generalize gravity direction
+				var minwidth = null;
+				var minarea = null;
+				var minx = null;
+				var miny = null;
+				var nf, area, shiftvector;
+
+				var allpoints = [];
+				for (let m = 0; m < placed.length; m++) {
+					for (let n = 0; n < placed[m].length; n++) {
+						allpoints.push({ x: placed[m][n].x + placements[m].x, y: placed[m][n].y + placements[m].y });
+					}
+				}
+
+				var allbounds;
+				var partbounds;
+				var hull = null;
+				
+				if (config.placementType == 'gravity' || config.placementType == 'box') {
+					allbounds = GeometryUtil.getPolygonBounds(allpoints);
+
+					var partpoints = [];
+					for (let m = 0; m < part.length; m++) {
+						partpoints.push({ x: part[m].x, y: part[m].y });
+					}
+					partbounds = GeometryUtil.getPolygonBounds(partpoints);
+				}
+				else if (config.placementType == 'convexhull' && allpoints.length > 0) {
+					// Calculate the hull of all already placed parts once
+					hull = getHull(allpoints);
+				}
+				
+				for (let j = 0; j < finalNfp.length; j++) {
+					nf = finalNfp[j];
+					
+					for (let k = 0; k < nf.length; k++) {
+						shiftvector = {
+							x: nf[k].x - part[0].x,
+							y: nf[k].y - part[0].y,
+							id: part.id,
+							source: part.source,
+							rotation: part.rotation,
+							filename: part.filename
+						};
+
+						// Check if the placement would cause overlap with other parts
+						var hasOverlap = false;
+						// Create shifted part for overlap test
+						var shiftedPart = shiftPolygon(part, shiftvector);
+						
+						for (let m = 0; m < placed.length; m++) {
+							var placedPart = placed[m];
+							var placedPos = placements[m];
+							
+							// Skip if the placed part has no children (holes)
+							if (!placedPart.children || placedPart.children.length === 0) {
+								continue;
+							}
+							
+							// Create a shifted copy of the placed part for overlap testing
+							var shiftedPlacedPart = shiftPolygon(placedPart, placedPos);
+							
+							// Check if the part being placed falls entirely inside any hole of an already placed part
+							var fallsInHole = false;
+							for (let n = 0; n < shiftedPlacedPart.children.length; n++) {
+								var hole = shiftedPlacedPart.children[n];
+								
+								// Check if part is inside this hole
+								if (GeometryUtil.pointInPolygon({ x: shiftedPart[0].x, y: shiftedPart[0].y }, hole)) {
+									// Further check if entire part is inside hole (simplified check)
+									var partBBox = GeometryUtil.getPolygonBounds(shiftedPart);
+									var holeBBox = GeometryUtil.getPolygonBounds(hole);
+									
+									// Very simplified check - if part's bounds are contained within hole's bounds
+									if (partBBox.x >= holeBBox.x && 
+										partBBox.y >= holeBBox.y && 
+										partBBox.x + partBBox.width <= holeBBox.x + holeBBox.width && 
+										partBBox.y + partBBox.height <= holeBBox.y + holeBBox.height) {
+										fallsInHole = true;
+										break;
+									}
+								}
+							}
+							
+							if (fallsInHole) {
+								continue; // This placement is valid as part falls in a hole
+							}
+							
+							// We need to check if parts overlap
+							// We'll use ClipperLib for this check to be consistent with the rest of the code
+							var c = new ClipperLib.Clipper();
+							var part1 = toClipperCoordinates(shiftedPart);
+							var part2 = toClipperCoordinates(shiftedPlacedPart);
+							
+							ClipperLib.JS.ScaleUpPath(part1, config.clipperScale);
+							ClipperLib.JS.ScaleUpPath(part2, config.clipperScale);
+							
+							var solution = new ClipperLib.Paths();
+							c.AddPaths([part1], ClipperLib.PolyType.ptSubject, true);
+							c.AddPaths([part2], ClipperLib.PolyType.ptClip, true);
+							
+							c.Execute(ClipperLib.ClipType.ctIntersection, solution, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+							
+							if (solution.length > 0) {
+								hasOverlap = true;
+								break;
+							}
+						}
+
+						// Skip this position if overlap was detected
+						if (hasOverlap) {
+							continue;
+						}
+
+						if (config.placementType == 'gravity' || config.placementType == 'box') {
+							var rectbounds = GeometryUtil.getPolygonBounds([
+								// allbounds points
+								{ x: allbounds.x, y: allbounds.y },
+								{ x: allbounds.x + allbounds.width, y: allbounds.y },
+								{ x: allbounds.x + allbounds.width, y: allbounds.y + allbounds.height },
+								{ x: allbounds.x, y: allbounds.y + allbounds.height },
+
+								// part points
+								{ x: partbounds.x + shiftvector.x, y: partbounds.y + shiftvector.y },
+								{ x: partbounds.x + partbounds.width + shiftvector.x, y: partbounds.y + shiftvector.y },
+								{ x: partbounds.x + partbounds.width + shiftvector.x, y: partbounds.y + partbounds.height + shiftvector.y },
+								{ x: partbounds.x + shiftvector.x, y: partbounds.y + partbounds.height + shiftvector.y }
+							]);
+
+							// weigh width more, to help compress in direction of gravity
+							if (config.placementType == 'gravity') {
+								area = rectbounds.width * 5 + rectbounds.height;
+							}
+							else {
+								area = rectbounds.width * rectbounds.height;
+							}
+						}
+						else if (config.placementType == 'convexhull') {
+							// Create points for the part at this candidate position
+							var partPoints = [];
+							for (let m = 0; m < part.length; m++) {
+								partPoints.push({ 
+									x: part[m].x + shiftvector.x, 
+									y: part[m].y + shiftvector.y 
+								});
+							}
+							
+							var combinedHull;
+							
+							// If this is the first part, the hull is just the part itself
+							if (allpoints.length === 0) {
+								combinedHull = getHull(partPoints);
+							} else {
+								// Merge the points of the part with the points of the hull
+								// and recalculate the combined hull (more efficient than using all points)
+								var hullPoints = hull.concat(partPoints);
+								combinedHull = getHull(hullPoints);
+							}
+							
+							if (!combinedHull) {
+								console.warn("Failed to calculate convex hull");
+								continue;
+							}
+							
+							// Calculate area of the convex hull
+							area = Math.abs(GeometryUtil.polygonArea(combinedHull));
+							
+							// Store for later use
+							shiftvector.hull = combinedHull;
+						}
+
+						if (config.mergeLines) {
+							// if lines can be merged, subtract savings from area calculation
+							var shiftedpart = shiftPolygon(part, shiftvector);
+							var shiftedplaced = [];
+
+							for (let m = 0; m < placed.length; m++) {
+								shiftedplaced.push(shiftPolygon(placed[m], placements[m]));
+							}
+
+							// don't check small lines, cut off at about 1/2 in
+							var minlength = 0.5 * config.scale;
+							var merged = mergedLength(shiftedplaced, shiftedpart, minlength, 0.1 * config.curveTolerance);
+							area -= merged.totalLength * config.timeRatio;
+						}
+
+						if (
+						minarea === null ||
+						(config.placementType == 'gravity' && (
+							rectbounds.width < minwidth ||
+							(GeometryUtil.almostEqual(rectbounds.width, minwidth) && area < minarea)
+						)) ||
+						(config.placementType != 'gravity' && area < minarea) ||
+						(GeometryUtil.almostEqual(minarea, area) && shiftvector.x < minx)
+						) {
+							minarea = area;
+							if (config.placementType == 'gravity' || config.placementType == 'box') {
+								minwidth = rectbounds.width;
+							}
+							position = shiftvector;
+							minx = shiftvector.x;
+							miny = shiftvector.y;
+
+							if (config.mergeLines) {
+								position.mergedLength = merged.totalLength;
+								position.mergedSegments = merged.segments;
+							}
+						}
+					}
+				}
+
+				if (position) {
+					placed.push(part);
+					placements.push(position);
+					if (position.mergedLength) {
+						totalMerged += position.mergedLength;
+					}
+					
+					// Remove from original parts array
+					for (let j = 0; j < parts.length; j++) {
+						if (parts[j].id === part.id && parts[j].source === part.source) {
+							parts.splice(j, 1);
+							break;
+						}
+					}
+				}
+
+				// send placement progress signal
+				var placednum = placed.length;
+				for (let j = 0; j < allplacements.length; j++) {
+					placednum += allplacements[j].sheetplacements.length;
+				}
+				ipcRenderer.send('background-progress', { index: nestindex, progress: 0.5 + 0.5 * (placednum / totalnum) });
+				
+			} catch (err) {
+				console.error('Error during placement:', err);
+				// Continue with the next part instead of crashing
 			}
-			ipcRenderer.send('background-progress', { index: nestindex, progress: 0.5 + 0.5 * (placednum / totalnum) });
-			console.timeEnd('placement');
+			
+			console.timeEnd(timerName);
 		}
 
 		fitness += (minwidth / sheetarea) + minarea;
@@ -1485,12 +1499,25 @@ function placeParts(sheets, parts, config, nestindex) {
 	for (let i = 0; i < parts.length; i++) {
 		fitness += 100000000 * (Math.abs(GeometryUtil.polygonArea(parts[i])) / totalsheetarea);
 	}
+	
+	// Apply a fitness bonus for parts placed in holes
+	// This provides a positive influence on the fitness even if not mathematically precise
+	// The more parts placed in holes, the better the fitness (lower value)
+	if (partsPlacedInHoles > 0) {
+		// Calculate hole utilization bonus as a percentage of total fitness
+		// More parts in holes = greater reduction in fitness
+		var holeUtilizationBonus = fitness * (0.05 * partsPlacedInHoles);
+		fitness -= holeUtilizationBonus;
+		
+		console.log(`Placed ${partsPlacedInHoles} parts in holes, applying fitness bonus of ${holeUtilizationBonus}`);
+	}
+	
 	// send finish progerss signal
 	ipcRenderer.send('background-progress', { index: nestindex, progress: -1 });
 
 	//console.log('WATCH', allplacements);
 
-	return { placements: allplacements, fitness: fitness, area: sheetarea, mergedLength: totalMerged };
+	return { placements: allplacements, fitness: fitness, area: sheetarea, mergedLength: totalMerged, partsInHoles: partsPlacedInHoles };
 }
 
 // clipperjs uses alerts for warnings
