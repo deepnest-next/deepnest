@@ -950,34 +950,6 @@ function placeParts(sheets, parts, config, nestindex) {
 						filename: part.filename
 					};
 
-					 // ENHANCEMENT: Add a more rigorous overlap check before considering this position
-					const theoreticPlacement = [];
-					for (let m = 0; m < part.length; m++) {
-						theoreticPlacement.push({
-							x: part[m].x + shiftvector.x,
-							y: part[m].y + shiftvector.y
-						});
-					}
-
-					let hasOverlap = false;
-					for (let m = 0; m < placed.length; m++) {
-						const placedPart = [];
-						for (let n = 0; n < placed[m].length; n++) {
-							placedPart.push({
-								x: placed[m][n].x + placements[m].x,
-								y: placed[m][n].y + placements[m].y
-							});
-						}
-
-						if (checkPlacementOverlap(theoreticPlacement, placedPart, config.overlapTolerance || 0.0001)) {
-							hasOverlap = true;
-							break;
-						}
-					}
-
-					if (hasOverlap) {
-						continue;
-					}
 
 					//console.time('evalbounds');
 
@@ -1053,29 +1025,28 @@ function placeParts(sheets, parts, config, nestindex) {
 						area -= merged.totalLength * config.timeRatio;
 					}
 
-					if (
-						minarea === null ||
-						(config.placementType == 'gravity' && (
-							rectbounds.width < minwidth ||
-							(GeometryUtil.almostEqual(rectbounds.width, minwidth) && area < minarea)
-						)) ||
-						(config.placementType != 'gravity' && area < minarea) ||
-						(GeometryUtil.almostEqual(minarea, area) && shiftvector.x < minx)
-					) {
-						// ENHANCEMENT: Add final verification before accepting position
-						if (!hasOverlap) {
-							minarea = area;
-							if (config.placementType == 'gravity' || config.placementType == 'box') {
-								minwidth = rectbounds.width;
-							}
-							position = shiftvector;
-							minx = shiftvector.x;
-							miny = shiftvector.y;
+					//console.timeEnd('evalmerge');
 
-							if (config.mergeLines) {
-								position.mergedLength = merged.totalLength;
-								position.mergedSegments = merged.segments;
-							}
+					if (
+					minarea === null ||
+					(config.placementType == 'gravity' && (
+						rectbounds.width < minwidth ||
+						(GeometryUtil.almostEqual(rectbounds.width, minwidth) && area < minarea)
+					)) ||
+					(config.placementType != 'gravity' && area < minarea) ||
+					(GeometryUtil.almostEqual(minarea, area) && shiftvector.x < minx)
+					) {
+						minarea = area;
+						if (config.placementType == 'gravity' || config.placementType == 'box') {
+							minwidth = rectbounds.width;
+						}
+						position = shiftvector;
+						minx = shiftvector.x;
+						miny = shiftvector.y;
+
+						if (config.mergeLines) {
+							position.mergedLength = merged.totalLength;
+							position.mergedSegments = merged.segments;
 						}
 					}
 				}
@@ -1133,123 +1104,6 @@ function placeParts(sheets, parts, config, nestindex) {
 	console.log('WATCH', allplacements);
 
 	return { placements: allplacements, fitness: fitness, area: sheetarea, mergedLength: totalMerged };
-}
-
-/**
- * Enhanced overlap checker with safety margin
- * @param {Array} poly1 - First polygon
- * @param {Array} poly2 - Second polygon
- * @param {number} tolerance - Small safety margin to prevent microscopic overlaps
- * @returns {boolean} - True if polygons overlap
- */
-function checkPlacementOverlap(poly1, poly2, tolerance = 0.0001) {
-	// Push polygons slightly apart by the tolerance to avoid microscopic overlaps
-	const expandedPoly1 = expandPolygon(poly1, -tolerance);
-
-	// Check if any point of poly1 is inside poly2
-	for (let i = 0; i < expandedPoly1.length; i++) {
-		if (isPointInPolygon(expandedPoly1[i], poly2)) {
-			return true;
-		}
-	}
-
-	// Check if any point of poly2 is inside poly1
-	for (let i = 0; i < poly2.length; i++) {
-		if (isPointInPolygon(poly2[i], expandedPoly1)) {
-			return true;
-		}
-	}
-
-	// Check for edge intersections
-	for (let i = 0; i < expandedPoly1.length; i++) {
-		const p1 = expandedPoly1[i];
-		const p2 = expandedPoly1[(i + 1) % expandedPoly1.length];
-
-		for (let j = 0; j < poly2.length; j++) {
-			const p3 = poly2[j];
-			const p4 = poly2[(j + 1) % poly2.length];
-
-			if (doLinesIntersect(p1, p2, p3, p4)) {
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
-/**
- * Slightly shrink a polygon by moving each point towards the center
- */
-function expandPolygon(polygon, amount) {
-	// Find center of polygon
-	let centerX = 0, centerY = 0;
-	for (const point of polygon) {
-		centerX += point.x;
-		centerY += point.y;
-	}
-	centerX /= polygon.length;
-	centerY /= polygon.length;
-
-	// Move each point slightly towards/away from center
-	return polygon.map(point => {
-		const dx = point.x - centerX;
-		const dy = point.y - centerY;
-		const dist = Math.sqrt(dx * dx + dy * dy);
-
-		// Avoid division by zero
-		if (dist < 0.0001) return { ...point };
-
-		const factor = (dist + amount) / dist;
-		return {
-			x: centerX + dx * factor,
-			y: centerY + dy * factor
-		};
-	});
-}
-
-/**
- * Point in polygon check for placement validation
- */
-function isPointInPolygon(point, polygon) {
-	let inside = false;
-	for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-		const xi = polygon[i].x;
-		const yi = polygon[i].y;
-		const xj = polygon[j].x;
-		const yj = polygon[j].y;
-
-		const intersect = ((yi > point.y) !== (yj > point.y)) &&
-			(point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
-
-		if (intersect) inside = !inside;
-	}
-
-	return inside;
-}
-
-/**
- * Line intersection check for placement validation
- */
-function doLinesIntersect(p1, p2, p3, p4) {
-	// Calculate direction vectors
-	const v1 = { x: p2.x - p1.x, y: p2.y - p1.y };
-	const v2 = { x: p4.x - p3.x, y: p4.y - p3.y };
-
-	// Calculate cross products
-	function crossProduct(v1, v2) {
-		return v1.x * v2.y - v1.y * v2.x;
-	}
-
-	const cross1 = crossProduct(v1, { x: p3.x - p1.x, y: p3.y - p1.y }) *
-		crossProduct(v1, { x: p4.x - p1.x, y: p4.y - p1.y });
-
-	const cross2 = crossProduct(v2, { x: p1.x - p3.x, y: p1.y - p3.y }) *
-		crossProduct(v2, { x: p2.x - p3.x, y: p2.y - p3.y });
-
-	// Lines intersect if both cross products are negative or zero
-	const EPSILON = 1e-10; // Numerical tolerance
-	return cross1 <= EPSILON && cross2 <= EPSILON;
 }
 
 // clipperjs uses alerts for warnings
