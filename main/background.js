@@ -950,6 +950,74 @@ function placeParts(sheets, parts, config, nestindex) {
 						filename: part.filename
 					};
 
+					// Check if the placement would cause overlap with other parts
+					var hasOverlap = false;
+					// Create shifted part for overlap test
+					var shiftedPart = shiftPolygon(part, shiftvector);
+					
+					for (let m = 0; m < placed.length; m++) {
+						var placedPart = placed[m];
+						var placedPos = placements[m];
+						
+						// Skip if the placed part has no children (holes)
+						if (!placedPart.children || placedPart.children.length === 0) {
+							continue;
+						}
+						
+						// Create a shifted copy of the placed part for overlap testing
+						var shiftedPlacedPart = shiftPolygon(placedPart, placedPos);
+						
+						// Check if the part being placed falls entirely inside any hole of an already placed part
+						var fallsInHole = false;
+						for (let n = 0; n < shiftedPlacedPart.children.length; n++) {
+							var hole = shiftedPlacedPart.children[n];
+							
+							// Check if part is inside this hole
+							if (GeometryUtil.pointInPolygon({ x: shiftedPart[0].x, y: shiftedPart[0].y }, hole)) {
+								// Further check if entire part is inside hole (simplified check)
+								var partBBox = GeometryUtil.getPolygonBounds(shiftedPart);
+								var holeBBox = GeometryUtil.getPolygonBounds(hole);
+								
+								// Very simplified check - if part's bounds are contained within hole's bounds
+								if (partBBox.x >= holeBBox.x && 
+									partBBox.y >= holeBBox.y && 
+									partBBox.x + partBBox.width <= holeBBox.x + holeBBox.width && 
+									partBBox.y + partBBox.height <= holeBBox.y + holeBBox.height) {
+									fallsInHole = true;
+									break;
+								}
+							}
+						}
+						
+						if (fallsInHole) {
+							continue; // This placement is valid as part falls in a hole
+						}
+						
+						// We need to check if parts overlap
+						// We'll use ClipperLib for this check to be consistent with the rest of the code
+						var c = new ClipperLib.Clipper();
+						var part1 = toClipperCoordinates(shiftedPart);
+						var part2 = toClipperCoordinates(shiftedPlacedPart);
+						
+						ClipperLib.JS.ScaleUpPath(part1, config.clipperScale);
+						ClipperLib.JS.ScaleUpPath(part2, config.clipperScale);
+						
+						var solution = new ClipperLib.Paths();
+						c.AddPaths([part1], ClipperLib.PolyType.ptSubject, true);
+						c.AddPaths([part2], ClipperLib.PolyType.ptClip, true);
+						
+						c.Execute(ClipperLib.ClipType.ctIntersection, solution, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+						
+						if (solution.length > 0) {
+							hasOverlap = true;
+							break;
+						}
+					}
+
+					// Skip this position if overlap was detected
+					if (hasOverlap) {
+						continue;
+					}
 
 					//console.time('evalbounds');
 
