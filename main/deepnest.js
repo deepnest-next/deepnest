@@ -24,7 +24,6 @@
       timeRatio: 0.5,
       scale: 72,
       simplify: false,
-      overlapTolerance: 0.0001,
     };
 
     // list of imported files
