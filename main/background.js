@@ -740,7 +740,6 @@ function placeParts(sheets, parts, config, nestindex) {
 
 	var allplacements = [];
 	var fitness = 0;
-	//var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
 
 	var key, nfp;
 	var part;
@@ -754,14 +753,141 @@ function placeParts(sheets, parts, config, nestindex) {
 		var sheet = sheets.shift();
 		var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
 		totalsheetarea += sheetarea;
+		
+		// Get sheet dimensions for big part comparison
+		var sheetBounds = GeometryUtil.getPolygonBounds(sheet);
+		var sheetWidth = sheetBounds.width;
+		var sheetHeight = sheetBounds.height;
 
 		fitness += sheetarea; // add 1 for each new sheet opened (lower fitness is better)
 
 		var clipCache = [];
-		//console.log('new sheet');
+		
+		// Sort parts by priority:
+		// 1. Big parts (width or height > 50% of sheet)
+		// 2. Parts with holes
+		// 3. Everything else
+		var prioritizedParts = [];
+		var partsWithHoles = [];
+		var normalParts = [];
+		
 		for (let i = 0; i < parts.length; i++) {
+			var partBounds = GeometryUtil.getPolygonBounds(parts[i]);
+			
+			// Check if it's a big part
+			if (partBounds.width > 0.5 * sheetWidth || partBounds.height > 0.5 * sheetHeight) {
+				prioritizedParts.push(parts[i]);
+			}
+			// Check if it has holes
+			else if (parts[i].children && parts[i].children.length > 0) {
+				partsWithHoles.push(parts[i]);
+			}
+			// Normal parts
+			else {
+				normalParts.push(parts[i]);
+			}
+		}
+		
+		// Combine all parts in priority order
+		var sortedParts = prioritizedParts.concat(partsWithHoles).concat(normalParts);
+		
+		// Process parts in their new sorted order
+		for (let i = 0; i < sortedParts.length; i++) {
 			console.time('placement');
-			part = parts[i];
+			part = sortedParts[i];
+			
+			// Before placing on the sheet, check if this part can fit into any hole of already placed parts
+			var fitsInHole = false;
+			var holePosition = null;
+			var holePart = null;
+			
+			if (placed.length > 0) {
+				// Look at all placed parts with holes
+				for (let j = 0; j < placed.length; j++) {
+					if (!placed[j].children || placed[j].children.length === 0) {
+						continue;
+					}
+					
+					var placedPos = placements[j];
+					
+					// Try all holes in this part
+					for (let k = 0; k < placed[j].children.length; k++) {
+						var hole = placed[j].children[k];
+						
+						// Try to fit the part into the hole (try all rotations if configured)
+						for (let r = 0; r < config.rotations; r++) {
+							var rotationToApply = (r * 360) / config.rotations;
+							var rotatedPart = rotatePolygon(part, rotationToApply);
+							rotatedPart.rotation = (part.rotation + rotationToApply) % 360;
+							rotatedPart.source = part.source;
+							rotatedPart.id = part.id;
+							rotatedPart.filename = part.filename;
+							
+							var partBounds = GeometryUtil.getPolygonBounds(rotatedPart);
+							var holeBounds = GeometryUtil.getPolygonBounds(hole);
+							
+							// Simple bounds check first for efficiency
+							if (partBounds.width <= holeBounds.width && partBounds.height <= holeBounds.height) {
+								// Try to place the part in the hole
+								var shiftVector = {
+									x: holeBounds.x - partBounds.x + (holeBounds.width - partBounds.width) / 2 + placedPos.x,
+									y: holeBounds.y - partBounds.y + (holeBounds.height - partBounds.height) / 2 + placedPos.y
+								};
+								
+								var shiftedPart = shiftPolygon(rotatedPart, shiftVector);
+								
+								// Check if the part is contained within the hole
+								var containedInHole = true;
+								for (let pt = 0; pt < shiftedPart.length; pt++) {
+									var point = { x: shiftedPart[pt].x, y: shiftedPart[pt].y };
+									if (!GeometryUtil.pointInPolygon(point, shiftPolygon(hole, placedPos))) {
+										containedInHole = false;
+										break;
+									}
+								}
+								
+								if (containedInHole) {
+									// We found a fit!
+									fitsInHole = true;
+									holePosition = {
+										x: shiftVector.x,
+										y: shiftVector.y,
+										id: rotatedPart.id,
+										source: rotatedPart.source,
+										rotation: rotatedPart.rotation,
+										filename: rotatedPart.filename
+									};
+									holePart = rotatedPart;
+									break;
+								}
+							}
+						}
+						
+						if (fitsInHole) break;
+					}
+					
+					if (fitsInHole) break;
+				}
+			}
+			
+			// If the part fits in a hole, place it there and continue
+			if (fitsInHole && holePosition && holePart) {
+				placements.push(holePosition);
+				placed.push(holePart);
+				
+				// Update sortedParts with the rotated part
+				sortedParts[i] = holePart;
+				
+				// Remove from original parts array
+				for (let j = 0; j < parts.length; j++) {
+					if (parts[j].id === holePart.id && parts[j].source === holePart.source) {
+						parts.splice(j, 1);
+						break;
+					}
+				}
+				
+				continue;
+			}
 
 			// inner NFP
 			var sheetNfp = null;
@@ -782,7 +908,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
 				// rotation is not in-place
 				part = r;
-				parts[i] = r;
+				sortedParts[i] = r;
 
 				if (part.rotation > 360) {
 					part.rotation = part.rotation % 360;
@@ -817,6 +943,14 @@ function placeParts(sheets, parts, config, nestindex) {
 				placements.push(position);
 				placed.push(part);
 
+				// Remove from original parts array
+				for (let j = 0; j < parts.length; j++) {
+					if (parts[j].id === part.id && parts[j].source === part.source) {
+						parts.splice(j, 1);
+						break;
+					}
+				}
+
 				continue;
 			}
 
@@ -828,7 +962,6 @@ function placeParts(sheets, parts, config, nestindex) {
 			var error = false;
 
 			// check if stored in clip cache
-			//var startindex = 0;
 			var clipkey = 's:' + part.source + 'r:' + part.rotation;
 			var startindex = 0;
 			if (clipCache[clipkey]) {
@@ -868,11 +1001,6 @@ function placeParts(sheets, parts, config, nestindex) {
 				console.log('clipper error', error);
 				continue;
 			}
-
-			/*var converted = [];
-			for(j=0; j<combinedNfp.length; j++){
-				converted.push(toNestCoordinates(combinedNfp[j], config.clipperScale));
-			}*/
 
 			clipCache[clipkey] = {
 				nfp: combinedNfp,
@@ -1019,8 +1147,6 @@ function placeParts(sheets, parts, config, nestindex) {
 						continue;
 					}
 
-					//console.time('evalbounds');
-
 					if (config.placementType == 'gravity' || config.placementType == 'box') {
 						var rectbounds = GeometryUtil.getPolygonBounds([
 							// allbounds points
@@ -1093,8 +1219,6 @@ function placeParts(sheets, parts, config, nestindex) {
 						area -= merged.totalLength * config.timeRatio;
 					}
 
-					//console.timeEnd('evalmerge');
-
 					if (
 					minarea === null ||
 					(config.placementType == 'gravity' && (
@@ -1126,6 +1250,14 @@ function placeParts(sheets, parts, config, nestindex) {
 				if (position.mergedLength) {
 					totalMerged += position.mergedLength;
 				}
+				
+				// Remove from original parts array
+				for (let j = 0; j < parts.length; j++) {
+					if (parts[j].id === part.id && parts[j].source === part.source) {
+						parts.splice(j, 1);
+						break;
+					}
+				}
 			}
 
 			// send placement progress signal
@@ -1133,21 +1265,11 @@ function placeParts(sheets, parts, config, nestindex) {
 			for (let j = 0; j < allplacements.length; j++) {
 				placednum += allplacements[j].sheetplacements.length;
 			}
-			//console.log(placednum, totalnum);
 			ipcRenderer.send('background-progress', { index: nestindex, progress: 0.5 + 0.5 * (placednum / totalnum) });
 			console.timeEnd('placement');
 		}
 
-		//if(minwidth){
 		fitness += (minwidth / sheetarea) + minarea;
-		//}
-
-		for (let i = 0; i < placed.length; i++) {
-			var index = parts.indexOf(placed[i]);
-			if (index >= 0) {
-				parts.splice(index, 1);
-			}
-		}
 
 		if (placements && placements.length > 0) {
 			allplacements.push({ sheet: sheet.source, sheetid: sheet.id, sheetplacements: placements });
