@@ -549,10 +549,11 @@ function getOuterNfp(A, B, inside) {
 
 	// not found in cache
 	if (inside || (A.children && A.children.length > 0)) {
+		console.warn('inner nfp', inside, JSON.stringify({ A: A, B: B }));
 		//console.log('computing minkowski: ',A.length, B.length);
-		//console.time('addon');
+		console.time('addon');
 		nfp = addon.calculateNFP({ A: A, B: B });
-		//console.timeEnd('addon');
+		console.timeEnd('addon');
 	}
 	else {
 		console.log('minkowski', A.length, B.length, A.source, B.source);
