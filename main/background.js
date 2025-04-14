@@ -1506,7 +1506,7 @@ function placeParts(sheets, parts, config, nestindex) {
 	if (partsPlacedInHoles > 0) {
 		// Calculate hole utilization bonus as a percentage of total fitness
 		// More parts in holes = greater reduction in fitness
-		var holeUtilizationBonus = fitness * (0.05 * partsPlacedInHoles);
+		var holeUtilizationBonus = (0.05 * partsPlacedInHoles);
 		fitness -= holeUtilizationBonus;
 		
 		console.log(`Placed ${partsPlacedInHoles} parts in holes, applying fitness bonus of ${holeUtilizationBonus}`);
