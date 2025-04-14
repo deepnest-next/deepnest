@@ -800,7 +800,8 @@ function placeParts(sheets, parts, config, nestindex) {
 			var fitsInHole = false;
 			var holePosition = null;
 			var holePart = null;
-			
+			var bestHoleFitScore = Number.MAX_VALUE; // Track the best fit for hole placement
+
 			if (placed.length > 0) {
 				// Look at all placed parts with holes
 				for (let j = 0; j < placed.length; j++) {
@@ -813,8 +814,9 @@ function placeParts(sheets, parts, config, nestindex) {
 					// Try all holes in this part
 					for (let k = 0; k < placed[j].children.length; k++) {
 						var hole = placed[j].children[k];
+						var holeBounds = GeometryUtil.getPolygonBounds(hole);
 						
-						// Try to fit the part into the hole (try all rotations if configured)
+						// Try fitting this part into the hole (with all allowed rotations)
 						for (let r = 0; r < config.rotations; r++) {
 							var rotationToApply = (r * 360) / config.rotations;
 							var rotatedPart = rotatePolygon(part, rotationToApply);
@@ -824,16 +826,59 @@ function placeParts(sheets, parts, config, nestindex) {
 							rotatedPart.filename = part.filename;
 							
 							var partBounds = GeometryUtil.getPolygonBounds(rotatedPart);
-							var holeBounds = GeometryUtil.getPolygonBounds(hole);
 							
-							// Simple bounds check first for efficiency
-							if (partBounds.width <= holeBounds.width && partBounds.height <= holeBounds.height) {
-								// Try to place the part in the hole
-								var shiftVector = {
-									x: holeBounds.x - partBounds.x + (holeBounds.width - partBounds.width) / 2 + placedPos.x,
-									y: holeBounds.y - partBounds.y + (holeBounds.height - partBounds.height) / 2 + placedPos.y
-								};
-								
+							// Skip if part is clearly too big for this hole
+							if (partBounds.width > holeBounds.width || partBounds.height > holeBounds.height) {
+								continue;
+							}
+							
+							// Calculate available space in each direction
+							var spaceX = holeBounds.width - partBounds.width;
+							var spaceY = holeBounds.height - partBounds.height;
+							
+							// Try multiple positions within the hole - not just centered
+							var positionsToTry = [];
+							
+							// Center position
+							positionsToTry.push({
+								x: holeBounds.x - partBounds.x + (holeBounds.width - partBounds.width) / 2 + placedPos.x,
+								y: holeBounds.y - partBounds.y + (holeBounds.height - partBounds.height) / 2 + placedPos.y
+							});
+							
+							// Top-left corner with small margin
+							if (spaceX > 2 || spaceY > 2) {
+								positionsToTry.push({
+									x: holeBounds.x - partBounds.x + 1 + placedPos.x,
+									y: holeBounds.y - partBounds.y + 1 + placedPos.y
+								});
+							}
+							
+							// Top-right corner with small margin
+							if (spaceX > 2) {
+								positionsToTry.push({
+									x: holeBounds.x - partBounds.x + holeBounds.width - partBounds.width - 1 + placedPos.x,
+									y: holeBounds.y - partBounds.y + 1 + placedPos.y
+								});
+							}
+							
+							// Bottom-left corner with small margin
+							if (spaceY > 2) {
+								positionsToTry.push({
+									x: holeBounds.x - partBounds.x + 1 + placedPos.x,
+									y: holeBounds.y - partBounds.y + holeBounds.height - partBounds.height - 1 + placedPos.y
+								});
+							}
+							
+							// Bottom-right corner with small margin
+							if (spaceX > 2 && spaceY > 2) {
+								positionsToTry.push({
+									x: holeBounds.x - partBounds.x + holeBounds.width - partBounds.width - 1 + placedPos.x,
+									y: holeBounds.y - partBounds.y + holeBounds.height - partBounds.height - 1 + placedPos.y
+								});
+							}
+							
+							for (let posIdx = 0; posIdx < positionsToTry.length; posIdx++) {
+								var shiftVector = positionsToTry[posIdx];
 								var shiftedPart = shiftPolygon(rotatedPart, shiftVector);
 								
 								// Check if the part is contained within the hole
@@ -847,67 +892,82 @@ function placeParts(sheets, parts, config, nestindex) {
 								}
 								
 								if (containedInHole) {
-										// Check if this part would overlap with any other part already placed in a hole
-										var overlapWithExistingParts = false;
+									// Check if this part would overlap with any other part already placed in a hole
+									var overlapWithExistingParts = false;
+									
+									for (let p = 0; p < placed.length; p++) {
+										// Skip the part that has the hole we're trying to place into
+										if (p === j) continue;
 										
-										for (let p = 0; p < placed.length; p++) {
-											// Skip the part that has the hole we're trying to place into
-											if (p === j) continue;
+										var otherPlacedPart = placed[p];
+										var otherPlacedPos = placements[p];
+										
+										// Check if the other placed part was placed in a hole
+										var wasPlacedInHole = false;
+										for (let h = 0; h < placed.length; h++) {
+											if (h === p) continue;
+											if (!placed[h].children || placed[h].children.length === 0) continue;
 											
-											var otherPlacedPart = placed[p];
-											var otherPlacedPos = placements[p];
-											
-											// Check if the other placed part was placed in a hole
-											var wasPlacedInHole = false;
-											for (let h = 0; h < placed.length; h++) {
-												if (h === p) continue;
-												if (!placed[h].children || placed[h].children.length === 0) continue;
+											// Check if otherPlacedPart is inside any hole of placed[h]
+											for (let holeIdx = 0; holeIdx < placed[h].children.length; holeIdx++) {
+												var checkHole = shiftPolygon(placed[h].children[holeIdx], placements[h]);
+												var checkPoint = { 
+													x: otherPlacedPart[0].x + otherPlacedPos.x,
+													y: otherPlacedPart[0].y + otherPlacedPos.y 
+												};
 												
-												// Check if otherPlacedPart is inside any hole of placed[h]
-												for (let holeIdx = 0; holeIdx < placed[h].children.length; holeIdx++) {
-													var checkHole = shiftPolygon(placed[h].children[holeIdx], placements[h]);
-													var checkPoint = { 
-														x: otherPlacedPart[0].x + otherPlacedPos.x,
-														y: otherPlacedPart[0].y + otherPlacedPos.y 
-													};
-													
-													if (GeometryUtil.pointInPolygon(checkPoint, checkHole)) {
-														wasPlacedInHole = true;
-														break;
-													}
+												if (GeometryUtil.pointInPolygon(checkPoint, checkHole)) {
+													wasPlacedInHole = true;
+													break;
 												}
-												if (wasPlacedInHole) break;
 											}
-											
-											// If the other part was not placed in a hole, we don't need to check for overlap
-											if (!wasPlacedInHole) continue;
-											
-											// Check for overlap between the current part and the other part already placed in a hole
-											var shiftedOtherPart = shiftPolygon(otherPlacedPart, otherPlacedPos);
-											
-											// Using ClipperLib for precise overlap detection
-											var c = new ClipperLib.Clipper();
-											var part1 = toClipperCoordinates(shiftedPart);
-											var part2 = toClipperCoordinates(shiftedOtherPart);
-											
-											ClipperLib.JS.ScaleUpPath(part1, config.clipperScale);
-											ClipperLib.JS.ScaleUpPath(part2, config.clipperScale);
-											
-											var solution = new ClipperLib.Paths();
-											c.AddPaths([part1], ClipperLib.PolyType.ptSubject, true);
-											c.AddPaths([part2], ClipperLib.PolyType.ptClip, true);
-											
-											c.Execute(ClipperLib.ClipType.ctIntersection, solution, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
-											
-											if (solution.length > 0) {
-												overlapWithExistingParts = true;
-												break;
-											}
+											if (wasPlacedInHole) break;
 										}
 										
-										// If no overlap was detected with other parts in holes, we found a fit
-										if (!overlapWithExistingParts) {
+										// We need to check for overlap with ALL other parts, not just those in holes
+										// This is necessary because parts placed directly on the sheet could still overlap
+										// with parts placed in holes
+										var shiftedOtherPart = shiftPolygon(otherPlacedPart, otherPlacedPos);
+										
+										// Using ClipperLib for precise overlap detection
+										var c = new ClipperLib.Clipper();
+										var part1 = toClipperCoordinates(shiftedPart);
+										var part2 = toClipperCoordinates(shiftedOtherPart);
+										
+										ClipperLib.JS.ScaleUpPath(part1, config.clipperScale);
+										ClipperLib.JS.ScaleUpPath(part2, config.clipperScale);
+										
+										var solution = new ClipperLib.Paths();
+										c.AddPaths([part1], ClipperLib.PolyType.ptSubject, true);
+										c.AddPaths([part2], ClipperLib.PolyType.ptClip, true);
+										
+										c.Execute(ClipperLib.ClipType.ctIntersection, solution, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+										
+										if (solution.length > 0) {
+											overlapWithExistingParts = true;
+											break;
+										}
+									}
+									
+									// If no overlap was detected with other parts
+									if (!overlapWithExistingParts) {
+										// Calculate a "fit score" - lower is better
+										// This prioritizes positions closest to the edges of the hole to maximize remaining space
+										var fitScore = 0;
+										
+										// Calculate distance to hole edges
+										var distToLeft = shiftedPart[0].x - (hole[0].x + placedPos.x);
+										var distToTop = shiftedPart[0].y - (hole[0].y + placedPos.y);
+										var distToRight = (hole[2].x + placedPos.x) - (shiftedPart[0].x + partBounds.width);
+										var distToBottom = (hole[2].y + placedPos.y) - (shiftedPart[0].y + partBounds.height);
+										
+										// Small penalty for parts away from edges
+										fitScore = distToLeft * distToTop * distToRight * distToBottom;
+										
+										// If this is better than our previous best fit, update
+										if (fitScore < bestHoleFitScore) {
 											fitsInHole = true;
+											bestHoleFitScore = fitScore;
 											holePosition = {
 												x: shiftVector.x,
 												y: shiftVector.y,
@@ -915,23 +975,16 @@ function placeParts(sheets, parts, config, nestindex) {
 												source: rotatedPart.source,
 												rotation: rotatedPart.rotation,
 												filename: rotatedPart.filename,
-												placedInHole: true, // Mark this part as placed in a hole for future reference
-												holeParentId: placed[j].id // Store reference to the part containing the hole
+												placedInHole: true,
+												holeParentId: placed[j].id
 											};
 											holePart = rotatedPart;
-											break;
 										}
 									}
 								}
-							
-							
-							if (fitsInHole) break;
+							}
 						}
-						
-						if (fitsInHole) break;
 					}
-					
-					if (fitsInHole) break;
 				}
 			}
 			
