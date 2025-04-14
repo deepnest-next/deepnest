@@ -1,4 +1,5 @@
 'use strict';
+const DEBUG = false;
 window.onload = function () {
 	const { ipcRenderer } = require('electron');
 	window.ipcRenderer = ipcRenderer;
@@ -77,7 +78,7 @@ window.onload = function () {
 			}
 		}
 
-		console.log('pairs: ', pairs.length);
+		DEBUG && console.log('pairs: ', pairs.length);
 
 		var process = function (pair) {
 
@@ -159,11 +160,11 @@ window.onload = function () {
 
 		// run the placement synchronously
 		function sync() {
-			//console.log('starting synchronous calculations', Object.keys(window.nfpCache).length);
-			console.log('in sync');
+			//DEBUG && console.log('starting synchronous calculations', Object.keys(window.nfpCache).length);
+			DEBUG && console.log('in sync');
 			var c = window.db.getStats();
-			console.log('nfp cached:', c);
-			console.log()
+			DEBUG && console.log('nfp cached:', c);
+			DEBUG && console.log()
 			ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
 			var placement = placeParts(data.sheets, parts, data.config, index);
 
@@ -171,7 +172,7 @@ window.onload = function () {
 			ipcRenderer.send('background-response', placement);
 		}
 
-		console.time('Total');
+		DEBUG && console.time('Total');
 
 
 		if (pairs.length > 0) {
@@ -244,8 +245,8 @@ window.onload = function () {
 					window.db.insert(doc);
 
 				}
-				console.timeEnd('Total');
-				console.log('before sync');
+				DEBUG && console.timeEnd('Total');
+				DEBUG && console.log('before sync');
 				sync();
 			});
 		}
@@ -528,18 +529,6 @@ function rotatePolygon(polygon, degrees) {
 function getOuterNfp(A, B, inside) {
 	var nfp;
 
-	/*var numpoly = A.length + B.length;
-	if(A.children && A.children.length > 0){
-		A.children.forEach(function(c){
-			numpoly += c.length;
-		});
-	}
-	if(B.children && B.children.length > 0){
-		B.children.forEach(function(c){
-			numpoly += c.length;
-		});
-	}*/
-
 	// try the file cache if the calculation will take a long time
 	var doc = window.db.find({ A: A.source, B: B.source, Arotation: A.rotation, Brotation: B.rotation });
 
@@ -549,15 +538,64 @@ function getOuterNfp(A, B, inside) {
 
 	// not found in cache
 	if (inside || (A.children && A.children.length > 0)) {
-		console.warn('inner nfp', inside, JSON.stringify({ A: A, B: B }));
-		//console.log('computing minkowski: ',A.length, B.length);
-		console.time('addon');
-		nfp = addon.calculateNFP({ A: A, B: B });
-		console.timeEnd('addon');
+		try {
+			DEBUG && console.log('inner nfp', inside, JSON.stringify({ A: A, B: B }));
+			DEBUG && console.log('addon-inner', A.children && A.children.length, B.children && B.children.length);
+			DEBUG && console.time('addon');
+			
+			// Use a safer check to see if the polygons are valid before calling the C++ addon
+			if (!validatePolygon(A) || !validatePolygon(B)) {
+				DEBUG && console.warn('Invalid polygon detected, fallback to clipper');
+				throw new Error('Invalid polygon');
+			}
+			
+			nfp = addon.calculateNFP({ A: A, B: B });
+			DEBUG && console.timeEnd('addon');
+		} catch (err) {
+			// If the C++ addon crashes or throws an error, fallback to clipper
+			DEBUG && console.error('NFP calculation error, falling back to clipper:', err);
+			
+			// Fallback to clipper method
+			try {
+				DEBUG && console.time('clipper_fallback');
+				
+				var Ac = toClipperCoordinates(A);
+				ClipperLib.JS.ScaleUpPath(Ac, 10000000);
+				var Bc = toClipperCoordinates(B);
+				ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+				for (let i = 0; i < Bc.length; i++) {
+					Bc[i].X *= -1;
+					Bc[i].Y *= -1;
+				}
+				var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true);
+				var clipperNfp;
+
+				var largestArea = null;
+				for (let i = 0; i < solution.length; i++) {
+					var n = toNestCoordinates(solution[i], 10000000);
+					var sarea = -GeometryUtil.polygonArea(n);
+					if (largestArea === null || largestArea < sarea) {
+						clipperNfp = n;
+						largestArea = sarea;
+					}
+				}
+
+				for (let i = 0; i < clipperNfp.length; i++) {
+					clipperNfp[i].x += B[0].x;
+					clipperNfp[i].y += B[0].y;
+				}
+
+				nfp = [clipperNfp];
+				DEBUG && console.timeEnd('clipper_fallback');
+			} catch (clipperErr) {
+				DEBUG && console.error('Even clipper fallback failed:', clipperErr);
+				return null;
+			}
+		}
 	}
 	else {
-		console.log('minkowski', A.length, B.length, A.source, B.source);
-		console.time('clipper');
+		DEBUG && console.log('minkowski', A.length, B.length, A.source, B.source);
+		DEBUG && console.time('clipper');
 
 		var Ac = toClipperCoordinates(A);
 		ClipperLib.JS.ScaleUpPath(Ac, 10000000);
@@ -568,8 +606,6 @@ function getOuterNfp(A, B, inside) {
 			Bc[i].Y *= -1;
 		}
 		var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true);
-		//console.log(solution.length, solution);
-		//var clipperNfp = toNestCoordinates(solution[0], 10000000);
 		var clipperNfp;
 
 		var largestArea = null;
@@ -588,12 +624,10 @@ function getOuterNfp(A, B, inside) {
 		}
 
 		nfp = [clipperNfp];
-		//console.log('clipper nfp', JSON.stringify(nfp));
-		console.timeEnd('clipper');
+		DEBUG && console.timeEnd('clipper');
 	}
 
 	if (!nfp || nfp.length == 0) {
-		//console.log('holy shit', nfp, A, B, JSON.stringify(A), JSON.stringify(B));
 		return null
 	}
 
@@ -616,6 +650,40 @@ function getOuterNfp(A, B, inside) {
 	}
 
 	return nfp;
+}
+
+// Helper function to validate if a polygon is suitable for NFP calculation
+function validatePolygon(polygon) {
+	// Basic validation - must have at least 3 points
+	if (!polygon || !Array.isArray(polygon) || polygon.length < 3) {
+		return false;
+	}
+	
+	// Check for NaN values or unusually large coordinates that might cause issues
+	for (let i = 0; i < polygon.length; i++) {
+		const pt = polygon[i];
+		
+		// Check if point is valid
+		if (!pt || typeof pt.x !== 'number' || typeof pt.y !== 'number') {
+			return false;
+		}
+		
+		// Check for NaN or Infinity values
+		if (isNaN(pt.x) || isNaN(pt.y) || !isFinite(pt.x) || !isFinite(pt.y)) {
+			return false;
+		}
+		
+		// Check for extremely large values that might cause numerical issues
+		const MAX_SAFE_COORD = 1e9; // 1 billion
+		if (Math.abs(pt.x) > MAX_SAFE_COORD || Math.abs(pt.y) > MAX_SAFE_COORD) {
+			return false;
+		}
+	}
+	
+	// Check that the polygon isn't self-intersecting (simplified check)
+	// A complete self-intersection check is complex and might be too expensive
+	
+	return true;
 }
 
 function getFrame(A) {
@@ -645,7 +713,7 @@ function getInnerNfp(A, B, config) {
 		var doc = window.db.find({ A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation }, true);
 
 		if (doc) {
-			//console.log('fetch inner', A.source, B.source, doc);
+			//DEBUG && console.log('fetch inner', A.source, B.source, doc);
 			return doc;
 		}
 	}
@@ -696,7 +764,7 @@ function getInnerNfp(A, B, config) {
 
 	if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
 		// insert into db
-		console.log('inserting inner: ', A.source, B.source, B.rotation, f);
+		DEBUG && console.log('inserting inner: ', A.source, B.source, B.rotation, f);
 		var doc = {
 			A: A.source,
 			B: B.source,
@@ -1001,7 +1069,7 @@ function placeParts(sheets, parts, config, nestindex) {
 		for (let i = 0; i < sortedParts.length; i++) {
 			// Use unique timer names to avoid "Timer already exists" error
 			const timerName = `placement_${i}`;
-			console.time(timerName);
+			DEBUG && console.time(timerName);
 			
 			try {
 				part = sortedParts[i];
@@ -1144,7 +1212,7 @@ function placeParts(sheets, parts, config, nestindex) {
 						}
 					}
 					if (position === null) {
-						console.log(sheetNfp);
+						DEBUG && console.log(sheetNfp);
 					}
 					placements.push(position);
 					placed.push(part);
@@ -1204,7 +1272,7 @@ function placeParts(sheets, parts, config, nestindex) {
 				}
 
 				if (error || !clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-					console.log('clipper error', error);
+					DEBUG && console.log('clipper error', error);
 					continue;
 				}
 
@@ -1213,7 +1281,7 @@ function placeParts(sheets, parts, config, nestindex) {
 					index: placed.length - 1
 				};
 
-				console.log('save cache', placed.length - 1);
+				DEBUG && console.log('save cache', placed.length - 1);
 
 				// difference with sheet polygon
 				var finalNfp = new ClipperLib.Paths();
@@ -1399,7 +1467,7 @@ function placeParts(sheets, parts, config, nestindex) {
 							}
 							
 							if (!combinedHull) {
-								console.warn("Failed to calculate convex hull");
+								DEBUG && console.warn("Failed to calculate convex hull");
 								continue;
 							}
 							
@@ -1474,11 +1542,11 @@ function placeParts(sheets, parts, config, nestindex) {
 				ipcRenderer.send('background-progress', { index: nestindex, progress: 0.5 + 0.5 * (placednum / totalnum) });
 				
 			} catch (err) {
-				console.error('Error during placement:', err);
+				DEBUG && console.error('Error during placement:', err);
 				// Continue with the next part instead of crashing
 			}
 			
-			console.timeEnd(timerName);
+			DEBUG && console.timeEnd(timerName);
 		}
 
 		fitness += (minwidth / sheetarea) + minarea;
@@ -1507,21 +1575,21 @@ function placeParts(sheets, parts, config, nestindex) {
 	if (partsPlacedInHoles > 0) {
 		// Calculate hole utilization bonus as a percentage of total fitness
 		// More parts in holes = greater reduction in fitness
-		var holeUtilizationBonus = (0.05 * partsPlacedInHoles);
+		var holeUtilizationBonus = (0.1258 * partsPlacedInHoles);
 		fitness -= holeUtilizationBonus;
 		
-		console.log(`Placed ${partsPlacedInHoles} parts in holes, applying fitness bonus of ${holeUtilizationBonus}`);
+		DEBUG && console.log(`Placed ${partsPlacedInHoles} parts in holes, applying fitness bonus of ${holeUtilizationBonus}`);
 	}
 	
 	// send finish progerss signal
 	ipcRenderer.send('background-progress', { index: nestindex, progress: -1 });
 
-	//console.log('WATCH', allplacements);
+	//DEBUG && console.log('WATCH', allplacements);
 
 	return { placements: allplacements, fitness: fitness, area: sheetarea, mergedLength: totalMerged, partsInHoles: partsPlacedInHoles };
 }
 
 // clipperjs uses alerts for warnings
 function alert(message) {
-	console.log('alert: ', message);
+	DEBUG && console.log('alert: ', message);
 }
