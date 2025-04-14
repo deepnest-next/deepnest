@@ -847,20 +847,85 @@ function placeParts(sheets, parts, config, nestindex) {
 								}
 								
 								if (containedInHole) {
-									// We found a fit!
-									fitsInHole = true;
-									holePosition = {
-										x: shiftVector.x,
-										y: shiftVector.y,
-										id: rotatedPart.id,
-										source: rotatedPart.source,
-										rotation: rotatedPart.rotation,
-										filename: rotatedPart.filename
-									};
-									holePart = rotatedPart;
-									break;
+										// Check if this part would overlap with any other part already placed in a hole
+										var overlapWithExistingParts = false;
+										
+										for (let p = 0; p < placed.length; p++) {
+											// Skip the part that has the hole we're trying to place into
+											if (p === j) continue;
+											
+											var otherPlacedPart = placed[p];
+											var otherPlacedPos = placements[p];
+											
+											// Check if the other placed part was placed in a hole
+											var wasPlacedInHole = false;
+											for (let h = 0; h < placed.length; h++) {
+												if (h === p) continue;
+												if (!placed[h].children || placed[h].children.length === 0) continue;
+												
+												// Check if otherPlacedPart is inside any hole of placed[h]
+												for (let holeIdx = 0; holeIdx < placed[h].children.length; holeIdx++) {
+													var checkHole = shiftPolygon(placed[h].children[holeIdx], placements[h]);
+													var checkPoint = { 
+														x: otherPlacedPart[0].x + otherPlacedPos.x,
+														y: otherPlacedPart[0].y + otherPlacedPos.y 
+													};
+													
+													if (GeometryUtil.pointInPolygon(checkPoint, checkHole)) {
+														wasPlacedInHole = true;
+														break;
+													}
+												}
+												if (wasPlacedInHole) break;
+											}
+											
+											// If the other part was not placed in a hole, we don't need to check for overlap
+											if (!wasPlacedInHole) continue;
+											
+											// Check for overlap between the current part and the other part already placed in a hole
+											var shiftedOtherPart = shiftPolygon(otherPlacedPart, otherPlacedPos);
+											
+											// Using ClipperLib for precise overlap detection
+											var c = new ClipperLib.Clipper();
+											var part1 = toClipperCoordinates(shiftedPart);
+											var part2 = toClipperCoordinates(shiftedOtherPart);
+											
+											ClipperLib.JS.ScaleUpPath(part1, config.clipperScale);
+											ClipperLib.JS.ScaleUpPath(part2, config.clipperScale);
+											
+											var solution = new ClipperLib.Paths();
+											c.AddPaths([part1], ClipperLib.PolyType.ptSubject, true);
+											c.AddPaths([part2], ClipperLib.PolyType.ptClip, true);
+											
+											c.Execute(ClipperLib.ClipType.ctIntersection, solution, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+											
+											if (solution.length > 0) {
+												overlapWithExistingParts = true;
+												break;
+											}
+										}
+										
+										// If no overlap was detected with other parts in holes, we found a fit
+										if (!overlapWithExistingParts) {
+											fitsInHole = true;
+											holePosition = {
+												x: shiftVector.x,
+												y: shiftVector.y,
+												id: rotatedPart.id,
+												source: rotatedPart.source,
+												rotation: rotatedPart.rotation,
+												filename: rotatedPart.filename,
+												placedInHole: true, // Mark this part as placed in a hole for future reference
+												holeParentId: placed[j].id // Store reference to the part containing the hole
+											};
+											holePart = rotatedPart;
+											break;
+										}
+									}
 								}
-							}
+							
+							
+							if (fitsInHole) break;
 						}
 						
 						if (fitsInHole) break;
