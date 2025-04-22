@@ -24,6 +24,7 @@
       timeRatio: 0.5,
       scale: 72,
       simplify: false,
+      overlapTolerance: 0.0001,
     };
 
     // list of imported files
@@ -1128,11 +1129,52 @@
       if (this.nests.length == 0 || this.nests[0].fitness > payload.fitness) {
         this.nests.unshift(payload);
 
-        if (this.nests.length > 10) {
-          this.nests.pop();
+        // Check if we should keep a long list (more than 100 results)
+        const keepLongList = process.env.DEEPNEST_LONGLIST;
+        
+        if (keepLongList) {
+          // Keep up to 100 results without sorting
+          if (this.nests.length > 100) {
+            this.nests.pop();
+          }
+        } else {
+          // Original behavior - keep only top 10 by fitness
+          if (this.nests.length > 10) {
+            this.nests.pop();
+          }
         }
+        
         if (displayCallback) {
           displayCallback();
+        }
+      } else if (process.env.DEEPNEST_LONGLIST) {
+        // With DEEPNEST_LONGLIST, we add the result to the list regardless of fitness
+        // Just make sure it's not worse than the worst result we already have
+        const worstFitness = Math.min(...this.nests.map(item => item.fitness));
+        if (this.nests.length < 100 || payload.fitness > worstFitness) {
+          // Find where to insert this result to maintain insertion order
+          this.nests.push(payload);
+          
+          // If we exceeded 100 results, remove the worst one
+          if (this.nests.length > 100) {
+            // Find the worst fitness
+            let worstIndex = 0;
+            let worstFitness = this.nests[0].fitness;
+            
+            for (let i = 1; i < this.nests.length; i++) {
+              if (this.nests[i].fitness > worstFitness) {
+                worstIndex = i;
+                worstFitness = this.nests[i].fitness;
+              }
+            }
+            
+            // Remove the worst fitness item
+            this.nests.splice(worstIndex, 1);
+          }
+          
+          if (displayCallback) {
+            displayCallback();
+          }
         }
       }
     });
