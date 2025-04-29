@@ -125,7 +125,7 @@ const packageAfterPruneHook = async (
         myPlatform,
         arch
       );
-      // Execute yarn install with the specified arch in the build folder
+/*       // Execute yarn install with the specified arch in the build folder
       execSync(`rm -rf yarn.lock npm-package.lock node_modules/`, {
         cwd: buildPath,
         stdio: "inherit",
@@ -151,7 +151,7 @@ const packageAfterPruneHook = async (
         env: { ...process.env },
       });
     }
-    await delay(1000);
+    await delay(1000); */
 
     // Check each node_module for a gyp build and print native addon modules
     const nodeModulesPath = path.join(buildPath, "node_modules");
