@@ -1745,8 +1745,10 @@ function placeParts(sheets, parts, config, nestindex) {
 
 	console.log('WATCH', allplacements);
 	
+	const utilisation = totalsheetarea > 0 ? (area / totalsheetarea) * 100 : 0;
+	console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
-    return { placements: allplacements, fitness: fitness, area: sheetarea,totalarea: totalsheetarea, mergedLength: totalMerged };
+    return { placements: allplacements, fitness: fitness, area: sheetarea,totalarea: totalsheetarea, mergedLength: totalMerged, utilisation: utilisation};
 }
 
 // New helper function to analyze sheet holes
