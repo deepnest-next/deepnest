@@ -1660,6 +1660,11 @@ ready(async function () {
 
                 return num + '/' + total;
             },
+            getUtilisation: function () {
+                const selected = this.get('getSelected')(); // reuse getSelected()
+                if (selected.length === 0) return '-';
+                return selected[0].utilisation.toFixed(2); // Formata para 2 decimais
+            },
             getTimeSaved: function () {
                 var ne = this.get('nests');
                 var selected = ne.filter(function (n) {
