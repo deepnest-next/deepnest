@@ -1,5 +1,4 @@
-const { app, ipcMain, BrowserWindow, screen, shell, crashReporter  } = require("electron");
-app.setAppUserModelId("net.deepnest.app");
+const { app, ipcMain, BrowserWindow, Menu, screen, shell, crashReporter  } = require("electron");
 const remote = require("@electron/remote/main");
 const fs = require("graceful-fs");
 const path = require("path");
@@ -9,6 +8,8 @@ const { loadPresets, savePreset, deletePreset } = require("./presets");
 const NotificationService = require('./notification-service');
 require("events").EventEmitter.defaultMaxListeners = 30;
 
+Menu.setApplicationMenu(null);
+app.setAppUserModelId("net.deepnest.app");
 
 app.on('render-process-gone', (event, webContents, details) => { console.error('Render process gone:', event, webContents, details); });
 
