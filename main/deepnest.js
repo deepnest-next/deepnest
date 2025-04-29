@@ -834,9 +834,9 @@
           part.filename !== null
         ) {
           const fileNameParts = part.filename.split(".");
-          if (fileNameParts.length === 3) {
-            const fileNameMiddlePart = fileNameParts[1];
-            const quantity = parseInt(fileNameMiddlePart, 10);
+          if (fileNameParts.length >= 3) {
+            const fileNameQuantityPart = fileNameParts[fileNameParts.length-1];
+            const quantity = parseInt(fileNameQuantityPart, 10);
             if (!isNaN(quantity)) {
               part.quantity = quantity;
             }
