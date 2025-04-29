@@ -610,7 +610,6 @@ const getMakers = () => {
         //macUpdateManifestBaseUrl: `https://dl.deepnest.app/deepnest-next/darwin/${arch}`
       }),
     },
-    /*
     {
       name: "@electron-forge/maker-flatpak",
       config: {
@@ -626,8 +625,7 @@ const getMakers = () => {
           ],
         },
       },
-    },
-    
+    },    
     {
       name: "@electron-forge/maker-deb",
       config: {
@@ -648,7 +646,7 @@ const getMakers = () => {
           categories: ["Education", "Graphics", "Utility"],
         },
       },
-    },*/
+    },
     {
       name: "@electron-forge/maker-dmg",
       config: {
