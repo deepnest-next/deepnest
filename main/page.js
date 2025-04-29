@@ -834,7 +834,7 @@ ready(async function () {
                     let jsonErr = JSON.parse(error);
                     message(`There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
                 } else {
-                    message('could not contact file conversion server', true);
+                    message(`could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
                 }
             });
         }
@@ -1304,7 +1304,7 @@ ready(async function () {
                     let jsonErr = JSON.parse(error);
                     message(`There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
                 } else {
-                    message('could not contact file conversion server', true);
+                    message(`could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`, true);
                 }
             });
         };
