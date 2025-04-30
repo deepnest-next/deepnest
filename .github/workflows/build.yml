@@ -148,7 +148,7 @@ jobs:
             
             # Additional tools for zypper package querying
             echo "Installing query tools for OpenSUSE"
-            zypper install -y gawk grep
+            zypper install -y gawk grep which
           else
             echo "No supported package manager found, assuming awk is present"
           fi
@@ -201,13 +201,70 @@ jobs:
             QUERY="rpm -q --whatprovides"
           fi
           
-          # Helper function to extract package name from zypper output
+          # Improved helper function to extract package name from zypper output
           extract_pkg_name() {
             local search_result="$1"
-            echo "$search_result" | grep -E "^(i\+  |i   |   )" | grep -v "32bit" | \
-              grep -vE "^$" | \
-              grep -vE "^(---+|S\s+|\s+Name\s+|\sSummary\s+\|\s+Type\s+|Reading installed packages...|Loading repository data...)" | \
-              sort -r | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}'
+            
+            # Display the full search result for debugging
+            echo "Raw search result:"
+            echo "$search_result"
+            
+            # Try different parsing methods based on output format
+            
+            # Method 1: Standard format with | separator
+            local pkg=$(echo "$search_result" | grep -E "^(i\+? |v |i  |   )" | grep -v "32bit" | \
+              head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+              
+            # Method 2: Alternative format without | separator
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep -E "^(i\+? |v |i  |   )" | grep -v "32bit" | \
+                grep -v "^S " | grep -v "^--" | grep -v "^$" | \
+                awk '{print $2}' | head -n1)
+            fi
+            
+            # Method 3: Try extracting using pattern matching
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep -E "^[^ ]+ *\| *[^ ]+ *\|" | grep -v "32bit" | \
+                head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
+            fi
+            
+            # If still empty, try a more aggressive approach
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep -v "No matching items found" | grep -v "Loading repository data" | \
+                grep -v "Reading installed packages" | grep -v "^S " | grep -v "^--" | grep -v "^$" | grep -v "Summary" | \
+                head -n1 | awk '{print $1}')
+            fi
+            
+            echo "$pkg"
+          }
+          
+          # Function to try rpm file command to find package
+          find_providing_package_with_rpm() {
+            local lib_name="$1"
+            local pkg_name=""
+            
+            # Try using rpm -qf on typical library locations
+            for lib_path in "/usr/lib64/$lib_name" "/usr/lib/$lib_name" "/lib64/$lib_name" "/lib/$lib_name"; do
+              if [ -e "$lib_path" ]; then
+                pkg_name=$(rpm -qf "$lib_path" 2>/dev/null) || true
+                if [ -n "$pkg_name" ] && [ "$pkg_name" != "file $lib_path is not owned by any package" ]; then
+                  echo "$pkg_name"
+                  return 0
+                fi
+              fi
+            done
+            
+            # Try finding the file with 'find' and then querying
+            local found_file=$(find /lib /usr/lib /lib64 /usr/lib64 -name "$lib_name" -type f 2>/dev/null | head -n1) || true
+            if [ -n "$found_file" ]; then
+                pkg_name=$(rpm -qf "$found_file" 2>/dev/null) || true
+                if [ -n "$pkg_name" ] && [ "$pkg_name" != "file $found_file is not owned by any package" ]; then
+                  echo "$pkg_name"
+                  return 0
+                fi
+            fi
+            
+            return 1
           }
 
           # Process each SONAME and find providing packages
@@ -220,56 +277,106 @@ jobs:
               # OpenSUSE multi-step search approach
               echo "Looking up package for $so using multi-step search"
               
-              # Step 1: Try --match-exact with direct library name
-              echo "  Step 1: Trying zypper se --provides --match-exact \"$so\""
-              search_result=$(zypper se --provides --match-exact "$so" 2>/dev/null) || true
-              if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                pkg_full=$(extract_pkg_name "$search_result")
-                echo "  Found package via --match-exact direct search: $pkg_full"
+              # First try direct rpm query if the library exists on the system
+              echo "  Step 0: Trying direct rpm query for existing file"
+              pkg_full=$(find_providing_package_with_rpm "$so") || true
+              if [ -n "$pkg_full" ]; then
+                echo "  Found package via direct rpm query: $pkg_full"
               else
-                # Step 2: Try without --match-exact (broader search)
-                echo "  Step 2: Trying zypper se --provides \"$so\""
-                search_result=$(zypper se --provides "$so" 2>/dev/null) || true
-                if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                  pkg_full=$(extract_pkg_name "$search_result")
-                  echo "  Found package via broad search: $pkg_full"
+                # Step 1: Try with rpm -qa --whatprovides
+                echo "  Step 1: Trying rpm -qa --whatprovides \"$so\""
+                rpm_result=$(rpm -qa --whatprovides "$so" 2>/dev/null) || true
+                if [ -n "$rpm_result" ]; then
+                  pkg_full=$(echo "$rpm_result" | head -n1)
+                  echo "  Found package via rpm whatprovides: $pkg_full"
                 else
-                  # Step 3: Try with /lib path prefix
-                  echo "  Step 3: Trying with /lib path prefix"
-                  for prefix in "/lib/" "/usr/lib/" "/lib64/" "/usr/lib64/"; do
-                    echo "    Trying zypper se --provides --match-exact \"${prefix}$so\""
-                    search_result=$(zypper se --provides --match-exact "${prefix}$so" 2>/dev/null) || true
+                  # Step 2: Try --match-exact with direct library name
+                  echo "  Step 2: Trying zypper se --provides --match-exact \"$so\""
+                  search_result=$(zypper se --provides --match-exact "$so" 2>/dev/null) || true
+                  if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                    pkg_full=$(extract_pkg_name "$search_result")
+                    echo "  Found package via --match-exact direct search: $pkg_full"
+                  else
+                    # Step 3: Try without --match-exact (broader search)
+                    echo "  Step 3: Trying zypper se --provides \"$so\""
+                    search_result=$(zypper se --provides "$so" 2>/dev/null) || true
                     if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                      pkg_full=$(extract_pkg_name "$search_result")
-                      echo "    Found package via --match-exact with prefix ${prefix}: $pkg_full"
-                      break
-                    fi
-                    
-                    # Also try without --match-exact
-                    echo "    Trying zypper se --provides \"${prefix}$so\""
-                    search_result=$(zypper se --provides "${prefix}$so" 2>/dev/null) || true
-                    if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                      pkg_full=$(extract_pkg_name "$search_result")
-                      echo "    Found package via broad search with prefix ${prefix}: $pkg_full"
-                      break
-                    fi
-                  done
-                  
-                  # Step 4: If still not found, try pattern search with library base name
-                  if [ -z "$pkg_full" ]; then
-                    echo "  Step 4: Trying pattern search with base name"
-                    base_name=$(echo "$so" | sed -E 's/^(lib[^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
-                    if [ -n "$base_name" ]; then
-                      # Try with common naming patterns
-                      for pattern in "${base_name}*" "lib${base_name}*"; do
-                        echo "    Trying zypper se -s \"$pattern\""
-                        search_result=$(zypper se -s "$pattern" 2>/dev/null) || true
+                      pkg_full=$(extract_pkg_name("$search_result"))
+                      echo "  Found package via broad search: $pkg_full"
+                    else
+                      # Step 4: Try with /lib path prefix
+                      echo "  Step 4: Trying with /lib path prefix"
+                      for prefix in "/lib/" "/usr/lib/" "/lib64/" "/usr/lib64/"; do
+                        echo "    Trying zypper se --provides --match-exact \"${prefix}$so\""
+                        search_result=$(zypper se --provides --match-exact "${prefix}$so" 2>/dev/null) || true
                         if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
                           pkg_full=$(extract_pkg_name "$search_result")
-                          echo "    Found package via pattern search with $pattern: $pkg_full"
+                          echo "    Found package via --match-exact with prefix ${prefix}: $pkg_full"
+                          break
+                        fi
+                        
+                        # Also try without --match-exact
+                        echo "    Trying zypper se --provides \"${prefix}$so\""
+                        search_result=$(zypper se --provides "${prefix}$so" 2>/dev/null) || true
+                        if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                          pkg_full=$(extract_pkg_name "$search_result")
+                          echo "    Found package via broad search with prefix ${prefix}: $pkg_full"
                           break
                         fi
                       done
+                      
+                      # Step 5: Try with file search (find packages by filename)
+                      if [ -z "$pkg_full" ]; then
+                        echo "  Step 5: Trying file search"
+                        search_result=$(zypper search -f "$so" 2>/dev/null) || true
+                        if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                          pkg_full=$(extract_pkg_name "$search_result")
+                          echo "  Found package via file search: $pkg_full"
+                        fi
+                      fi
+                      
+                      # Step 6: Try with package name search based on library name
+                      if [ -z "$pkg_full" ]; then
+                        echo "  Step 6: Trying package name search"
+                        # Extract base name (remove lib prefix and version suffix)
+                        base_name=$(echo "$so" | sed -E 's/^lib([^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
+                        if [ -n "$base_name" ]; then
+                          # Common package naming patterns for libraries
+                          for pattern in "${base_name}" "lib${base_name}" "lib${base_name}-devel" "${base_name}-libs"; do
+                            echo "    Trying zypper se \"$pattern\""
+                            search_result=$(zypper se "$pattern" 2>/dev/null) || true
+                            if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                              pkg_full=$(extract_pkg_name "$search_result")
+                              echo "    Found package via package name search with $pattern: $pkg_full"
+                              break
+                            fi
+                          done
+                        fi
+                      fi
+                      
+                      # Step 7: Try fuzzy search with approximate patterns
+                      if [ -z "$pkg_full" ]; then
+                        echo "  Step 7: Trying fuzzy search with approximate patterns"
+                        # Extract the core part of the library name (remove lib prefix and everything after first dot)
+                        core_name=$(echo "$so" | sed -E 's/^lib([^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
+                        if [ -n "$core_name" ]; then
+                          for pattern in "*${core_name}*"; do
+                            echo "    Trying zypper se \"$pattern\""
+                            search_result=$(zypper se "$pattern" 2>/dev/null) || true
+                            if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                              # For fuzzy search, take the first one that's not a -devel package
+                              pkg_full=$(echo "$search_result" | grep -v "devel" | grep -E "^(i\+? |v |i  |   )" | \
+                                grep -v "32bit" | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+                              if [ -z "$pkg_full" ]; then
+                                # If no non-devel package, just take the first match
+                                pkg_full=$(extract_pkg_name "$search_result")
+                              fi
+                              echo "    Found package via fuzzy search with $pattern: $pkg_full"
+                              break
+                            fi
+                          done
+                        fi
+                      fi
                     fi
                   fi
                 fi
@@ -298,39 +405,63 @@ jobs:
                 # Use similar multi-step search for the base library name
                 echo "Looking up package for base library $base using multi-step search"
                 
-                # Step 1: Try --match-exact with direct library name
-                search_result=$(zypper se --provides --match-exact "$base" 2>/dev/null) || true
-                if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                  pkg_base=$(extract_pkg_name "$search_result")
-                  echo "  Found base package via --match-exact: $pkg_base"
+                # First try direct rpm query if the library exists on the system
+                pkg_base=$(find_providing_package_with_rpm "$base") || true
+                if [ -n "$pkg_base" ]; then
+                  echo "  Found base package via direct rpm query: $pkg_base"
                 else
-                  # Step 2: Try without --match-exact
-                  search_result=$(zypper se --provides "$base" 2>/dev/null) || true
-                  if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                    pkg_base=$(extract_pkg_name "$search_result")
-                    echo "  Found base package via broad search: $pkg_base"
+                  # Try with rpm -qa --whatprovides
+                  rpm_result=$(rpm -qa --whatprovides "$base" 2>/dev/null) || true
+                  if [ -n "$rpm_result" ]; then
+                    pkg_base=$(echo "$rpm_result" | head -n1)
+                    echo "  Found base package via rpm whatprovides: $pkg_base"
                   else
-                    # Step 3: Try with /lib path prefix
-                    for prefix in "/lib/" "/usr/lib/" "/lib64/" "/usr/lib64/"; do
-                      search_result=$(zypper se --provides --match-exact "${prefix}$base" 2>/dev/null) || true
+                    # Try with standard zypper searches
+                    search_result=$(zypper se --provides --match-exact "$base" 2>/dev/null) || true
+                    if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                      pkg_base=$(extract_pkg_name "$search_result")
+                      echo "  Found base package via --match-exact: $pkg_base"
+                    else
+                      search_result=$(zypper se --provides "$base" 2>/dev/null) || true
                       if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
                         pkg_base=$(extract_pkg_name "$search_result")
-                        echo "  Found base package via --match-exact with prefix: $pkg_base"
-                        break
+                        echo "  Found base package via broad search: $pkg_base"
+                      else
+                        # Try with path prefixes
+                        for prefix in "/lib/" "/usr/lib/" "/lib64/" "/usr/lib64/"; do
+                          search_result=$(zypper se --provides --match-exact "${prefix}$base" 2>/dev/null) || true
+                          if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                            pkg_base=$(extract_pkg_name "$search_result")
+                            echo "  Found base package via --match-exact with prefix: $pkg_base"
+                            break
+                          fi
+                          
+                          search_result=$(zypper se --provides "${prefix}$base" 2>/dev/null) || true
+                          if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                            pkg_base=$(extract_pkg_name "$search_result")
+                            echo "  Found base package via broad search with prefix: $pkg_base"
+                            break
+                          fi
+                        done
+                        
+                        # If still not found, try file search
+                        if [ -z "$pkg_base" ]; then
+                          search_result=$(zypper search -f "$base" 2>/dev/null) || true
+                          if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                            pkg_base=$(extract_pkg_name "$search_result")
+                            echo "  Found base package via file search: $pkg_base"
+                          else
+                            # If still not found, use the same package as the versioned library
+                            if [ "$pkg_full" != "not-found" ]; then
+                              pkg_base="$pkg_full"
+                              echo "  Using same package for base library $base: $pkg_base"
+                            else
+                              pkg_base="not-found"
+                              echo "  No package found for base library $base"
+                            fi
+                          fi
+                        fi
                       fi
-                      
-                      search_result=$(zypper se --provides "${prefix}$base" 2>/dev/null) || true
-                      if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                        pkg_base=$(extract_pkg_name "$search_result")
-                        echo "  Found base package via broad search with prefix: $pkg_base"
-                        break
-                      fi
-                    done
-                    
-                    # If still not found, use the same package as the versioned library
-                    if [ -z "$pkg_base" ]; then
-                      pkg_base="$pkg_full"
-                      echo "  Using same package for base library $base: $pkg_base"
                     fi
                   fi
                 fi
