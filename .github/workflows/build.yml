@@ -316,7 +316,7 @@ jobs:
             # b) generischen Symlink ableiten (libname.so)
             base=$(echo "$so" | sed -r 's/(.*\.so)\..+/\1/')
             if [[ "$base" != "$so" ]]; then
-              pkg_base=$(dnf repoquery --quiet --whatprovides "*$base" | head -n1)
+              pkg_base=$(dnf repoquery --quiet --whatprovides "*$base*" | head -n1)
               echo "$base => $pkg_base" >> rpm-deps-detail.txt
               rpm_list+=("$pkg_base")
             fi
