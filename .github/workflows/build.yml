@@ -131,9 +131,24 @@ jobs:
             echo "Detected yum → installing yum-utils and gawk"
             yum install -y yum-utils gawk
           elif command -v zypper >/dev/null; then
-            echo "Detected zypper → refreshing repos and installing rpm and gawk"
+            echo "Detected zypper → refreshing repos"
             zypper refresh
-            zypper install -y rpm gawk
+            
+            # Special handling for opensuse/leap which has rpm-ndb conflict
+            if [[ "${{ matrix.docker }}" == "opensuse/leap:latest" ]]; then
+              echo "OpenSUSE Leap detected - checking for rpm-ndb package"
+              if rpm -q rpm-ndb &>/dev/null; then
+                echo "rpm-ndb is installed - using that instead of installing rpm"
+                zypper install -y gawk
+              else
+                echo "rpm-ndb not found - installing rpm and gawk"
+                zypper install -y rpm gawk
+              fi
+            else
+              # Other OpenSUSE distributions
+              echo "Installing rpm and gawk"
+              zypper install -y rpm gawk
+            fi
           else
             echo "No supported package manager found, assuming awk is present"
           fi
