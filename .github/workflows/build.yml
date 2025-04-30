@@ -215,8 +215,12 @@ jobs:
               search_result=$(zypper se --provides --match-exact "$so" 2>/dev/null) || true
               
               if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                # Extract package name - skip header lines and take first match
-                pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | grep -v "32bit" | sort -r | head -n1 | awk '{print $2}')
+                # Improved extraction for package name - handle different status prefixes (i+, i, or blank)
+                # Filter out headers, 32bit packages, and extract the package name
+                pkg_full=$(echo "$search_result" | grep -E "^(i\+  |i   |   )" | grep -v "32bit" | \
+                           grep -vE "^(---+|S\s+|\s+Name\s+|\sSummary\s+\|\s+Type\s+|Reading installed packages...|Loading repository data...)" | \
+                           sort -r | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+                
                 echo "  Found package via zypper se --provides --match-exact: $pkg_full"
               else
                 echo "  Direct search failed, trying base name pattern"
@@ -227,8 +231,11 @@ jobs:
                   search_result=$(zypper se -s "${base_name}*" 2>/dev/null) || true
                   
                   if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                    # Extract the most relevant package name
-                    pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | grep -i "$base_name" | grep -v "32bit" | sort -r | head -n1 | awk '{print $2}')
+                    # Improved extraction for package name with the same pattern as above
+                    pkg_full=$(echo "$search_result" | grep -E "^(i\+  |i   |   )" | grep -v "32bit" | \
+                              grep -vE "^(---+|S\s+|\s+Name\s+|\sSummary\s+\|\s+Type\s+|Reading installed packages...|Loading repository data...)" | \
+                              sort -r | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+                    
                     echo "  Found package via pattern search: $pkg_full"
                   else
                     echo "  No package found for $so"
@@ -237,7 +244,6 @@ jobs:
                 fi
               fi
             else
-              # Existing code for other distributions
               pkg_full=$($QUERY "*$so" 2>/dev/null | head -n1) || true
               echo "  Package for $so: $pkg_full"
             fi
@@ -255,7 +261,11 @@ jobs:
                 search_result=$(zypper se --provides --match-exact "$base" 2>/dev/null) || true
                 
                 if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                  pkg_base=$(echo "$search_result" | grep -E "^[i | ]" | grep -v "32bit" | sort -r | head -n1 | awk '{print $2}')
+                  # Using the improved extraction pattern here too
+                  pkg_base=$(echo "$search_result" | grep -E "^(i\+  |i   |   )" | grep -v "32bit" | \
+                            grep -vE "^(---+|S\s+|\s+Name\s+|\sSummary\s+\|\s+Type\s+|Reading installed packages...|Loading repository data...)" | \
+                            sort -r | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+                  
                   echo "  Found base package via zypper se --provides --match-exact: $pkg_base"
                 else
                   # If not found, use the same package as the versioned library
@@ -263,7 +273,6 @@ jobs:
                   echo "  Using same package for base library $base: $pkg_base"
                 fi
               else
-                # Existing code for other distributions
                 pkg_base=$($QUERY "*$base" 2>/dev/null | head -n1) || true
                 echo "  Package for base $base: $pkg_base"
               fi
