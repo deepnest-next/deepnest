@@ -16,6 +16,7 @@ jobs:
       matrix:
         os:
           [
+            "ubuntu-22.04",
             "ubuntu-24.04",
             "ubuntu-24.04-arm",
             "windows-latest",
@@ -178,7 +179,7 @@ jobs:
       # TODO: add AppImage for linux if we can get snap and/or flatpak to work
       
       - name: Prepare minimal debian/control
-        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         run: |
           PKG=$(node -p "require('./package.json').name")
           VER=$(node -p "require('./package.json').version")
@@ -197,7 +198,7 @@ jobs:
           EOF
 
       - name: Scan shared-library dependencies
-        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         id: scan
         run: |
           # alle ausführbaren Dateien sammeln
@@ -209,16 +210,16 @@ jobs:
           # als Schritt-Output verfügbar machen
           echo "DEPS=$deps" >> $GITHUB_OUTPUT
       - name: Show detected dependencies
-        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         run: |
           echo "Ermittelte Debian-Depends:"
           cat control-deps.txt
 
       - name: Upload dependencies artifact
-        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         uses: actions/upload-artifact@v4
         with:
-          name: debian-dependencies-${{ matrix.arch }}
+          name: debian-dependencies-${{ matrix.os }}-${{ matrix.arch }}
           retention-days: 1
           path: control-deps.txt
   
