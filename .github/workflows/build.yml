@@ -208,54 +208,31 @@ jobs:
             pkg_base=""
 
             if [ $is_opensuse -eq 1 ]; then
-              # Simple direct query for OpenSUSE using zypper se --provides
-              echo "Looking up package for $so in OpenSUSE with zypper se --provides"
+              # Simple direct query for OpenSUSE using zypper se --provides --match-exact
+              echo "Looking up package for $so using zypper se --provides --match-exact"
               
-              # Remove wildcard for OpenSUSE - search for exact library name
-              search_result=$(zypper se --provides "$so" 2>/dev/null) || true
+              # Use match-exact for precise library name lookup
+              search_result=$(zypper se --provides --match-exact "$so" 2>/dev/null) || true
               
               if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
                 # Extract package name - skip header lines and take first match
-                pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | head -n1 | awk '{print $3}')
-                echo "  Found package via zypper se --provides: $pkg_full"
+                pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | grep -v "32bit" | sort -r | head -n1 | awk '{print $2}')
+                echo "  Found package via zypper se --provides --match-exact: $pkg_full"
               else
-                # If direct search fails, try with some common package naming patterns
-                echo "  Direct search failed, trying common package patterns"
-                
-                # Extract base library name (remove lib prefix and .so suffix)
-                base_name=$(echo "$so" | sed -E 's/^lib([^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
-                
-                # Try with common package naming patterns
+                echo "  Direct search failed, trying base name pattern"
+                # If direct search fails, try with the base library name (without version)
+                base_name=$(echo "$so" | sed -E 's/^(lib[^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
                 if [ -n "$base_name" ]; then
-                  # Common package pattern: libNAME-X
-                  pattern_pkg="lib$base_name"
-                  search_result=$(zypper se -s "$pattern_pkg" 2>/dev/null) || true
+                  # Try to find a package that begins with the base name
+                  search_result=$(zypper se -s "${base_name}*" 2>/dev/null) || true
                   
                   if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                    pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | head -n1 | awk '{print $3}')
+                    # Extract the most relevant package name
+                    pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | grep -i "$base_name" | grep -v "32bit" | sort -r | head -n1 | awk '{print $2}')
                     echo "  Found package via pattern search: $pkg_full"
-                  fi
-                fi
-                
-                # If still not found, use hardcoded mapping for very common libraries
-                if [ -z "$pkg_full" ]; then
-                  case "$so" in
-                    libLLVM.so*) pkg_full="llvm" ;;
-                    libX11.so*) pkg_full="libX11-6" ;;
-                    libX11-xcb.so*) pkg_full="libX11-6" ;;
-                    libXau.so*) pkg_full="libXau6" ;;
-                    libXcomposite.so*) pkg_full="libXcomposite1" ;;
-                    libz.so*) pkg_full="libz1" ;;
-                    *)
-                      # No match found
-                      pkg_full="not-found" 
-                      ;;
-                  esac
-                  
-                  if [ -n "$pkg_full" ] && [ "$pkg_full" != "not-found" ]; then
-                    echo "  Used hardcoded mapping for common library: $pkg_full"
                   else
                     echo "  No package found for $so"
+                    pkg_full="not-found"
                   fi
                 fi
               fi
@@ -274,12 +251,12 @@ jobs:
             base=$(echo "$so" | sed -E 's/(.*\.so)\..+/\1/' 2>/dev/null) || true
             if [ -n "$base" ] && [[ "$base" != "$so" ]]; then
               if [ $is_opensuse -eq 1 ]; then
-                # Simple direct query for the base library name
-                search_result=$(zypper se --provides "$base" 2>/dev/null) || true
+                # Simple direct query for the base library using match-exact
+                search_result=$(zypper se --provides --match-exact "$base" 2>/dev/null) || true
                 
                 if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                  pkg_base=$(echo "$search_result" | grep -E "^[i | ]" | head -n1 | awk '{print $3}')
-                  echo "  Found base package via zypper se --provides: $pkg_base"
+                  pkg_base=$(echo "$search_result" | grep -E "^[i | ]" | grep -v "32bit" | sort -r | head -n1 | awk '{print $2}')
+                  echo "  Found base package via zypper se --provides --match-exact: $pkg_base"
                 else
                   # If not found, use the same package as the versioned library
                   pkg_base="$pkg_full"
