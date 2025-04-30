@@ -292,7 +292,7 @@ jobs:
           echo "# RPM-Abhängigkeiten pro SONAME" > rpm-deps-detail.txt
           rpm_list=()
           # alle SONAMEs extrahieren und deduplizieren
-          sos=$(grep '->' so-deps.txt | awk '{print $1}' | sort -u)
+          sos=$(grep ' -> ' so-deps.txt | awk '{print $1}' | sort -u)
           for so in $sos; do
             echo "## $so" >> rpm-deps-detail.txt
             # erste gefundene Package-NAME ausgeben
