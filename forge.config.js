@@ -636,6 +636,7 @@ const getMakers = () => {
           homepage: "https://www.deepnest.net",
           categories: ["Education", "Graphics", "Utility"],
           section: "graphics",
+          depents: packageJson.hostDependencies.debian
         },
       },
     },

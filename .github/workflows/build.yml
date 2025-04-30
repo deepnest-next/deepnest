@@ -58,6 +58,7 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-24.04" || "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then
             sudo apt-get update && sudo apt-get upgrade && sudo apt-get install -y flatpak flatpak-builder elfutils snapd libgl1 libglx-mesa0;
+            sudo apt-get install -y dpkg-dev debhelper fakeroot ; 
             flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo ;
             flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo ;
             flatpak update --appstream -y;
@@ -175,7 +176,33 @@ jobs:
           MAKER_PLATFORM: ${{ matrix.target == 'mas' && 'mas' || '' }}
 
       # TODO: add AppImage for linux if we can get snap and/or flatpak to work
+      
+      - name: Scan shared-library dependencies
+        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        id: scan
+        run: |
+          # alle ausführbaren Dateien sammeln
+          files=$(find out/ -type f -executable)
+          # dpkg-shlibdeps erzeugt standardmäßig eine "Depends:"-Zeile
+          deps=$(dpkg-shlibdeps $files -O | sed 's/^[[:space:]]*Depends: //')
+          # in Datei schreiben
+          echo "Depends: $deps" > control-deps.txt
+          # als Schritt-Output verfügbar machen
+          echo "DEPS=$deps" >> $GITHUB_OUTPUT
+      - name: Show detected dependencies
+        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        run: |
+          echo "Ermittelte Debian-Depends:"
+          cat control-deps.txt
 
+      - name: Upload dependencies artifact
+        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-dependencies
+          retention-days: 1
+          path: control-deps.txt
+  
       - name: Upload artifacts (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
         #if: ${{ ((matrix.os == 'ubuntu-24.04' && matrix.arch == 'x64') || (matrix.os == 'ubuntu-24.04-arm' && matrix.arch == 'arm64') || (matrix.os == 'windows' && (matrix.arch == 'x64' || matrix.arch == 'arm64')) || (matrix.os == 'macos_x64' && matrix.arch == 'x64') || (matrix.os == 'macos' && matrix.arch == 'arm64')) }}
