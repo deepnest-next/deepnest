@@ -206,7 +206,7 @@ jobs:
         id: scan
         run: |
           # alle ausführbaren Dateien sammeln
-          files=$(find out/ -type f -executable)
+          files=$(find out/ -type f \( -executable -o -name '*.node' \))
           # dpkg-shlibdeps erzeugt standardmäßig eine "Depends:"-Zeile
           deps=$(dpkg-shlibdeps $files -O | sed 's/^[[:space:]]*Depends: //')
           # in Datei schreiben
@@ -216,7 +216,7 @@ jobs:
       - name: Scan SONAME-Abhängigkeiten (.so-Libraries)
         if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         run: |
-          files=$(find out/ -type f -executable)
+          files=$(find out/ -type f \( -executable -o -name '*.node' \))
           echo "# SONAME Abhängigkeiten pro Binary" > so-deps.txt
           for f in $files; do
             echo "## $f" >> so-deps.txt
