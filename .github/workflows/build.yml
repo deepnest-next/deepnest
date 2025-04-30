@@ -295,11 +295,20 @@ jobs:
           sos=$(grep ' -> ' so-deps.txt | awk '{print $1}' | sort -u)
           for so in $sos; do
             echo "## $so" >> rpm-deps-detail.txt
-            # erste gefundene Package-NAME ausgeben
+            
+            # a) erste gefundene Package-NAME ausgeben
             pkg=$(dnf repoquery --quiet --whatprovides "*$so" | head -n1)
             echo "$pkg" >> rpm-deps-detail.txt
             rpm_list+=("$pkg")
             echo "" >> rpm-deps-detail.txt
+
+            # b) generischen Symlink ableiten (libname.so)
+            base=$(echo "$so" | sed -r 's/(.*\.so)\..+/\1/')
+            if [[ "$base" != "$so" ]]; then
+              pkg_base=$(dnf repoquery --quiet --whatprovides "*$base" | head -n1)
+              echo "$base => $pkg_base" >> rpm-deps-detail.txt
+              rpm_list+=("$pkg_base")
+            fi
           done
           # kommagetrennte Requires-Zeile erzeugen
           uniq_pkgs=$(printf "%s\n" "${rpm_list[@]}" | sort -u | paste -sd ', ')
