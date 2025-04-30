@@ -149,6 +149,10 @@ jobs:
               echo "Installing rpm and gawk"
               zypper install -y rpm gawk
             fi
+            
+            # Additional tools specifically for zypper-based distributions
+            echo "Installing additional tools for better package searching"
+            zypper install -y findutils grep
           else
             echo "No supported package manager found, assuming awk is present"
           fi
@@ -158,36 +162,106 @@ jobs:
           echo "# RPM-Abhängigkeiten pro SONAME (inkl. generischer .so)" > rpm-deps-detail.txt
           rpm_list=()
           sos=$(grep -- '->' so-deps.txt | cut -d ' ' -f1 | sort -u)
+          
+          # Detect if this is an openSUSE distribution
+          is_opensuse=0
+          if command -v zypper >/dev/null; then
+            is_opensuse=1
+            echo "Detected openSUSE distribution, using special package search logic"
+          fi
 
-          # Query-Befehl wählen
-          if   command -v dnf    >/dev/null; then QUERY="dnf repoquery --quiet --whatprovides"
-          elif command -v yum    >/dev/null; then QUERY="yum whatprovides"
-          elif command -v zypper >/dev/null; then QUERY="zypper search --provides"
-          else                              QUERY="rpm -q --whatprovides"; fi
+          # Query-Befehl wählen for non-openSUSE distributions
+          if   command -v dnf    >/dev/null && [ $is_opensuse -eq 0 ]; then 
+            QUERY="dnf repoquery --quiet --whatprovides"
+          elif command -v yum    >/dev/null && [ $is_opensuse -eq 0 ]; then 
+            QUERY="yum whatprovides"
+          elif [ $is_opensuse -eq 0 ]; then
+            QUERY="rpm -q --whatprovides"
+          fi
 
           for so in $sos; do
             echo "## $so" >> rpm-deps-detail.txt
+            pkg_full=""
+            pkg_base=""
 
-            # Exakte SONAME-Abfrage
-            pkg_full=$($QUERY "*$so" | head -n1)
+            if [ $is_opensuse -eq 1 ]; then
+              # Special handling for openSUSE
+              # First try the rpm command directly
+              rpm_output=$(rpm -q --whatprovides "*$so" 2>/dev/null)
+              if [ $? -eq 0 ] && [ -n "$rpm_output" ]; then
+                pkg_full=$(echo "$rpm_output" | head -n1)
+              else
+                # If direct rpm query fails, use zypper search --provides with grep
+                echo "Searching for provider of $so using zypper..."
+                zypper_output=$(zypper search --provides "*$so" 2>/dev/null)
+                if [ -n "$zypper_output" ] && echo "$zypper_output" | grep -q "No matching items found."; then
+                  echo "No match found for $so"
+                  pkg_full="not-found"
+                else
+                  # Extract package name from zypper output (skip header lines)
+                  pkg_full=$(echo "$zypper_output" | grep -v "Loading" | grep -v "|" | grep -v "^$" | head -n1 | awk '{print $1}')
+                  if [ -z "$pkg_full" ]; then
+                    # Try alternative parsing if above fails
+                    pkg_full=$(echo "$zypper_output" | grep -v "Loading" | grep -v "^$" | grep -o -E '[^ ]+\.[^. ]+' | head -n1)
+                  fi
+                fi
+              fi
+            else
+              # Existing code for other distributions
+              pkg_full=$($QUERY "*$so" | head -n1)
+            fi
+            
             echo "$so => $pkg_full" >> rpm-deps-detail.txt
-            rpm_list+=("$pkg_full")
+            if [ -n "$pkg_full" ] && [ "$pkg_full" != "not-found" ]; then
+              rpm_list+=("$pkg_full")
+            fi
 
             # Generischen Symlink (libname.so)
             base=$(echo "$so" | sed -r 's/(.*\.so)\..+/\1/')
             if [[ "$base" != "$so" ]]; then
-              pkg_base=$($QUERY "*$base" | head -n1)
+              if [ $is_opensuse -eq 1 ]; then
+                # Special handling for openSUSE for base library name
+                rpm_output=$(rpm -q --whatprovides "*$base" 2>/dev/null)
+                if [ $? -eq 0 ] && [ -n "$rpm_output" ]; then
+                  pkg_base=$(echo "$rpm_output" | head -n1)
+                else
+                  zypper_output=$(zypper search --provides "*$base" 2>/dev/null)
+                  if [ -n "$zypper_output" ] && echo "$zypper_output" | grep -q "No matching items found."; then
+                    echo "No match found for $base"
+                    pkg_base="not-found"
+                  else
+                    pkg_base=$(echo "$zypper_output" | grep -v "Loading" | grep -v "|" | grep -v "^$" | head -n1 | awk '{print $1}')
+                    if [ -z "$pkg_base" ]; then
+                      pkg_base=$(echo "$zypper_output" | grep -v "Loading" | grep -v "^$" | grep -o -E '[^ ]+\.[^. ]+' | head -n1)
+                    fi
+                  fi
+                fi
+              else
+                # Existing code for other distributions
+                pkg_base=$($QUERY "*$base" | head -n1)
+              fi
+              
               echo "$base => $pkg_base" >> rpm-deps-detail.txt
-              rpm_list+=("$pkg_base")
+              if [ -n "$pkg_base" ] && [ "$pkg_base" != "not-found" ]; then
+                rpm_list+=("$pkg_base")
+              fi
             fi
 
             echo "" >> rpm-deps-detail.txt
           done
 
+          # Show found packages for debugging
+          echo "Found packages:"
+          printf "%s\n" "${rpm_list[@]}" | sort -u
+          
           # Kommagetrennte Requires-Zeile
-          uniq_pkgs=$(printf "%s\n" "${rpm_list[@]}" | sort -u | paste -sd ', ')
-          echo "Requires: $uniq_pkgs" > rpm-deps.txt
-
+          if [ ${#rpm_list[@]} -eq 0 ]; then
+            echo "Warning: No packages found, creating empty requires"
+            echo "Requires: " > rpm-deps.txt
+          else
+            uniq_pkgs=$(printf "%s\n" "${rpm_list[@]}" | sort -u | grep -v "^$" | paste -sd ', ')
+            echo "Requires: $uniq_pkgs" > rpm-deps.txt
+          fi
 
       - name: Upload RPM-mapping artifacts
         uses: actions/upload-artifact@v4
