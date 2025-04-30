@@ -285,7 +285,7 @@ jobs:
           path: .
 
       - name: Install dnf-utils for repoquery
-        run: dnf install -y dnf-plugins-core  # enthält repoquery
+        run: dnf install -y dnf-plugins-core gawk
 
       - name: Map SONAME → RPM-Paket
         run: |
