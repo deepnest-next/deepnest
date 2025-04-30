@@ -26,6 +26,8 @@ jobs:
         arch: ["x64", "arm64"]
         target: ["", "mas"]
         exclude:
+          - os: "ubuntu-22.04"
+            arch: "arm64"
           - os: "ubuntu-24.04-arm"
             arch: "x64"
           - os: "ubuntu-24.04"
@@ -35,6 +37,8 @@ jobs:
           - os: "macos-latest"
             arch: "x64"
           # Exclude MAS target for non-macOS platforms
+          - os: "ubuntu-22.04"
+            arch: "mas"
           - os: "ubuntu-24.04"
             target: "mas"
           - os: "ubuntu-24.04-arm"
@@ -57,7 +61,7 @@ jobs:
       - name: Install distribution dependencies
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-24.04" || "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" || "${{ matrix.os }}" == "ubuntu-24.04" || "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then
             sudo apt-get update && sudo apt-get upgrade && sudo apt-get install -y flatpak flatpak-builder elfutils snapd libgl1 libglx-mesa0;
             sudo apt-get install -y dpkg-dev debhelper fakeroot ; 
             flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo ;
