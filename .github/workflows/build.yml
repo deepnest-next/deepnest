@@ -257,13 +257,6 @@ jobs:
 
     strategy:
       matrix:
-        os:
-          [
-            "ubuntu-22.04",
-            "ubuntu-24.04",
-            "ubuntu-24.04-arm",
-          ]
-        arch: ["x64", "arm64"]
         docker: [
           "fedora:latest",
           "opensuse/leap:latest",
@@ -274,18 +267,11 @@ jobs:
           "redhat/ubi8:latest",
           "redhat/ubi9:latest",
           ]
-        exclude:
-          - os: "ubuntu-22.04"
-            arch: "arm64"
-          - os: "ubuntu-24.04-arm"
-            arch: "x64"
-          - os: "ubuntu-24.04"
-            arch: "arm64"
       fail-fast: true
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
     container:
-      image: fedora:latest
+      image: ${{ matrix.docker }}
 
     steps:
       - name: Download Debian-artifacts
@@ -330,7 +316,7 @@ jobs:
       - name: Upload RPM-mapping artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rpm-dependencies-${{ matrix.os }}-${{ matrix.arch }}-${{ env.DOCKER_LABEL }}
+          name: rpm-dependencies-${{ env.DOCKER_LABEL }}
           retention-days: 1
           path: |
             rpm-deps.txt
