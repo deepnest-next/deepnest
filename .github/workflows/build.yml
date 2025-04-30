@@ -206,8 +206,8 @@ jobs:
             local search_result="$1"
             
             # Display the full search result for debugging
-            echo "Raw search result:"
-            echo "$search_result"
+            # echo "Raw search result:"
+            # echo "$search_result"
             
             # Try different parsing methods based on output format
             
