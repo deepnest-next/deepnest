@@ -257,6 +257,13 @@ jobs:
 
     strategy:
       matrix:
+        os:
+          [
+            "ubuntu-22.04",
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+          ]
+        arch: ["x64", "arm64"]
         docker: [
           "fedora:latest",
           "opensuse/leap:latest",
@@ -267,9 +274,48 @@ jobs:
           "redhat/ubi8:latest",
           "redhat/ubi9:latest",
           ]
+        exclude:
+          - os: "ubuntu-22.04"
+            arch: "arm64"
+          - os: "ubuntu-24.04-arm"
+            arch: "x64"
+          - os: "ubuntu-24.04"
+            arch: "arm64"
+          - os: "ubuntu-24.04-arm"
+            docker: "fedora:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "opensuse/leap:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "opensuse/tumbleweed:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "rockylinux:9.3"
+          - os: "ubuntu-24.04-arm"
+            docker: "rockylinux:8.9"
+          - os: "ubuntu-24.04-arm"
+            docker: "almalinux:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "redhat/ubi8:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "redhat/ubi9:latest"
+          - os: "ubuntu-22.04"
+            docker: "fedora:latest"
+          - os: "ubuntu-22.04"
+            docker: "opensuse/leap:latest"
+          - os: "ubuntu-22.04"
+            docker: "opensuse/tumbleweed:latest"
+          - os: "ubuntu-22.04"
+            docker: "rockylinux:9.3"
+          - os: "ubuntu-22.04"
+            docker: "rockylinux:8.9"
+          - os: "ubuntu-22.04"
+            docker: "almalinux:latest"
+          - os: "ubuntu-22.04"
+            docker: "redhat/ubi8:latest"
+          - os: "ubuntu-22.04"
+            docker: "redhat/ubi9:latest"
       fail-fast: true
 
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     container:
       image: ${{ matrix.docker }}
 
