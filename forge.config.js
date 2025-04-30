@@ -326,7 +326,7 @@ const packageAfterPruneHook = async (
   globSync(`${buildPath}/**/velopack_nodeffi_*`).forEach(function (fpath) {
     if (!fpath.endsWith(".node")) return;
     if (process.platform == "darwin" && fpath.includes("_osx.node")) return;
-    if (process.platform == "linux" && fpath.includes("_linux")) return;
+    if (process.platform == "linux" && fpath.includes("_linux") && !fpath.includes(`linux_${os.arch()}`)) return;
     if (process.platform == "win32" && fpath.includes("_win_")) return;
     console.log(
       "Delete file:",
