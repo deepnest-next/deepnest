@@ -152,7 +152,7 @@ jobs:
             
             # Additional tools specifically for zypper-based distributions
             echo "Installing additional tools for better package searching"
-            zypper install -y findutils grep
+            zypper install -y findutils grep sed
           else
             echo "No supported package manager found, assuming awk is present"
           fi
@@ -161,7 +161,7 @@ jobs:
         run: |
           echo "# RPM-Abhängigkeiten pro SONAME (inkl. generischer .so)" > rpm-deps-detail.txt
           rpm_list=()
-          sos=$(grep -- '->' so-deps.txt | cut -d ' ' -f1 | sort -u)
+          sos=$(grep -- '->' so-deps.txt | cut -d ' ' -f1 | sort -u) || true
           
           # Detect if this is an openSUSE distribution
           is_opensuse=0
@@ -187,28 +187,35 @@ jobs:
             if [ $is_opensuse -eq 1 ]; then
               # Special handling for openSUSE
               # First try the rpm command directly
-              rpm_output=$(rpm -q --whatprovides "*$so" 2>/dev/null)
+              echo "Trying direct rpm query for $so"
+              rpm_output=$(rpm -q --whatprovides "*$so" 2>/dev/null) || true
               if [ $? -eq 0 ] && [ -n "$rpm_output" ]; then
                 pkg_full=$(echo "$rpm_output" | head -n1)
+                echo "  Found package via rpm: $pkg_full"
               else
-                # If direct rpm query fails, use zypper search --provides with grep
-                echo "Searching for provider of $so using zypper..."
-                zypper_output=$(zypper search --provides "*$so" 2>/dev/null)
-                if [ -n "$zypper_output" ] && echo "$zypper_output" | grep -q "No matching items found."; then
-                  echo "No match found for $so"
+                # If direct rpm query fails, use zypper what-provides (better than search --provides)
+                echo "Searching for provider of $so using zypper what-provides..."
+                zypper_output=$(zypper what-provides "*$so" 2>/dev/null) || true
+                
+                # Check for different error messages
+                if [ -z "$zypper_output" ] || echo "$zypper_output" | grep -q "No provider of.*found"; then
+                  echo "  No match found for $so"
                   pkg_full="not-found"
                 else
-                  # Extract package name from zypper output (skip header lines)
-                  pkg_full=$(echo "$zypper_output" | grep -v "Loading" | grep -v "|" | grep -v "^$" | head -n1 | awk '{print $1}')
+                  # Extract package name from zypper output
+                  pkg_full=$(echo "$zypper_output" | grep -v "Loading" | grep "| package" | head -n1 | awk '{print $3}')
+                  echo "  Found package via zypper: $pkg_full"
+                  # If that didn't work, try an alternative approach
                   if [ -z "$pkg_full" ]; then
-                    # Try alternative parsing if above fails
-                    pkg_full=$(echo "$zypper_output" | grep -v "Loading" | grep -v "^$" | grep -o -E '[^ ]+\.[^. ]+' | head -n1)
+                    pkg_full=$(echo "$zypper_output" | grep -oE '[^ ]+\.[^. ]+\.[^. ]+' | head -n1)
+                    echo "  Found package via alternative parsing: $pkg_full"
                   fi
                 fi
               fi
             else
               # Existing code for other distributions
-              pkg_full=$($QUERY "*$so" | head -n1)
+              pkg_full=$($QUERY "*$so" 2>/dev/null | head -n1) || true
+              echo "  Package for $so: $pkg_full"
             fi
             
             echo "$so => $pkg_full" >> rpm-deps-detail.txt
@@ -217,28 +224,34 @@ jobs:
             fi
 
             # Generischen Symlink (libname.so)
-            base=$(echo "$so" | sed -r 's/(.*\.so)\..+/\1/')
-            if [[ "$base" != "$so" ]]; then
+            base=$(echo "$so" | sed -E 's/(.*\.so)\..+/\1/' 2>/dev/null) || true
+            if [ -n "$base" ] && [[ "$base" != "$so" ]]; then
               if [ $is_opensuse -eq 1 ]; then
                 # Special handling for openSUSE for base library name
-                rpm_output=$(rpm -q --whatprovides "*$base" 2>/dev/null)
+                echo "Trying direct rpm query for base library $base"
+                rpm_output=$(rpm -q --whatprovides "*$base" 2>/dev/null) || true
                 if [ $? -eq 0 ] && [ -n "$rpm_output" ]; then
                   pkg_base=$(echo "$rpm_output" | head -n1)
+                  echo "  Found package for base via rpm: $pkg_base"
                 else
-                  zypper_output=$(zypper search --provides "*$base" 2>/dev/null)
-                  if [ -n "$zypper_output" ] && echo "$zypper_output" | grep -q "No matching items found."; then
-                    echo "No match found for $base"
+                  echo "Searching for provider of base $base using zypper what-provides..."
+                  zypper_output=$(zypper what-provides "*$base" 2>/dev/null) || true
+                  if [ -z "$zypper_output" ] || echo "$zypper_output" | grep -q "No provider of.*found"; then
+                    echo "  No match found for base $base"
                     pkg_base="not-found"
                   else
-                    pkg_base=$(echo "$zypper_output" | grep -v "Loading" | grep -v "|" | grep -v "^$" | head -n1 | awk '{print $1}')
+                    pkg_base=$(echo "$zypper_output" | grep -v "Loading" | grep "| package" | head -n1 | awk '{print $3}')
+                    echo "  Found package for base via zypper: $pkg_base"
                     if [ -z "$pkg_base" ]; then
-                      pkg_base=$(echo "$zypper_output" | grep -v "Loading" | grep -v "^$" | grep -o -E '[^ ]+\.[^. ]+' | head -n1)
+                      pkg_base=$(echo "$zypper_output" | grep -oE '[^ ]+\.[^. ]+\.[^. ]+' | head -n1)
+                      echo "  Found package for base via alternative parsing: $pkg_base"
                     fi
                   fi
                 fi
               else
                 # Existing code for other distributions
-                pkg_base=$($QUERY "*$base" | head -n1)
+                pkg_base=$($QUERY "*$base" 2>/dev/null | head -n1) || true
+                echo "  Package for base $base: $pkg_base"
               fi
               
               echo "$base => $pkg_base" >> rpm-deps-detail.txt
@@ -252,16 +265,40 @@ jobs:
 
           # Show found packages for debugging
           echo "Found packages:"
-          printf "%s\n" "${rpm_list[@]}" | sort -u
+          if [ ${#rpm_list[@]} -eq 0 ]; then
+            echo "  No packages found!"
+          else
+            printf "  %s\n" "${rpm_list[@]}" | sort -u
+          fi
           
           # Kommagetrennte Requires-Zeile
           if [ ${#rpm_list[@]} -eq 0 ]; then
             echo "Warning: No packages found, creating empty requires"
             echo "Requires: " > rpm-deps.txt
           else
-            uniq_pkgs=$(printf "%s\n" "${rpm_list[@]}" | sort -u | grep -v "^$" | paste -sd ', ')
-            echo "Requires: $uniq_pkgs" > rpm-deps.txt
+            # The following is safer - create the file first in case paste fails
+            printf "%s\n" "${rpm_list[@]}" | sort -u | grep -v "^$" > /tmp/pkg_list
+            if [ -s /tmp/pkg_list ]; then
+              # File has content, create comma-separated list
+              uniq_pkgs=$(paste -sd ', ' /tmp/pkg_list)
+              echo "Requires: $uniq_pkgs" > rpm-deps.txt
+            else
+              # File is empty
+              echo "Requires: " > rpm-deps.txt
+            fi
           fi
+          
+          # Ensure the detail file exists even if empty
+          touch rpm-deps-detail.txt
+
+      - name: Show generated files
+        run: |
+          echo "Content of rpm-deps.txt:"
+          cat rpm-deps.txt
+          echo "--------------------------"
+          echo "Content of rpm-deps-detail.txt (first 20 lines):"
+          head -n 20 rpm-deps-detail.txt
+          echo "--------------------------"
 
       - name: Upload RPM-mapping artifacts
         uses: actions/upload-artifact@v4
