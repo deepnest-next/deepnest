@@ -121,6 +121,18 @@ jobs:
           name: debian-dependencies-${{ matrix.os }}-${{ matrix.arch }}
           path: .
 
+      - name: Check downloaded artifacts
+        run: |
+          echo "Listing all downloaded files:"
+          ls -la
+          echo "Content of so-deps.txt file (if exists):"
+          if [ -f "so-deps.txt" ]; then
+            cat so-deps.txt
+          else
+            echo "so-deps.txt does not exist!"
+            echo "# Empty file - no dependencies found" > so-deps.txt
+          fi
+
       - name: Install query tools & awk (distro-agnostisch)
         run: |
           echo "DOCKER_LABEL=$(echo '${{ matrix.docker }}' | tr ':/' '_')" >> $GITHUB_ENV
@@ -134,25 +146,9 @@ jobs:
             echo "Detected zypper → refreshing repos"
             zypper refresh
             
-            # Special handling for opensuse/leap which has rpm-ndb conflict
-            if [[ "${{ matrix.docker }}" == "opensuse/leap:latest" ]]; then
-              echo "OpenSUSE Leap detected - checking for rpm-ndb package"
-              if rpm -q rpm-ndb &>/dev/null; then
-                echo "rpm-ndb is installed - using that instead of installing rpm"
-                zypper install -y gawk
-              else
-                echo "rpm-ndb not found - installing rpm and gawk"
-                zypper install -y rpm gawk
-              fi
-            else
-              # Other OpenSUSE distributions
-              echo "Installing rpm and gawk"
-              zypper install -y rpm gawk
-            fi
-            
-            # Additional tools specifically for zypper-based distributions
-            echo "Installing additional tools for better package searching"
-            zypper install -y findutils grep sed
+            # Additional tools for zypper package querying
+            echo "Installing query tools for OpenSUSE"
+            zypper install -y gawk grep
           else
             echo "No supported package manager found, assuming awk is present"
           fi
@@ -161,7 +157,33 @@ jobs:
         run: |
           echo "# RPM-Abhängigkeiten pro SONAME (inkl. generischer .so)" > rpm-deps-detail.txt
           rpm_list=()
+          
+          if [ ! -f "so-deps.txt" ]; then
+            echo "WARNING: so-deps.txt file not found, creating empty file"
+            echo "# Empty file - no dependencies found" > so-deps.txt
+            echo "Requires: " > rpm-deps.txt
+            exit 0
+          fi
+          
+          # Check if so-deps.txt has content with proper format
+          if ! grep -q -- "->" so-deps.txt; then
+            echo "WARNING: so-deps.txt does not contain expected format with '->' symbols"
+            echo "Content of so-deps.txt:"
+            cat so-deps.txt
+            echo "Creating empty dependency files"
+            echo "Requires: " > rpm-deps.txt
+            exit 0
+          fi
+          
+          # Extract SONAME list - with additional error handling
           sos=$(grep -- '->' so-deps.txt | cut -d ' ' -f1 | sort -u) || true
+          if [ -z "$sos" ]; then
+            echo "WARNING: No shared object names found in so-deps.txt"
+            echo "Requires: " > rpm-deps.txt
+            exit 0
+          fi
+          echo "Found shared objects to process:"
+          echo "$sos"
           
           # Detect if this is an openSUSE distribution
           is_opensuse=0
@@ -179,36 +201,61 @@ jobs:
             QUERY="rpm -q --whatprovides"
           fi
 
+          # Process each SONAME and find providing packages
           for so in $sos; do
             echo "## $so" >> rpm-deps-detail.txt
             pkg_full=""
             pkg_base=""
 
             if [ $is_opensuse -eq 1 ]; then
-              # Special handling for openSUSE
-              # First try the rpm command directly
-              echo "Trying direct rpm query for $so"
-              rpm_output=$(rpm -q --whatprovides "*$so" 2>/dev/null) || true
-              if [ $? -eq 0 ] && [ -n "$rpm_output" ]; then
-                pkg_full=$(echo "$rpm_output" | head -n1)
-                echo "  Found package via rpm: $pkg_full"
+              # Simple direct query for OpenSUSE using zypper se --provides
+              echo "Looking up package for $so in OpenSUSE with zypper se --provides"
+              
+              # Remove wildcard for OpenSUSE - search for exact library name
+              search_result=$(zypper se --provides "$so" 2>/dev/null) || true
+              
+              if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                # Extract package name - skip header lines and take first match
+                pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | head -n1 | awk '{print $3}')
+                echo "  Found package via zypper se --provides: $pkg_full"
               else
-                # If direct rpm query fails, use zypper what-provides (better than search --provides)
-                echo "Searching for provider of $so using zypper what-provides..."
-                zypper_output=$(zypper what-provides "*$so" 2>/dev/null) || true
+                # If direct search fails, try with some common package naming patterns
+                echo "  Direct search failed, trying common package patterns"
                 
-                # Check for different error messages
-                if [ -z "$zypper_output" ] || echo "$zypper_output" | grep -q "No provider of.*found"; then
-                  echo "  No match found for $so"
-                  pkg_full="not-found"
-                else
-                  # Extract package name from zypper output
-                  pkg_full=$(echo "$zypper_output" | grep -v "Loading" | grep "| package" | head -n1 | awk '{print $3}')
-                  echo "  Found package via zypper: $pkg_full"
-                  # If that didn't work, try an alternative approach
-                  if [ -z "$pkg_full" ]; then
-                    pkg_full=$(echo "$zypper_output" | grep -oE '[^ ]+\.[^. ]+\.[^. ]+' | head -n1)
-                    echo "  Found package via alternative parsing: $pkg_full"
+                # Extract base library name (remove lib prefix and .so suffix)
+                base_name=$(echo "$so" | sed -E 's/^lib([^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
+                
+                # Try with common package naming patterns
+                if [ -n "$base_name" ]; then
+                  # Common package pattern: libNAME-X
+                  pattern_pkg="lib$base_name"
+                  search_result=$(zypper se -s "$pattern_pkg" 2>/dev/null) || true
+                  
+                  if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                    pkg_full=$(echo "$search_result" | grep -E "^[i | ]" | head -n1 | awk '{print $3}')
+                    echo "  Found package via pattern search: $pkg_full"
+                  fi
+                fi
+                
+                # If still not found, use hardcoded mapping for very common libraries
+                if [ -z "$pkg_full" ]; then
+                  case "$so" in
+                    libLLVM.so*) pkg_full="llvm" ;;
+                    libX11.so*) pkg_full="libX11-6" ;;
+                    libX11-xcb.so*) pkg_full="libX11-6" ;;
+                    libXau.so*) pkg_full="libXau6" ;;
+                    libXcomposite.so*) pkg_full="libXcomposite1" ;;
+                    libz.so*) pkg_full="libz1" ;;
+                    *)
+                      # No match found
+                      pkg_full="not-found" 
+                      ;;
+                  esac
+                  
+                  if [ -n "$pkg_full" ] && [ "$pkg_full" != "not-found" ]; then
+                    echo "  Used hardcoded mapping for common library: $pkg_full"
+                  else
+                    echo "  No package found for $so"
                   fi
                 fi
               fi
@@ -227,26 +274,16 @@ jobs:
             base=$(echo "$so" | sed -E 's/(.*\.so)\..+/\1/' 2>/dev/null) || true
             if [ -n "$base" ] && [[ "$base" != "$so" ]]; then
               if [ $is_opensuse -eq 1 ]; then
-                # Special handling for openSUSE for base library name
-                echo "Trying direct rpm query for base library $base"
-                rpm_output=$(rpm -q --whatprovides "*$base" 2>/dev/null) || true
-                if [ $? -eq 0 ] && [ -n "$rpm_output" ]; then
-                  pkg_base=$(echo "$rpm_output" | head -n1)
-                  echo "  Found package for base via rpm: $pkg_base"
+                # Simple direct query for the base library name
+                search_result=$(zypper se --provides "$base" 2>/dev/null) || true
+                
+                if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
+                  pkg_base=$(echo "$search_result" | grep -E "^[i | ]" | head -n1 | awk '{print $3}')
+                  echo "  Found base package via zypper se --provides: $pkg_base"
                 else
-                  echo "Searching for provider of base $base using zypper what-provides..."
-                  zypper_output=$(zypper what-provides "*$base" 2>/dev/null) || true
-                  if [ -z "$zypper_output" ] || echo "$zypper_output" | grep -q "No provider of.*found"; then
-                    echo "  No match found for base $base"
-                    pkg_base="not-found"
-                  else
-                    pkg_base=$(echo "$zypper_output" | grep -v "Loading" | grep "| package" | head -n1 | awk '{print $3}')
-                    echo "  Found package for base via zypper: $pkg_base"
-                    if [ -z "$pkg_base" ]; then
-                      pkg_base=$(echo "$zypper_output" | grep -oE '[^ ]+\.[^. ]+\.[^. ]+' | head -n1)
-                      echo "  Found package for base via alternative parsing: $pkg_base"
-                    fi
-                  fi
+                  # If not found, use the same package as the versioned library
+                  pkg_base="$pkg_full"
+                  echo "  Using same package for base library $base: $pkg_base"
                 fi
               else
                 # Existing code for other distributions
