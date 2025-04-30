@@ -301,7 +301,7 @@ jobs:
                     echo "  Step 3: Trying zypper se --provides \"$so\""
                     search_result=$(zypper se --provides "$so" 2>/dev/null) || true
                     if [ -n "$search_result" ] && ! echo "$search_result" | grep -q "No matching items found"; then
-                      pkg_full=$(extract_pkg_name("$search_result"))
+                      pkg_full=$(extract_pkg_name "$search_result")
                       echo "  Found package via broad search: $pkg_full"
                     else
                       # Step 4: Try with /lib path prefix
