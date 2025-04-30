@@ -213,11 +213,25 @@ jobs:
           echo "Depends: $deps" > control-deps.txt
           # als Schritt-Output verfügbar machen
           echo "DEPS=$deps" >> $GITHUB_OUTPUT
+      - name: Scan SONAME-Abhängigkeiten (.so-Libraries)
+        if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
+        run: |
+          files=$(find out/ -type f -executable)
+          echo "# SONAME Abhängigkeiten pro Binary" > so-deps.txt
+          for f in $files; do
+            echo "## $f" >> so-deps.txt
+            # listet SONAME → Pfad der Library
+            ldd "$f" | grep "=>" | awk '{print $1 " -> " $3}' >> so-deps.txt
+            echo "" >> so-deps.txt
+          done
       - name: Show detected dependencies
         if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         run: |
-          echo "Ermittelte Debian-Depends:"
+          echo "=== Debian Depends ==="
           cat control-deps.txt
+          echo
+          echo "=== SONAME Abhängigkeiten ==="
+          cat so-deps.txt
 
       - name: Upload dependencies artifact
         if: ${{ matrix.os == 'ubuntu-22.04' ||matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
@@ -225,7 +239,9 @@ jobs:
         with:
           name: debian-dependencies-${{ matrix.os }}-${{ matrix.arch }}
           retention-days: 1
-          path: control-deps.txt
+          path: |
+            control-deps.txt
+            so-deps.txt
   
       - name: Upload artifacts (${{ matrix.arch }})
         uses: actions/upload-artifact@v4
@@ -235,3 +251,65 @@ jobs:
           retention-days: 1
           path: |
             out/make/
+
+  map-rpm:
+    needs: build
+
+    strategy:
+      matrix:
+        os:
+          [
+            "ubuntu-22.04",
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+          ]
+        arch: ["x64", "arm64"]
+        exclude:
+          - os: "ubuntu-22.04"
+            arch: "arm64"
+          - os: "ubuntu-24.04-arm"
+            arch: "x64"
+          - os: "ubuntu-24.04"
+            arch: "arm64"
+      fail-fast: true
+
+    runs-on: ${{ matrix.os }}
+    container:
+      image: fedora:latest
+
+    steps:
+      - name: Download Debian-artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: debian-dependencies-${{ matrix.os }}-${{ matrix.arch }}
+          path: .
+
+      - name: Install dnf-utils for repoquery
+        run: dnf install -y dnf-plugins-core  # enthält repoquery
+
+      - name: Map SONAME → RPM-Paket
+        run: |
+          echo "# RPM-Abhängigkeiten pro SONAME" > rpm-deps-detail.txt
+          rpm_list=()
+          # alle SONAMEs extrahieren und deduplizieren
+          sos=$(grep '->' so-deps.txt | awk '{print $1}' | sort -u)
+          for so in $sos; do
+            echo "## $so" >> rpm-deps-detail.txt
+            # erste gefundene Package-NAME ausgeben
+            pkg=$(dnf repoquery --quiet --whatprovides "*$so" | head -n1)
+            echo "$pkg" >> rpm-deps-detail.txt
+            rpm_list+=("$pkg")
+            echo "" >> rpm-deps-detail.txt
+          done
+          # kommagetrennte Requires-Zeile erzeugen
+          uniq_pkgs=$(printf "%s\n" "${rpm_list[@]}" | sort -u | paste -sd ', ')
+          echo "Requires: $uniq_pkgs" > rpm-deps.txt
+
+      - name: Upload RPM-mapping artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-dependencies-${{ matrix.os }}-${{ matrix.arch }}
+          retention-days: 1
+          path: |
+            rpm-deps.txt
+            rpm-deps-detail.txt
