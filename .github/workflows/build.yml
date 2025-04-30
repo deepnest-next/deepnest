@@ -300,7 +300,7 @@ jobs:
             pkg=$(dnf repoquery --quiet --whatprovides "*$so" | head -n1)
             echo "$pkg" >> rpm-deps-detail.txt
             rpm_list+=("$pkg")
-            echo "" >> rpm-deps-detail.txt
+            
 
             # b) generischen Symlink ableiten (libname.so)
             base=$(echo "$so" | sed -r 's/(.*\.so)\..+/\1/')
@@ -309,6 +309,8 @@ jobs:
               echo "$base => $pkg_base" >> rpm-deps-detail.txt
               rpm_list+=("$pkg_base")
             fi
+
+            echo "" >> rpm-deps-detail.txt
           done
           # kommagetrennte Requires-Zeile erzeugen
           uniq_pkgs=$(printf "%s\n" "${rpm_list[@]}" | sort -u | paste -sd ', ')
