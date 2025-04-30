@@ -1,0 +1,170 @@
+name: macOS Build
+
+on:
+  workflow_call:
+    inputs:
+      build_number:
+        required: true
+        type: string
+      prebuilds_only:
+        required: true
+        type: string
+    secrets:
+      APPLE_MAC_CERT:
+        required: true
+      APPLE_MAC_CERT_PASS:
+        required: true
+      APPLE_KEYCHAIN:
+        required: true
+      APPLE_KEYCHAIN_PASS:
+        required: true
+      APPLE_API_KEY:
+        required: true
+      APPLE_API_KEY_ID:
+        required: true
+      APPLE_API_ISSUER:
+        required: true
+      APPLE_TEAM_PREFIX:
+        required: true
+      APPLE_DEVELOPER_ID_APPLICATION:
+        required: true
+      APPLE_DEVELOPER_ID_INSTALLER:
+        required: true
+      APPLE_MAS_IDENTITY:
+        required: true
+      APPLE_MAS_INSTALLER_IDENTITY:
+        required: true
+      APPLE_PROVISIONING_PROFILE:
+        required: true
+
+jobs:
+  build:
+    env:
+      UPDATE_FEED_OWNER: deepnest-next
+      UPDATE_FEED_REPOSITORY: deepnest
+      BUILD_NUMBER: ${{ inputs.build_number }}
+      PREBUILDS_ONLY: ${{ inputs.prebuilds_only }}
+    
+    strategy:
+      matrix:
+        os: ["macos-latest", "macos-13"]
+        arch: ["x64", "arm64"]
+        target: ["", "mas"]
+        exclude:
+          - os: "macos-13"
+            arch: "arm64"
+          - os: "macos-latest"
+            arch: "x64"
+          - os: "macos-13"
+            target: "mas"
+      fail-fast: true
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Github checkout
+        uses: actions/checkout@v4
+
+      - name: Install distribution dependencies
+        shell: bash
+        run: |
+          brew install python-setuptools;
+
+      - name: Setup macOS keychain and signing certificates
+        shell: bash
+        run: |
+          # Create temporary keychain
+          security create-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          security set-keychain-settings -lut 3600 "$APPLE_KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          security default-keychain -s "$APPLE_KEYCHAIN_PATH"
+
+          # Import signing certificate (using one p12 for both app and installer)
+          echo -n "$APPLE_MAC_CERT" | base64 --decode -o "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_SIGN_CERT_PASS" -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/sbin/installer -k "$APPLE_KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,installer: -s -k "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          rm $CERTIFICATE_PATH
+
+          # Import API key for notarization
+          echo -n "${{ secrets.APPLE_API_KEY }}" | base64 --decode -o "$NOTARIZATION_KEY_PATH"
+
+          # Create _assets directory if it doesn't exist and generate provisioning profile
+          mkdir -p _assets
+          if [[ "${{ matrix.target }}" == "mas" ]]; then
+            echo -n "${{ secrets.APPLE_PROVISIONING_PROFILE }}" | base64 --decode -o "_assets/embedded.provisionprofile"
+          fi
+          security find-identity "$APPLE_KEYCHAIN_PATH" -v > /dev/null || true
+          security find-identity -p codesigning "$APPLE_KEYCHAIN_PATH" -v > /dev/null || true
+          security find-identity -p installer "$APPLE_KEYCHAIN_PATH" -v > /dev/null || true
+        env:
+          NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          CERTIFICATE_PATH: "${{ runner.temp }}/signing_cert.p12"
+          APPLE_MAC_CERT: ${{ secrets.APPLE_MAC_CERT }}
+          APPLE_SIGN_CERT_PASS: ${{ secrets.APPLE_MAC_CERT_PASS }}
+          APPLE_KEYCHAIN: ${{ secrets.APPLE_KEYCHAIN }}
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
+          APPLE_KEYCHAIN_PASS: ${{ secrets.APPLE_KEYCHAIN_PASS }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+
+      - name: Replace AppIdentifierPrefix in plist files
+        shell: bash
+        run: |
+          # Find all entitlements plist files and replace the placeholder
+          find _assets -name "entitlements*.plist" -exec sed -i '' "s/\$(AppIdentifierPrefix)/${{secrets.APPLE_TEAM_PREFIX}}/g" {} \;
+
+      - name: Setup Node (v22)
+        uses: actions/setup-node@v4
+        with:
+          cache: "npm"
+          node-version: "22"
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          npm install -g npm@latest
+          npm ci
+          npm install -D appdmg
+
+      - name: Build (${{ matrix.arch }})
+        uses: DeineAgenturUG/retry@6278ba3ea01ddc52e75d82766fca6cf4d35835cd
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          retry_wait_seconds: 120
+          command: |
+            mkdir -p out/make/
+            if [[ "${{ matrix.target }}" == "mas" && ("${{ matrix.os }}" == "macos-13" || "${{ matrix.os }}" == "macos-latest") ]]; then
+              npm run make -- --arch ${{ matrix.arch }} || find ./out -type f
+              if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+                # For macOS 13, we need to use the universal build for the MAS
+                # because it doesn't support arm64 builds.
+                npm run make -- --arch universal --platform mas || find ./out -type f
+              fi
+            else
+              npm run make -- --arch ${{ matrix.arch }}
+            fi
+            find ./out -type f
+          shell: bash
+        env:
+          NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
+          APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+          APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}
+          APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
+          APPLE_MAS_INSTALLER_IDENTITY: ${{ secrets.APPLE_MAS_INSTALLER_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          CI: "true"
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          MAKER_ARCH: ${{ matrix.arch }}
+          MAKER_PLATFORM: ${{ matrix.target == 'mas' && 'mas' || '' }}
+
+      - name: Upload artifacts (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.target == 'mas' && '-mas' || '' }}
+          retention-days: 1
+          path: |
+            out/make/
