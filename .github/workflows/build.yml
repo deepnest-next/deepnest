@@ -177,6 +177,24 @@ jobs:
 
       # TODO: add AppImage for linux if we can get snap and/or flatpak to work
       
+      - name: Prepare minimal debian/control
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          ARCH=amd64
+          mkdir -p debian
+          cat > debian/control <<EOF
+          Source: $PKG
+          Section: utils
+          Priority: optional
+          Maintainer: CI Runner <ci@github.com>
+          Standards-Version: 4.5.0
+          Package: $PKG
+          Version: $VER
+          Architecture: $ARCH
+          Description: Temporäres Control für dpkg-shlibdeps
+          EOF
+
       - name: Scan shared-library dependencies
         if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         id: scan
