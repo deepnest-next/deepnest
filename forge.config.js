@@ -3,6 +3,7 @@ const { serialHooks } = require('@electron/packager/dist/hooks')
 const { FuseV1Options, FuseVersion } = require("@electron/fuses");
 const { rmSync, renameSync } = require("fs");
 const fs = require("fs");
+const os = require("os");
 const { execSync } = require("child_process");
 const { globSync } = require("glob");
 const path = require("path");
