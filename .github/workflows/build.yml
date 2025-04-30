@@ -178,6 +178,7 @@ jobs:
       # TODO: add AppImage for linux if we can get snap and/or flatpak to work
       
       - name: Prepare minimal debian/control
+        if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'ubuntu-24.04-arm' }}
         run: |
           PKG=$(node -p "require('./package.json').name")
           VER=$(node -p "require('./package.json').version")
