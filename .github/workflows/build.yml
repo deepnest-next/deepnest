@@ -264,6 +264,16 @@ jobs:
             "ubuntu-24.04-arm",
           ]
         arch: ["x64", "arm64"]
+        docker: [
+          "fedora:latest",
+          "opensuse/leap:latest",
+          "opensuse/tumbleweed:latest",
+          "rockylinux:9.3",
+          "rockylinux:8.9",
+          "almalinux:latest",
+          "redhat/ubi8:latest",
+          "redhat/ubi9:latest",
+          ]
         exclude:
           - os: "ubuntu-22.04"
             arch: "arm64"
@@ -289,6 +299,7 @@ jobs:
 
       - name: Map SONAME → RPM-Paket
         run: |
+          echo "DOCKER_LABEL=$(echo '${{ matrix.docker }}' | tr ':/' '_')" >> $GITHUB_ENV
           echo "# RPM-Abhängigkeiten pro SONAME" > rpm-deps-detail.txt
           rpm_list=()
           # alle SONAMEs extrahieren und deduplizieren
@@ -319,7 +330,7 @@ jobs:
       - name: Upload RPM-mapping artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rpm-dependencies-${{ matrix.os }}-${{ matrix.arch }}
+          name: rpm-dependencies-${{ matrix.os }}-${{ matrix.arch }}-${{ env.DOCKER_LABEL }}
           retention-days: 1
           path: |
             rpm-deps.txt
