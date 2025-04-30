@@ -226,6 +226,7 @@ jobs:
             # Method 3: Try extracting using pattern matching
             if [ -z "$pkg" ]; then
               pkg=$(echo "$search_result" | grep -E "^[^ ]+ *\| *[^ ]+ *\|" | grep -v "32bit" | \
+                grep -v "^S " | grep -v "^--" | grep -v "^$" | \
                 head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
               echo "Extracted package name Methode 3: $pkg"  
             fi
