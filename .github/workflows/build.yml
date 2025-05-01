@@ -157,37 +157,37 @@ jobs:
       - name: Map SONAME → RPM-Paket (inkl. generische .so)
         shell: bash
         run: |
-          echo "# RPM-Abhängigkeiten pro SONAME (inkl. generischer .so)" > rpm-deps-detail.txt
+          echo "# RPM-Abhängigkeiten pro SONAME (inkl. generischer .so)" >rpm-deps-detail.txt
           rpm_list=()
-          echoerr() { cat <<< "$@" 1>&2; }
-          
+          echoerr() { cat <<<"$@" 1>&2; }
+
           if [ ! -f "so-deps.txt" ]; then
             echo "WARNING: so-deps.txt file not found, creating empty file"
-            echo "# Empty file - no dependencies found" > so-deps.txt
-            echo "Requires: " > rpm-deps.txt
+            echo "# Empty file - no dependencies found" >so-deps.txt
+            echo "Requires: " >rpm-deps.txt
             exit 0
           fi
-          
+
           # Check if so-deps.txt has content with proper format
           if ! grep -q -- "->" so-deps.txt; then
             echo "WARNING: so-deps.txt does not contain expected format with '->' symbols"
             echo "Content of so-deps.txt:"
             cat so-deps.txt
             echo "Creating empty dependency files"
-            echo "Requires: " > rpm-deps.txt
+            echo "Requires: " >rpm-deps.txt
             exit 0
           fi
-          
+
           # Extract SONAME list - with additional error handling
           sos=$(grep -- '->' so-deps.txt | cut -d ' ' -f1 | sort -u) || true
           if [ -z "$sos" ]; then
             echo "WARNING: No shared object names found in so-deps.txt"
-            echo "Requires: " > rpm-deps.txt
+            echo "Requires: " >rpm-deps.txt
             exit 0
           fi
           echo "Found shared objects to process:"
           echo "$sos"
-          
+
           # Detect if this is an openSUSE distribution
           is_opensuse=0
           if command -v zypper >/dev/null; then
@@ -196,59 +196,89 @@ jobs:
           fi
 
           # Query-Befehl wählen for non-openSUSE distributions
-          if   command -v dnf    >/dev/null && [ $is_opensuse -eq 0 ]; then 
+          if command -v dnf >/dev/null && [ $is_opensuse -eq 0 ]; then
             QUERY="dnf repoquery --quiet --whatprovides"
-          elif command -v yum    >/dev/null && [ $is_opensuse -eq 0 ]; then 
+          elif command -v yum >/dev/null && [ $is_opensuse -eq 0 ]; then
             QUERY="yum whatprovides"
           elif [ $is_opensuse -eq 0 ]; then
             QUERY="rpm -q --whatprovides"
           fi
-          
+
           # Improved helper function to extract package name from zypper output
           extract_pkg_name() {
             local search_result="$1"
-            
+            local pkg=""
             # Display the full search result for debugging
             echoerr "Raw search result:"
             echoerr "$search_result"
-            
+
             # Try different parsing methods based on output format
-            
-            # Method 1: Standard format with | separator
-            local pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" | \
+
+            # Method 1: Standard format with | separator - prioritize non-32bit packages
+            pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" |
               head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-            echoerr "Parsed package name (Method 1): $pkg"  
-            # Method 2: Alternative format without | separator
+            echoerr "Parsed package name (Method 1 - non-32bit): $pkg"
+
+            # Method 1b: If no non-32bit package found, try with 32bit packages
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" | \
-                grep -v "^S " | grep -v "^--" | grep -v "^$" | \
+              pkg=$(echo "$search_result" | grep "| package" | grep -vE "^$" |
+                head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+              echoerr "Parsed package name (Method 1b - including 32bit): $pkg"
+            fi
+
+            # Method 2: Alternative format without | separator - prioritize non-32bit packages
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" |
+                grep -v "^$" |
                 awk '{print $2}' | head -n1)
-              echoerr "Parsed package name (Method 2): $pkg"
+              echoerr "Parsed package name (Method 2 - non-32bit): $pkg"
+
+              # Method 2b: If no non-32bit package found, try with 32bit packages
+              if [ -z "$pkg" ]; then
+                pkg=$(echo "$search_result" | grep "| package" | grep -vE "^$" |
+                  grep -v "^$" |
+                  awk '{print $2}' | head -n1)
+                echoerr "Parsed package name (Method 2b - including 32bit): $pkg"
+              fi
             fi
-            
-            # Method 3: Try extracting using pattern matching
+
+            # Method 3: Try extracting using pattern matching - prioritize non-32bit packages
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" | \
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" |
                 head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
-              echoerr "Parsed package name (Method 3): $pkg"
+              echoerr "Parsed package name (Method 3 - non-32bit): $pkg"
+
+              # Method 3b: If no non-32bit package found, try with 32bit packages
+              if [ -z "$pkg" ]; then
+                pkg=$(echo "$search_result" | grep "| package" | grep -vE "^$" |
+                  head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
+                echoerr "Parsed package name (Method 3b - including 32bit): $pkg"
+              fi
             fi
-            
-            # If still empty, try a more aggressive approach
+
+            # If still empty, try a more aggressive approach - prioritize non-32bit packages
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep -v "No matching items found" | grep -v "Loading repository data" | \
-                grep -v "Reading installed packages" | grep -v "^S " | grep -v "^--" | grep -v "^$" | grep -v "Summary" | \
-                head -n1 | awk '{print $1}')
-              echoerr "Parsed package name (Method 4 - aggressive): $pkg"
+              pkg=$(echo "$search_result" | grep -v "32bit" |
+                grep "| package" | grep -v "^$" |
+                head -n1 | awk '{print $2}')
+              echoerr "Parsed package name (Method 4 - aggressive non-32bit): $pkg"
+
+              # Method 4b: If no non-32bit package found, try with 32bit packages
+              if [ -z "$pkg" ]; then
+                pkg=$(echo "$search_result" | grep "| package" | grep -v "^$" | grep -v "Summary" |
+                  head -n1 | awk '{print $2}')
+                echoerr "Parsed package name (Method 4b - aggressive including 32bit): $pkg"
+              fi
             fi
-            
+
             echo "$pkg"
           }
-          
+
           # Function to try rpm file command to find package
           find_providing_package_with_rpm() {
             local lib_name="$1"
             local pkg_name=""
-            
+            local found_file=""
             # Try using rpm -qf on typical library locations
             for lib_path in "/usr/lib64/$lib_name" "/usr/lib/$lib_name" "/lib64/$lib_name" "/lib/$lib_name"; do
               if [ -e "$lib_path" ]; then
@@ -259,30 +289,30 @@ jobs:
                 fi
               fi
             done
-            
+
             # Try finding the file with 'find' and then querying
-            local found_file=$(find /lib /usr/lib /lib64 /usr/lib64 -name "$lib_name" -type f 2>/dev/null | head -n1) || true
+            found_file=$(find /lib /usr/lib /lib64 /usr/lib64 -name "$lib_name" -type f 2>/dev/null | head -n1) || true
             if [ -n "$found_file" ]; then
-                pkg_name=$(rpm -qf "$found_file" 2>/dev/null) || true
-                if [ -n "$pkg_name" ] && [ "$pkg_name" != "file $found_file is not owned by any package" ]; then
-                  echo "$pkg_name"
-                  return 0
-                fi
+              pkg_name=$(rpm -qf "$found_file" 2>/dev/null) || true
+              if [ -n "$pkg_name" ] && [ "$pkg_name" != "file $found_file is not owned by any package" ]; then
+                echo "$pkg_name"
+                return 0
+              fi
             fi
-            
+
             return 1
           }
 
           # Process each SONAME and find providing packages
           for so in $sos; do
-            echo "## $so" >> rpm-deps-detail.txt
+            echo "## $so" >>rpm-deps-detail.txt
             pkg_full=""
             pkg_base=""
 
             if [ $is_opensuse -eq 1 ]; then
               # OpenSUSE multi-step search approach
               echo "Looking up package for $so using multi-step search"
-              
+
               # First try direct rpm query if the library exists on the system
               echo "  Step 0: Trying direct rpm query for existing file"
               pkg_full=$(find_providing_package_with_rpm "$so") || true
@@ -322,7 +352,7 @@ jobs:
                           echo "    Found package via --match-exact with prefix ${prefix}: $pkg_full"
                           break
                         fi
-                        
+
                         # Also try without --match-exact
                         echo "    Trying zypper se --provides \"${prefix}$so\""
                         search_result=$(zypper se --provides "${prefix}$so" 2>/dev/null) || true
@@ -332,7 +362,7 @@ jobs:
                           break
                         fi
                       done
-                      
+
                       # Step 5: Try with file search (find packages by filename)
                       if [ -z "$pkg_full" ]; then
                         echo "  Step 5: Trying file search"
@@ -342,7 +372,7 @@ jobs:
                           echo "  Found package via file search: $pkg_full"
                         fi
                       fi
-                      
+
                       # Step 6: Try with package name search based on library name
                       if [ -z "$pkg_full" ]; then
                         echo "  Step 6: Trying package name search"
@@ -361,7 +391,7 @@ jobs:
                           done
                         fi
                       fi
-                      
+
                       # Step 7: Try fuzzy search with approximate patterns
                       if [ -z "$pkg_full" ]; then
                         echo "  Step 7: Trying fuzzy search with approximate patterns"
@@ -373,7 +403,7 @@ jobs:
                             search_result=$(zypper se "$pattern" 2>/dev/null) || true
                             if [ -n "$search_result" ]; then
                               # For fuzzy search, take the first one that's not a -devel package
-                              pkg_full=$(echo "$search_result" | grep -v "devel" | grep -E "^(i\+? |v |i  |   )" | \
+                              pkg_full=$(echo "$search_result" | grep -v "devel" | grep -E "^(i\+? |v |i  |   )" |
                                 grep -v "32bit" | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
                               if [ -z "$pkg_full" ]; then
                                 # If no non-devel package, just take the first match
@@ -389,7 +419,7 @@ jobs:
                   fi
                 fi
               fi
-              
+
               # If we still haven't found anything, mark as not-found
               if [ -z "$pkg_full" ]; then
                 echo "  No package found for $so after all search attempts"
@@ -400,8 +430,8 @@ jobs:
               pkg_full=$($QUERY "*$so" 2>/dev/null | head -n1) || true
               echo "  Package for $so: $pkg_full"
             fi
-            
-            echo "$so => $pkg_full" >> rpm-deps-detail.txt
+
+            echo "$so => $pkg_full" >>rpm-deps-detail.txt
             if [ -n "$pkg_full" ] && [ "$pkg_full" != "not-found" ]; then
               rpm_list+=("$pkg_full")
             fi
@@ -412,7 +442,7 @@ jobs:
               if [ $is_opensuse -eq 1 ]; then
                 # Use similar multi-step search for the base library name
                 echo "Looking up package for base library $base using multi-step search"
-                
+
                 # First try direct rpm query if the library exists on the system
                 pkg_base=$(find_providing_package_with_rpm "$base") || true
                 if [ -n "$pkg_base" ]; then
@@ -443,7 +473,7 @@ jobs:
                             echo "  Found base package via --match-exact with prefix: $pkg_base"
                             break
                           fi
-                          
+
                           search_result=$(zypper se --provides "${prefix}$base" 2>/dev/null) || true
                           if [ -n "$search_result" ]; then
                             pkg_base=$(extract_pkg_name "$search_result")
@@ -451,7 +481,7 @@ jobs:
                             break
                           fi
                         done
-                        
+
                         # If still not found, try file search
                         if [ -z "$pkg_base" ]; then
                           search_result=$(zypper search -f "$base" 2>/dev/null) || true
@@ -478,14 +508,14 @@ jobs:
                 pkg_base=$($QUERY "*$base" 2>/dev/null | head -n1) || true
                 echo "  Package for base $base: $pkg_base"
               fi
-              
-              echo "$base => $pkg_base" >> rpm-deps-detail.txt
+
+              echo "$base => $pkg_base" >>rpm-deps-detail.txt
               if [ -n "$pkg_base" ] && [ "$pkg_base" != "not-found" ]; then
                 rpm_list+=("$pkg_base")
               fi
             fi
 
-            echo "" >> rpm-deps-detail.txt
+            echo "" >>rpm-deps-detail.txt
           done
 
           # Show found packages for debugging
@@ -495,24 +525,24 @@ jobs:
           else
             printf "  %s\n" "${rpm_list[@]}" | sort -u
           fi
-          
+
           # Kommagetrennte Requires-Zeile
           if [ ${#rpm_list[@]} -eq 0 ]; then
             echo "Warning: No packages found, creating empty requires"
-            echo "Requires: " > rpm-deps.txt
+            echo "Requires: " >rpm-deps.txt
           else
             # The following is safer - create the file first in case paste fails
-            printf "%s\n" "${rpm_list[@]}" | sort -u | grep -v "^$" > /tmp/pkg_list
+            printf "%s\n" "${rpm_list[@]}" | sort -u | grep -v "^$" >/tmp/pkg_list
             if [ -s /tmp/pkg_list ]; then
               # File has content, create comma-separated list
               uniq_pkgs=$(paste -sd ', ' /tmp/pkg_list)
-              echo "Requires: $uniq_pkgs" > rpm-deps.txt
+              echo "Requires: $uniq_pkgs" >rpm-deps.txt
             else
               # File is empty
-              echo "Requires: " > rpm-deps.txt
+              echo "Requires: " >rpm-deps.txt
             fi
           fi
-          
+
           # Ensure the detail file exists even if empty
           touch rpm-deps-detail.txt
 
