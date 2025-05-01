@@ -6,6 +6,11 @@
   "main": "main.js",
   "types": "index.d.ts",
   "license": "MIT",
+  "author": {
+    "name": "deepnest-next Community",
+    "email": "stuff@deepnest.net",
+    "url": "https://deepnest.net"
+  },
   "funding": [
     {
       "type": "patreon",
@@ -14,13 +19,20 @@
   ],
   "scripts": {
     "start": "electron .",
-    "printenv": "cross-replace node -e \"console.log(process.env)\"",
+    "forge-start": "electron-forge start",
     "test": "playwright test",
     "build": "electron-rebuild",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
-    "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
+    "clean:out": "rmdir /s /q build dist out >nul 2>&1|echo . >nul",
+    "clean-all": "rmdir /s /q build dist node_modules bin out >nul 2>&1|echo . >nul",
     "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore'",
-    "dist-all": "npm run clean-all && npm install && npm run build && npm run dist"
+    "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
+    "package": "electron-forge package",
+    "postinstall": "patch-package",
+    "make": "electron-forge make",
+    "publish:dry": "electron-forge publish --dry-run",
+    "publish:fromdry": "electron-forge publish --from-dry-run",
+    "publish": "electron-forge publish"
   },
   "repository": "https://github.com/deepnest-next/deepnest",
   "keywords": [
@@ -30,44 +42,130 @@
     "Laser"
   ],
   "devDependencies": {
-    "@electron/packager": "18.3.6",
+    "@electron-forge/cli": "^7.8.0",
+    "@electron-forge/maker-appx": "^7.8.0",
+    "@electron-forge/maker-deb": "^7.8.0",
+    "@electron-forge/maker-dmg": "^7.8.0",
+    "@electron-forge/maker-flatpak": "^7.8.0",
+    "@electron-forge/maker-pkg": "^7.8.0",
+    "@electron-forge/maker-rpm": "^7.8.0",
+    "@electron-forge/maker-snap": "^7.8.0",
+    "@electron-forge/maker-wix": "^7.8.0",
+    "@electron-forge/maker-zip": "^7.8.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.0",
+    "@electron-forge/plugin-fuses": "^7.8.0",
+    "@electron-forge/publisher-github": "^7.8.0",
+    "@electron-forge/publisher-s3": "^7.8.0",
+    "@electron-forge/publisher-snapcraft": "^7.8.0",
+    "@electron/fuses": "^1.8.0",
+    "@electron/packager": "^18.3.6",
     "@electron/rebuild": "3.7.2",
     "@playwright/test": "1.52.0",
-    "@types/node": "22.14.1",
+    "@reforged/maker-appimage": "^5.0.0",
+    "@types/node": "22.15.3",
     "cross-replace": "0.2.0",
-    "electron": "34.5.2"
+    "electron": "34.5.2",
+    "electron-forge-maker-appimage": "26.0.14",
+    "electron-maker-velopack": "^1.0.4",
+    "glob": "11.0.2",
+    "node-abi": "4.4.0",
+    "patch-package": "^8.0.0"
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "202503.13.155300",
     "@deepnest/svg-preprocessor": "0.1.10",
     "@electron/remote": "2.1.2",
-    "axios": "1.8.4",
+    "axios": "1.9.0",
     "form-data": "4.0.2",
     "graceful-fs": "4.2.11",
-    "marked": "15.0.9"
+    "marked": "15.0.11",
+    "velopack": "0.0.1053"
+  },
+  "optionalDependencies": {
+    "@deepnest/svg-preprocessor-win32-x64-msvc": "0.1.10",
+    "@deepnest/svg-preprocessor-darwin-x64": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-x64-gnu": "0.1.10",
+    "@deepnest/svg-preprocessor-darwin-arm64": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-arm64-gnu": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-arm64-musl": "0.1.10",
+    "@deepnest/svg-preprocessor-win32-arm64-msvc": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-arm-gnueabihf": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-arm-musleabihf": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-x64-musl": "0.1.10",
+    "@deepnest/svg-preprocessor-win32-ia32-msvc": "0.1.10",
+    "@deepnest/svg-preprocessor-linux-riscv64-gnu": "0.1.10",
+    "electron-installer-debian": "3.2.0",
+    "appdmg": "0.6.6",
+    "@malept/electron-installer-flatpak": "0.11.4",
+    "electron-installer-redhat": "3.4.0",
+    "dmg-license": "1.0.11"
+  },
+  "hostDependencies": {
+    "debian": [
+      "libasound2 | libasound2t64",
+      "libatk-bridge2.0-0 | libatk-bridge2.0-0t64",
+      "libatk1.0-0 | libatk1.0-0t64",
+      "libatspi2.0-0 | libatspi2.0-0t64",
+      "libc6",
+      "libcairo2",
+      "libcups2 | libcups2t64",
+      "libdbus-1-3",
+      "libexpat1",
+      "libgbm1",
+      "libgcc-s1",
+      "libglib2.0-0 | libglib2.0-0t64",
+      "libgtk-3-0 | libgtk-3-0t64",
+      "libnspr4",
+      "libnss3",
+      "libpango-1.0-0",
+      "libudev1",
+      "libx11-6",
+      "libxcb1",
+      "libxcomposite1",
+      "libxdamage1",
+      "libxext6",
+      "libxfixes3",
+      "libxkbcommon0",
+      "libxrandr2"
+    ],
+    "redhat": [
+      "libasound2 | libasound2t64",
+      "libatk-bridge2.0-0 | libatk-bridge2.0-0t64",
+      "libatk1.0-0 | libatk1.0-0t64",
+      "libatspi2.0-0 | libatspi2.0-0t64",
+      "libc6",
+      "libcairo2",
+      "libcups2",
+      "libdbus-1-3",
+      "libexpat1",
+      "libgbm1",
+      "libgcc-s1",
+      "libglib2.0-0 | libglib2.0-0t64",
+      "libgtk-3-0 | libgtk-3-0t64",
+      "libnspr4",
+      "libnss3",
+      "libpango1.0-0 | libpango-1.0-0",
+      "libudev1",
+      "libx11-6",
+      "libxcb1",
+      "libxcomposite1",
+      "libxdamage1",
+      "libxext6",
+      "libxfixes3",
+      "libxkbcommon0",
+      "libxrandr2"
+    ]
   },
   "files": [
     "main.js",
+    "notification-service.js",
+    "presets.js",
     "main/**/*",
     "index.d.ts",
     "node_modules",
     "package.json",
-    "icon.icns",
-    "icon.ico"
+    "_assets"
   ],
-  "build": {
-    "appId": "net.deepnest.app",
-    "copyright": "2024 deepnest-next Community",
-    "compression": "maximum",
-    "nodeGypRebuild": false,
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "icon.icns"
-    },
-    "win": {
-      "icon": "icon.ico"
-    }
-  },
   "contributors": [
     {
       "name": "Josef Fröhle",

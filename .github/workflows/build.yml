@@ -1,44 +1,565 @@
-name: build
+name: Application Build
 
 on:
-  workflow_dispatch:
-  push:
-    # enable next line to limit branches to run
-    branches: ["main"]
+  workflow_dispatch: 
   pull_request:
-    # enable next line to limit branches to run
-    # branches: [ "main" ]
 
 jobs:
-  build:
+  linux-build:
+    uses: ./.github/workflows/linux-build.yml
+    with:
+      build_number: ${{ github.run_number }}
+      prebuilds_only: "1"
+    secrets:
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_TEAM_PREFIX: ${{ secrets.APPLE_TEAM_PREFIX }}
+
+  windows-build:
+    uses: ./.github/workflows/windows-build.yml
+    with:
+      build_number: ${{ github.run_number }}
+      prebuilds_only: "1"
+    secrets:
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_TEAM_PREFIX: ${{ secrets.APPLE_TEAM_PREFIX }}
+
+  macos-build:
+    uses: ./.github/workflows/macos-build.yml
+    with:
+      build_number: ${{ github.run_number }}
+      prebuilds_only: "1"
+    secrets:
+      APPLE_MAC_CERT: ${{ secrets.APPLE_MAC_CERT }}
+      APPLE_MAC_CERT_PASS: ${{ secrets.APPLE_MAC_CERT_PASS }}
+      APPLE_KEYCHAIN: ${{ secrets.APPLE_KEYCHAIN }}
+      APPLE_KEYCHAIN_PASS: ${{ secrets.APPLE_KEYCHAIN_PASS }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_TEAM_PREFIX: ${{ secrets.APPLE_TEAM_PREFIX }}
+      APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+      APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}
+      APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
+      APPLE_MAS_INSTALLER_IDENTITY: ${{ secrets.APPLE_MAS_INSTALLER_IDENTITY }}
+      APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+
+  map-rpm:
+    needs: linux-build
+    timeout-minutes: 10
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
-        os: [windows-2022, ubuntu-22.04]
+        os:
+          [
+            "ubuntu-22.04",
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+          ]
+        arch: ["x64", "arm64"]
+        docker: [
+          "fedora:latest",
+          "opensuse/leap:latest",
+          "opensuse/tumbleweed:latest",
+          "rockylinux:9.3",
+          "rockylinux:8.9",
+          "almalinux:latest",
+          "redhat/ubi8:latest",
+          "redhat/ubi9:latest",
+          ]
+        exclude:
+          - os: "ubuntu-22.04"
+            arch: "arm64"
+          - os: "ubuntu-24.04-arm"
+            arch: "x64"
+          - os: "ubuntu-24.04"
+            arch: "arm64"
+          - os: "ubuntu-24.04-arm"
+            docker: "fedora:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "opensuse/leap:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "opensuse/tumbleweed:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "rockylinux:9.3"
+          - os: "ubuntu-24.04-arm"
+            docker: "rockylinux:8.9"
+          - os: "ubuntu-24.04-arm"
+            docker: "almalinux:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "redhat/ubi8:latest"
+          - os: "ubuntu-24.04-arm"
+            docker: "redhat/ubi9:latest"
+          - os: "ubuntu-22.04"
+            docker: "fedora:latest"
+          - os: "ubuntu-22.04"
+            docker: "opensuse/leap:latest"
+          - os: "ubuntu-22.04"
+            docker: "opensuse/tumbleweed:latest"
+          - os: "ubuntu-22.04"
+            docker: "rockylinux:9.3"
+          - os: "ubuntu-22.04"
+            docker: "rockylinux:8.9"
+          - os: "ubuntu-22.04"
+            docker: "almalinux:latest"
+          - os: "ubuntu-22.04"
+            docker: "redhat/ubi8:latest"
+          - os: "ubuntu-22.04"
+            docker: "redhat/ubi9:latest"
+      fail-fast: false
+
     runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.docker }}
+      options: "--platform linux/${{ matrix.arch == 'x86' && 'amd64' || 'arm64' }}"
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Download Debian-artifacts
+        uses: actions/download-artifact@v4
         with:
-          submodules: recursive
+          name: debian-dependencies-${{ matrix.os }}-${{ matrix.arch }}
+          path: .
 
-      #    not needed currently, but leaving here for future use
-      #    - uses: actions/setup-python@v4
-      #      with:
-      #        python-version: '2.7.18'
+      - name: Check downloaded artifacts
+        run: |
+          echo "Listing all downloaded files:"
+          ls -la
+          echo "Content of so-deps.txt file (if exists):"
+          if [ -f "so-deps.txt" ]; then
+            cat so-deps.txt
+          else
+            echo "so-deps.txt does not exist!"
+            echo "# Empty file - no dependencies found" > so-deps.txt
+          fi
 
-      - name: boost
-        if: startsWith(matrix.os,'ubuntu')
-        run: sudo apt-get update && sudo apt-get install -yq libboost-dev
+      - name: Install query tools & awk (distro-agnostisch)
+        run: |
+          echo "DOCKER_LABEL=$(echo '${{ matrix.docker }}' | tr ':/' '_')" >> $GITHUB_ENV
+          if   command -v dnf    >/dev/null; then
+            echo "Detected dnf → installing dnf-plugins-core and gawk"
+            dnf install -y dnf-plugins-core gawk
+          elif command -v yum    >/dev/null; then
+            echo "Detected yum → installing yum-utils and gawk"
+            yum install -y yum-utils gawk
+          elif command -v zypper >/dev/null; then
+            echo "Detected zypper → refreshing repos"
+            zypper refresh
+            
+            # Additional tools for zypper package querying
+            echo "Installing query tools for OpenSUSE"
+            zypper install -y gawk grep which
+          else
+            echo "No supported package manager found, assuming awk is present"
+          fi
+  
+      - name: Map SONAME → RPM-Paket (inkl. generische .so)
+        shell: bash
+        run: |
+          echo "# RPM-Abhängigkeiten pro SONAME (inkl. generischer .so)" >rpm-deps-detail.txt
+          rpm_list=()
+          echoerr() { cat <<<"$@" 1>&2; }
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+          if [ ! -f "so-deps.txt" ]; then
+            echo "WARNING: so-deps.txt file not found, creating empty file"
+            echo "# Empty file - no dependencies found" >so-deps.txt
+            echo "Requires: " >rpm-deps.txt
+            exit 0
+          fi
+
+          # Check if so-deps.txt has content with proper format
+          if ! grep -q -- "->" so-deps.txt; then
+            echo "WARNING: so-deps.txt does not contain expected format with '->' symbols"
+            echo "Content of so-deps.txt:"
+            cat so-deps.txt
+            echo "Creating empty dependency files"
+            echo "Requires: " >rpm-deps.txt
+            exit 0
+          fi
+
+          # Extract SONAME list - with additional error handling
+          sos=$(grep -- '->' so-deps.txt | cut -d ' ' -f1 | sort -u) || true
+          if [ -z "$sos" ]; then
+            echo "WARNING: No shared object names found in so-deps.txt"
+            echo "Requires: " >rpm-deps.txt
+            exit 0
+          fi
+          echo "Found shared objects to process:"
+          echo "$sos"
+
+          # Detect if this is an openSUSE distribution
+          is_opensuse=0
+          if command -v zypper >/dev/null; then
+            is_opensuse=1
+            echo "Detected openSUSE distribution, using special package search logic"
+          fi
+
+          # Query-Befehl wählen for non-openSUSE distributions
+          if command -v dnf >/dev/null && [ $is_opensuse -eq 0 ]; then
+            QUERY="dnf repoquery --quiet --whatprovides"
+          elif command -v yum >/dev/null && [ $is_opensuse -eq 0 ]; then
+            QUERY="yum whatprovides"
+          elif [ $is_opensuse -eq 0 ]; then
+            QUERY="rpm -q --whatprovides"
+          fi
+
+          # Improved helper function to extract package name from zypper output
+          extract_pkg_name() {
+            local search_result="$1"
+            local pkg=""
+            # Display the full search result for debugging
+            echoerr "Raw search result:"
+            echoerr "$search_result"
+
+            # Try different parsing methods based on output format
+
+            # Method 1: Standard format with | separator - prioritize non-32bit packages
+            pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" |
+              head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+            echoerr "Parsed package name (Method 1 - non-32bit): $pkg"
+
+            # Method 1b: If no non-32bit package found, try with 32bit packages
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep "| package" | grep -vE "^$" |
+                head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+              echoerr "Parsed package name (Method 1b - including 32bit): $pkg"
+            fi
+
+            # Method 2: Alternative format without | separator - prioritize non-32bit packages
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" |
+                grep -v "^$" |
+                awk '{print $2}' | head -n1)
+              echoerr "Parsed package name (Method 2 - non-32bit): $pkg"
+
+              # Method 2b: If no non-32bit package found, try with 32bit packages
+              if [ -z "$pkg" ]; then
+                pkg=$(echo "$search_result" | grep "| package" | grep -vE "^$" |
+                  grep -v "^$" |
+                  awk '{print $2}' | head -n1)
+                echoerr "Parsed package name (Method 2b - including 32bit): $pkg"
+              fi
+            fi
+
+            # Method 3: Try extracting using pattern matching - prioritize non-32bit packages
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" |
+                head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
+              echoerr "Parsed package name (Method 3 - non-32bit): $pkg"
+
+              # Method 3b: If no non-32bit package found, try with 32bit packages
+              if [ -z "$pkg" ]; then
+                pkg=$(echo "$search_result" | grep "| package" | grep -vE "^$" |
+                  head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
+                echoerr "Parsed package name (Method 3b - including 32bit): $pkg"
+              fi
+            fi
+
+            # If still empty, try a more aggressive approach - prioritize non-32bit packages
+            if [ -z "$pkg" ]; then
+              pkg=$(echo "$search_result" | grep -v "32bit" |
+                grep "| package" | grep -v "^$" |
+                head -n1 | awk '{print $2}')
+              echoerr "Parsed package name (Method 4 - aggressive non-32bit): $pkg"
+
+              # Method 4b: If no non-32bit package found, try with 32bit packages
+              if [ -z "$pkg" ]; then
+                pkg=$(echo "$search_result" | grep "| package" | grep -v "^$" | grep -v "Summary" |
+                  head -n1 | awk '{print $2}')
+                echoerr "Parsed package name (Method 4b - aggressive including 32bit): $pkg"
+              fi
+            fi
+
+            echo "$pkg"
+          }
+
+          # Function to try rpm file command to find package
+          find_providing_package_with_rpm() {
+            local lib_name="$1"
+            local pkg_name=""
+            local found_file=""
+            # Try using rpm -qf on typical library locations
+            for lib_path in "/usr/lib64/$lib_name" "/usr/lib/$lib_name" "/lib64/$lib_name" "/lib/$lib_name"; do
+              if [ -e "$lib_path" ]; then
+                pkg_name=$(rpm -qf "$lib_path" 2>/dev/null) || true
+                if [ -n "$pkg_name" ] && [ "$pkg_name" != "file $lib_path is not owned by any package" ]; then
+                  echo "$pkg_name"
+                  return 0
+                fi
+              fi
+            done
+
+            # Try finding the file with 'find' and then querying
+            found_file=$(find /lib /usr/lib /lib64 /usr/lib64 -name "$lib_name" -type f 2>/dev/null | head -n1) || true
+            if [ -n "$found_file" ]; then
+              pkg_name=$(rpm -qf "$found_file" 2>/dev/null) || true
+              if [ -n "$pkg_name" ] && [ "$pkg_name" != "file $found_file is not owned by any package" ]; then
+                echo "$pkg_name"
+                return 0
+              fi
+            fi
+
+            return 1
+          }
+
+          # Process each SONAME and find providing packages
+          for so in $sos; do
+            echo "## $so" >>rpm-deps-detail.txt
+            pkg_full=""
+            pkg_base=""
+
+            if [ $is_opensuse -eq 1 ]; then
+              # OpenSUSE multi-step search approach
+              echo "Looking up package for $so using multi-step search"
+
+              # First try direct rpm query if the library exists on the system
+              echo "  Step 0: Trying direct rpm query for existing file"
+              pkg_full=$(find_providing_package_with_rpm "$so") || true
+              if [ -n "$pkg_full" ]; then
+                echo "  Found package via direct rpm query: $pkg_full"
+              else
+                # Step 1: Try with rpm -qa --whatprovides
+                echo "  Step 1: Trying rpm -qa --whatprovides \"$so\""
+                rpm_result=$(rpm -qa --whatprovides "$so" 2>/dev/null) || true
+                if [ -n "$rpm_result" ]; then
+                  pkg_full=$(echo "$rpm_result" | head -n1)
+                  echo "  Found package via rpm whatprovides: $pkg_full"
+                else
+                  # Step 2: Try --match-exact with direct library name
+                  echo "  Step 2: Trying zypper se --provides --match-exact \"$so\""
+                  search_result=$(zypper se --provides --match-exact "$so" 2>/dev/null) || true
+                  echo "  Search result: \"\"\"$search_result\"\"\""
+                  if [ -n "$search_result" ]; then
+                    pkg_full=$(extract_pkg_name "$search_result")
+                    echo "  Found package via --match-exact direct search: $pkg_full"
+                  else
+                    # Step 3: Try without --match-exact (broader search)
+                    echo "  Step 3: Trying zypper se --provides \"$so\""
+                    search_result=$(zypper se --provides "$so" 2>/dev/null) || true
+                    echo "  Search result: \"\"\"$search_result\"\"\""
+                    if [ -n "$search_result" ]; then
+                      pkg_full=$(extract_pkg_name "$search_result")
+                      echo "  Found package via broad search: $pkg_full"
+                    else
+                      # Step 4: Try with /lib path prefix
+                      echo "  Step 4: Trying with /lib path prefix"
+                      for prefix in "/lib/" "/usr/lib/" "/lib64/" "/usr/lib64/"; do
+                        echo "    Trying zypper se --provides --match-exact \"${prefix}$so\""
+                        search_result=$(zypper se --provides --match-exact "${prefix}$so" 2>/dev/null) || true
+                        if [ -n "$search_result" ]; then
+                          pkg_full=$(extract_pkg_name "$search_result")
+                          echo "    Found package via --match-exact with prefix ${prefix}: $pkg_full"
+                          break
+                        fi
+
+                        # Also try without --match-exact
+                        echo "    Trying zypper se --provides \"${prefix}$so\""
+                        search_result=$(zypper se --provides "${prefix}$so" 2>/dev/null) || true
+                        if [ -n "$search_result" ]; then
+                          pkg_full=$(extract_pkg_name "$search_result")
+                          echo "    Found package via broad search with prefix ${prefix}: $pkg_full"
+                          break
+                        fi
+                      done
+
+                      # Step 5: Try with file search (find packages by filename)
+                      if [ -z "$pkg_full" ]; then
+                        echo "  Step 5: Trying file search"
+                        search_result=$(zypper search -f "$so" 2>/dev/null) || true
+                        if [ -n "$search_result" ]; then
+                          pkg_full=$(extract_pkg_name "$search_result")
+                          echo "  Found package via file search: $pkg_full"
+                        fi
+                      fi
+
+                      # Step 6: Try with package name search based on library name
+                      if [ -z "$pkg_full" ]; then
+                        echo "  Step 6: Trying package name search"
+                        # Extract base name (remove lib prefix and version suffix)
+                        base_name=$(echo "$so" | sed -E 's/^lib([^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
+                        if [ -n "$base_name" ]; then
+                          # Common package naming patterns for libraries
+                          for pattern in "${base_name}" "lib${base_name}" "lib${base_name}-devel" "${base_name}-libs"; do
+                            echo "    Trying zypper se \"$pattern\""
+                            search_result=$(zypper se "$pattern" 2>/dev/null) || true
+                            if [ -n "$search_result" ]; then
+                              pkg_full=$(extract_pkg_name "$search_result")
+                              echo "    Found package via package name search with $pattern: $pkg_full"
+                              break
+                            fi
+                          done
+                        fi
+                      fi
+
+                      # Step 7: Try fuzzy search with approximate patterns
+                      if [ -z "$pkg_full" ]; then
+                        echo "  Step 7: Trying fuzzy search with approximate patterns"
+                        # Extract the core part of the library name (remove lib prefix and everything after first dot)
+                        core_name=$(echo "$so" | sed -E 's/^lib([^.]+).*$/\1/' | tr '[:upper:]' '[:lower:]')
+                        if [ -n "$core_name" ]; then
+                          for pattern in "*${core_name}*"; do
+                            echo "    Trying zypper se \"$pattern\""
+                            search_result=$(zypper se "$pattern" 2>/dev/null) || true
+                            if [ -n "$search_result" ]; then
+                              # For fuzzy search, take the first one that's not a -devel package
+                              pkg_full=$(echo "$search_result" | grep -v "devel" | grep -E "^(i\+? |v |i  |   )" |
+                                grep -v "32bit" | head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
+                              if [ -z "$pkg_full" ]; then
+                                # If no non-devel package, just take the first match
+                                pkg_full=$(extract_pkg_name "$search_result")
+                              fi
+                              echo "    Found package via fuzzy search with $pattern: $pkg_full"
+                              break
+                            fi
+                          done
+                        fi
+                      fi
+                    fi
+                  fi
+                fi
+              fi
+
+              # If we still haven't found anything, mark as not-found
+              if [ -z "$pkg_full" ]; then
+                echo "  No package found for $so after all search attempts"
+                pkg_full="not-found"
+              fi
+            else
+              # Existing code for other distributions
+              pkg_full=$($QUERY "*$so" 2>/dev/null | head -n1) || true
+              echo "  Package for $so: $pkg_full"
+            fi
+
+            echo "$so => $pkg_full" >>rpm-deps-detail.txt
+            if [ -n "$pkg_full" ] && [ "$pkg_full" != "not-found" ]; then
+              rpm_list+=("$pkg_full")
+            fi
+
+            # Generischen Symlink (libname.so)
+            base=$(echo "$so" | sed -E 's/(.*\.so)\..+/\1/' 2>/dev/null) || true
+            if [ -n "$base" ] && [[ "$base" != "$so" ]]; then
+              if [ $is_opensuse -eq 1 ]; then
+                # Use similar multi-step search for the base library name
+                echo "Looking up package for base library $base using multi-step search"
+
+                # First try direct rpm query if the library exists on the system
+                pkg_base=$(find_providing_package_with_rpm "$base") || true
+                if [ -n "$pkg_base" ]; then
+                  echo "  Found base package via direct rpm query: $pkg_base"
+                else
+                  # Try with rpm -qa --whatprovides
+                  rpm_result=$(rpm -qa --whatprovides "$base" 2>/dev/null) || true
+                  if [ -n "$rpm_result" ]; then
+                    pkg_base=$(echo "$rpm_result" | head -n1)
+                    echo "  Found base package via rpm whatprovides: $pkg_base"
+                  else
+                    # Try with standard zypper searches
+                    search_result=$(zypper se --provides --match-exact "$base" 2>/dev/null) || true
+                    if [ -n "$search_result" ]; then
+                      pkg_base=$(extract_pkg_name "$search_result")
+                      echo "  Found base package via --match-exact: $pkg_base"
+                    else
+                      search_result=$(zypper se --provides "$base" 2>/dev/null) || true
+                      if [ -n "$search_result" ]; then
+                        pkg_base=$(extract_pkg_name "$search_result")
+                        echo "  Found base package via broad search: $pkg_base"
+                      else
+                        # Try with path prefixes
+                        for prefix in "/lib/" "/usr/lib/" "/lib64/" "/usr/lib64/"; do
+                          search_result=$(zypper se --provides --match-exact "${prefix}$base" 2>/dev/null) || true
+                          if [ -n "$search_result" ]; then
+                            pkg_base=$(extract_pkg_name "$search_result")
+                            echo "  Found base package via --match-exact with prefix: $pkg_base"
+                            break
+                          fi
+
+                          search_result=$(zypper se --provides "${prefix}$base" 2>/dev/null) || true
+                          if [ -n "$search_result" ]; then
+                            pkg_base=$(extract_pkg_name "$search_result")
+                            echo "  Found base package via broad search with prefix: $pkg_base"
+                            break
+                          fi
+                        done
+
+                        # If still not found, try file search
+                        if [ -z "$pkg_base" ]; then
+                          search_result=$(zypper search -f "$base" 2>/dev/null) || true
+                          if [ -n "$search_result" ]; then
+                            pkg_base=$(extract_pkg_name "$search_result")
+                            echo "  Found base package via file search: $pkg_base"
+                          else
+                            # If still not found, use the same package as the versioned library
+                            if [ "$pkg_full" != "not-found" ]; then
+                              pkg_base="$pkg_full"
+                              echo "  Using same package for base library $base: $pkg_base"
+                            else
+                              pkg_base="not-found"
+                              echo "  No package found for base library $base"
+                            fi
+                          fi
+                        fi
+                      fi
+                    fi
+                  fi
+                fi
+              else
+                # Existing code for other distributions
+                pkg_base=$($QUERY "*$base" 2>/dev/null | head -n1) || true
+                echo "  Package for base $base: $pkg_base"
+              fi
+
+              echo "$base => $pkg_base" >>rpm-deps-detail.txt
+              if [ -n "$pkg_base" ] && [ "$pkg_base" != "not-found" ]; then
+                rpm_list+=("$pkg_base")
+              fi
+            fi
+
+            echo "" >>rpm-deps-detail.txt
+          done
+
+          # Show found packages for debugging
+          echo "Found packages:"
+          if [ ${#rpm_list[@]} -eq 0 ]; then
+            echo "  No packages found!"
+          else
+            printf "  %s\n" "${rpm_list[@]}" | sort -u
+          fi
+
+          # Kommagetrennte Requires-Zeile
+          if [ ${#rpm_list[@]} -eq 0 ]; then
+            echo "Warning: No packages found, creating empty requires"
+            echo "Requires: " >rpm-deps.txt
+          else
+            # The following is safer - create the file first in case paste fails
+            printf "%s\n" "${rpm_list[@]}" | sort -u | grep -v "^$" >/tmp/pkg_list
+            if [ -s /tmp/pkg_list ]; then
+              # File has content, create comma-separated list
+              uniq_pkgs=$(paste -sd ', ' /tmp/pkg_list)
+              echo "Requires: $uniq_pkgs" >rpm-deps.txt
+            else
+              # File is empty
+              echo "Requires: " >rpm-deps.txt
+            fi
+          fi
+
+          # Ensure the detail file exists even if empty
+          touch rpm-deps-detail.txt
+
+      - name: Show generated files
+        run: |
+          echo "Content of rpm-deps.txt:"
+          cat rpm-deps.txt
+          echo "--------------------------"
+          echo "Content of rpm-deps-detail.txt (first 20 lines):"
+          head -n 20 rpm-deps-detail.txt
+          echo "--------------------------"
+
+      - name: Upload RPM-mapping artifacts
+        uses: actions/upload-artifact@v4
         with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Build
-        run: |
-          npm install
-          npm run build
-      - name: Package
-        run: |
-          npm run dist
+          name: rpm-dependencies-${{ env.DOCKER_LABEL }}
+          retention-days: 1
+          path: |
+            rpm-deps.txt
+            rpm-deps-detail.txt

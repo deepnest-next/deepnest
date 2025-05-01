@@ -1,0 +1,214 @@
+---
+name: Application Publish (Release)
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      UPDATE_FEED_OWNER: deepnest-next
+      UPDATE_FEED_REPOSITORY: deepnest
+      PREBUILDS_ONLY: 1
+    strategy:
+      matrix:
+        os:
+          [
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+            "windows-latest",
+            "macos-latest",
+            "macos-13",
+          ]
+        arch: ["x64", "arm64"]
+        target: ["", "mas"]
+        exclude:
+          - os: "ubuntu-24.04-arm"
+            arch: "x64"
+          - os: "ubuntu-24.04"
+            arch: "arm64"
+          - os: "macos-latest"
+            arch: "x64"
+          - os: "macos-13"
+            arch: "arm64"
+          # Exclude MAS target for non-macOS platforms
+          - os: "ubuntu-24.04"
+            target: "mas"
+          - os: "ubuntu-24.04-arm"
+            target: "mas"
+          - os: "windows-latest"
+            target: "mas"
+          # Include only one target for each macOS build to avoid duplicates
+          # - os: "macos-13"
+          #   target: ""
+          # - os: "macos-latest"
+          #   target: ""
+      fail-fast: true # Explicitly failing fast because this is a publish. We want to bail the entire release if something went wrong with another build
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Github checkout
+        uses: actions/checkout@v4
+
+      - name: Install distribution dependencies
+        shell: bash
+        run: |
+          if [[ ("${{ matrix.os }}" == "ubuntu-24.04" && "${{ matrix.arch }}" == "x64") || ("${{ matrix.os }}" == "ubuntu-24.04-arm" && "${{ matrix.arch }}" == "arm64") ]]; then
+            sudo apt-get update && sudo apt-get upgrade && sudo apt-get install -y flatpak flatpak-builder elfutils snapd libgl1 libglx-mesa0;
+            flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo ;
+            flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo ;
+            flatpak update --appstream -y;
+            flatpak install -y --user flathub org.freedesktop.Sdk//24.08;
+            flatpak install -y --user flathub org.freedesktop.Platform//24.08;
+            # sudo apt-get install -y flatpak flatpak-builder elfutils ;
+            git config --global --add protocol.file.allow always
+            # sudo snap install snapcraft --classic;
+            # sudo snap install core22 --classic;
+          fi
+          # if [ "${{ matrix.os.name }}" == "windows" ]; then
+          #   choco install -y nsis;
+          #   choco install wixtoolset  --version=3.14.0;
+          # fi
+
+      - name: Setup macOS keychain and signing certificates
+        shell: bash
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
+        run: |
+          # Create temporary keychain
+          security create-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          security set-keychain-settings -lut 3600 "$APPLE_KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          security default-keychain -s "$APPLE_KEYCHAIN_PATH"
+
+          # Import signing certificate (using one p12 for both app and installer)
+          echo -n "$APPLE_MAC_CERT" | base64 --decode -o "$CERTIFICATE_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_SIGN_CERT_PASS" -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/sbin/installer -k "$APPLE_KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,installer: -s -k "$APPLE_KEYCHAIN_PASS" "$APPLE_KEYCHAIN_PATH"
+          rm $CERTIFICATE_PATH
+
+          # Import API key for notarization
+          echo -n "${{ secrets.APPLE_API_KEY }}" | base64 --decode -o "$NOTARIZATION_KEY_PATH"
+
+          # Create _assets directory if it doesn't exist and generate provisioning profile
+          mkdir -p _assets
+          if [[ "${{ matrix.target }}" == "mas" ]]; then
+            echo -n "${{ secrets.APPLE_PROVISIONING_PROFILE }}" | base64 --decode -o "_assets/embedded.provisionprofile"
+          fi
+          security find-identity "$APPLE_KEYCHAIN_PATH" -v > /dev/null || true
+          security find-identity -p codesigning "$APPLE_KEYCHAIN_PATH" -v > /dev/null || true
+          security find-identity -p installer "$APPLE_KEYCHAIN_PATH" -v > /dev/null || true
+        env:
+          NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          CERTIFICATE_PATH: "${{ runner.temp }}/signing_cert.p12"
+          APPLE_MAC_CERT: ${{ secrets.APPLE_MAC_CERT }}
+          APPLE_SIGN_CERT_PASS: ${{ secrets.APPLE_MAC_CERT_PASS }}
+          APPLE_KEYCHAIN: ${{ secrets.APPLE_KEYCHAIN }}
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
+          APPLE_KEYCHAIN_PASS: ${{ secrets.APPLE_KEYCHAIN_PASS }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+
+      - name: Replace AppIdentifierPrefix in plist files
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
+        run: |
+          # Find all entitlements plist files and replace the placeholder
+          find _assets -name "entitlements*.plist" -exec sed -i '' "s/\$(AppIdentifierPrefix)/${{secrets.APPLE_TEAM_PREFIX}}/g" {} \;
+      
+      - name: Setup Node (v22)
+        uses: actions/setup-node@v4
+        with:
+          # https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#caching-packages-data
+          cache: "npm"
+          node-version: "22"
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          npm install -g npm@latest
+          npm ci
+          if [[ "${{ matrix.os }}" == "macos-13" || "${{ matrix.os }}" == "macos-latest" ]]; then
+            # Install appdmg for macOS builds
+            npm install -D appdmg
+          fi
+
+      - name: Publish Dry (${{ matrix.arch }})
+        uses: DeineAgenturUG/retry@6278ba3ea01ddc52e75d82766fca6cf4d35835cd
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+          APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}
+          APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
+          APPLE_MAS_INSTALLER_IDENTITY: ${{ secrets.APPLE_MAS_INSTALLER_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          CI: "true"
+          BUILD_NUMBER: ${{ github.run_number }}
+          MAKER_ARCH: ${{ matrix.arch }}
+          MAKER_PLATFORM: ${{ matrix.target == 'mas' && 'mas' || '' }}
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          retry_wait_seconds: 120
+          shell: bash
+          command: |
+            if [[ ("${{ matrix.os }}" == "ubuntu-24.04" && "${{ matrix.arch }}" == "x64") || ("${{ matrix.os }}" == "ubuntu-24.04-arm" && "${{ matrix.arch }}" == "arm64") ]]; then
+              npm run publish:dry -- --arch ${{ matrix.arch }}
+            fi
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+              npm run publish:dry -- --arch ${{ matrix.arch }}
+            fi
+            if [[ ("${{ matrix.os }}" == "macos-13" && "${{ matrix.arch }}" == "x64" && "${{ matrix.target }}" == "") || ("${{ matrix.os }}" == "macos-latest" && "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "") ]]; then
+              npm run publish:dry -- --arch ${{ matrix.arch }}
+            fi
+            if [[ ("${{ matrix.os }}" == "macos-13" && "${{ matrix.arch }}" == "x64" && "${{ matrix.target }}" == "mas") || ("${{ matrix.os }}" == "macos-latest" && "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "mas") ]]; then
+              npm run publish:dry -- --arch universal --platform mas
+            fi
+
+      - name: Publish From Dry (${{ matrix.arch }})
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTARIZATION_KEY_PATH: "${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          APPLE_KEYCHAIN_PATH: "${{ runner.temp }}/${{ secrets.APPLE_KEYCHAIN }}.keychain-db"
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_DEVELOPER_ID_APPLICATION: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+          APPLE_DEVELOPER_ID_INSTALLER: ${{ secrets.APPLE_DEVELOPER_ID_INSTALLER }}
+          APPLE_MAS_IDENTITY: ${{ secrets.APPLE_MAS_IDENTITY }}
+          APPLE_MAS_INSTALLER_IDENTITY: ${{ secrets.APPLE_MAS_INSTALLER_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          CI: "true"
+          BUILD_NUMBER: ${{ github.run_number }}
+          MAKER_ARCH: ${{ matrix.arch }}
+          MAKER_PLATFORM: ${{ matrix.target == 'mas' && 'mas' || '' }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_KEY }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET }}
+          S3_ENDPOINT: ${{ secrets.S3_HOST }}
+        run: |
+          if [[ ("${{ matrix.os }}" == "ubuntu-24.04" && "${{ matrix.arch }}" == "x64") || ("${{ matrix.os }}" == "ubuntu-24.04-arm" && "${{ matrix.arch }}" == "arm64") ]]; then
+            npm run publish:fromdry -- --arch ${{ matrix.arch }}
+          fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npm run publish:fromdry -- --arch ${{ matrix.arch }}
+          fi
+          if [[ ("${{ matrix.os }}" == "macos-13" && "${{ matrix.arch }}" == "x64" && "${{ matrix.target }}" == "") || ("${{ matrix.os }}" == "macos-latest" && "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "") ]]; then
+            npm run publish:fromdry -- --arch ${{ matrix.arch }}
+          fi
+          if [[ ("${{ matrix.os }}" == "macos-latest" && "${{ matrix.arch }}" == "arm64" && "${{ matrix.target }}" == "mas") ]]; then
+            npm run publish:fromdry -- --arch universal --platform mas
+          fi
+
+      # TODO: add AppImage for linux if we can get snap and/or flatpak to work
+      # https://github.com/AppImage/appimagetool?tab=readme-ov-file
+      # something like this: https://github.com/tropy/tropy/blob/bdf729db09e68b9ea514e2e1cbd67faac42c1872/scripts/pack.js#L116
