@@ -113,7 +113,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container:
       image: ${{ matrix.docker }}
-      options: "--platform linux/${{ matrix.arch }}"
+      options: "--platform linux/${{ matrix.arch == 'x86' && 'linux/amd64' || 'linux/arm64' }}"
 
     steps:
       - name: Download Debian-artifacts
