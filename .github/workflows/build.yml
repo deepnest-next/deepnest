@@ -214,12 +214,12 @@ jobs:
             # Try different parsing methods based on output format
             
             # Method 1: Standard format with | separator
-            local pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | \
+            local pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" | \
               head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
             echoerr "Parsed package name (Method 1): $pkg"  
             # Method 2: Alternative format without | separator
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | \
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" | \
                 grep -v "^S " | grep -v "^--" | grep -v "^$" | \
                 awk '{print $2}' | head -n1)
               echoerr "Parsed package name (Method 2): $pkg"
@@ -227,7 +227,7 @@ jobs:
             
             # Method 3: Try extracting using pattern matching
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | \
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | grep -vE "^$" | \
                 head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
               echoerr "Parsed package name (Method 3): $pkg"
             fi
