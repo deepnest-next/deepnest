@@ -212,23 +212,20 @@ jobs:
             # Try different parsing methods based on output format
             
             # Method 1: Standard format with | separator
-            local pkg=$(echo "$search_result" | grep -E "^(i\+? |v |i  |   )" | grep -v "32bit" | \
+            local pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | \
               head -n1 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}')
-            echo "Extracted package name Methode 1: $pkg"  
+              
             # Method 2: Alternative format without | separator
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep -E "^(i\+? |v |i  |   )" | grep -v "32bit" | \
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | \
                 grep -v "^S " | grep -v "^--" | grep -v "^$" | \
                 awk '{print $2}' | head -n1)
-              echo "Extracted package name Methode 2: $pkg"  
             fi
             
             # Method 3: Try extracting using pattern matching
             if [ -z "$pkg" ]; then
-              pkg=$(echo "$search_result" | grep -E "^[^ ]+ *\| *[^ ]+ *\|" | grep -v "32bit" | \
-                grep -v "^S " | grep -v "^--" | grep -v "^$" | \
+              pkg=$(echo "$search_result" | grep "| package" | grep -v "32bit" | \
                 head -n1 | sed -E 's/^[^ ]+ *\| *([^ ]+) *\|.*/\1/')
-              echo "Extracted package name Methode 3: $pkg"  
             fi
             
             # If still empty, try a more aggressive approach
@@ -236,7 +233,6 @@ jobs:
               pkg=$(echo "$search_result" | grep -v "No matching items found" | grep -v "Loading repository data" | \
                 grep -v "Reading installed packages" | grep -v "^S " | grep -v "^--" | grep -v "^$" | grep -v "Summary" | \
                 head -n1 | awk '{print $1}')
-              echo "Extracted package name Methode 4: $pkg"  
             fi
             
             echo "$pkg"
