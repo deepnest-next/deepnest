@@ -317,7 +317,7 @@ ready(async function () {
     function saveJSON() {
         var filePath = remote.getGlobal("NEST_DIRECTORY") + "exports.json";
 
-        var selected = DeepNest.nests.filter(function (n) {
+        var selected = window.DeepNest.nests.filter(function (n) {
             return n.selected;
         });
 
@@ -448,8 +448,8 @@ ready(async function () {
         //magic: true,
         template: '#template-part-list',
         data: {
-            parts: DeepNest.parts,
-            imports: DeepNest.imports,
+            parts: window.DeepNest.parts,
+            imports: window.DeepNest.imports,
             getSelected: function () {
                 var parts = this.get('parts');
                 return parts.filter(function (p) {
@@ -534,13 +534,13 @@ ready(async function () {
     });
 
     ractive.on('selectall', function (e) {
-        var selected = DeepNest.parts.filter(function (p) {
+        var selected = window.DeepNest.parts.filter(function (p) {
             return p.selected;
         }).length;
 
-        var toggleon = (selected < DeepNest.parts.length);
+        var toggleon = (selected < window.DeepNest.parts.length);
 
-        DeepNest.parts.forEach(function (p) {
+        window.DeepNest.parts.forEach(function (p) {
             if (p.selected != toggleon) {
                 togglepart(p);
             }
@@ -550,25 +550,25 @@ ready(async function () {
         ractive.update('parts');
         ractive.update('imports');
 
-        if (DeepNest.imports.length > 0) {
+        if (window.DeepNest.imports.length > 0) {
             applyzoom();
         }
     });
 
     // applies svg zoom library to the currently visible import
-    applyzoom = function () {
-        if (DeepNest.imports.length > 0) {
-            for (var i = 0; i < DeepNest.imports.length; i++) {
-                if (DeepNest.imports[i].selected) {
-                    if (DeepNest.imports[i].zoom) {
-                        var pan = DeepNest.imports[i].zoom.getPan();
-                        var zoom = DeepNest.imports[i].zoom.getZoom();
+    function applyzoom() {
+        if (window.DeepNest.imports.length > 0) {
+            for (var i = 0; i < window.DeepNest.imports.length; i++) {
+                if (window.DeepNest.imports[i].selected) {
+                    if (window.DeepNest.imports[i].zoom) {
+                        var pan = window.DeepNest.imports[i].zoom.getPan();
+                        var zoom = window.DeepNest.imports[i].zoom.getZoom();
                     }
                     else {
                         var pan = false;
                         var zoom = false;
                     }
-                    DeepNest.imports[i].zoom = svgPanZoom('#import-' + i + ' svg', {
+                    window.DeepNest.imports[i].zoom = svgPanZoom('#import-' + i + ' svg', {
                         zoomEnabled: true,
                         controlIconsEnabled: false,
                         fit: true,
@@ -578,27 +578,27 @@ ready(async function () {
                     });
 
                     if (zoom) {
-                        DeepNest.imports[i].zoom.zoom(zoom);
+                        window.DeepNest.imports[i].zoom.zoom(zoom);
                     }
                     if (pan) {
-                        DeepNest.imports[i].zoom.pan(pan);
+                        window.DeepNest.imports[i].zoom.pan(pan);
                     }
 
                     document.querySelector('#import-' + i + ' .zoomin').addEventListener('click', function (ev) {
                         ev.preventDefault();
-                        DeepNest.imports.find(function (e) {
+                        window.DeepNest.imports.find(function (e) {
                             return e.selected;
                         }).zoom.zoomIn();
                     });
                     document.querySelector('#import-' + i + ' .zoomout').addEventListener('click', function (ev) {
                         ev.preventDefault();
-                        DeepNest.imports.find(function (e) {
+                        window.DeepNest.imports.find(function (e) {
                             return e.selected;
                         }).zoom.zoomOut();
                     });
                     document.querySelector('#import-' + i + ' .zoomreset').addEventListener('click', function (ev) {
                         ev.preventDefault();
-                        DeepNest.imports.find(function (e) {
+                        window.DeepNest.imports.find(function (e) {
                             return e.selected;
                         }).zoom.resetZoom().resetPan();
                     });
@@ -612,7 +612,7 @@ ready(async function () {
             return false;
         }
 
-        DeepNest.imports.forEach(function (i) {
+        window.DeepNest.imports.forEach(function (i) {
             i.selected = false;
         });
 
@@ -622,34 +622,34 @@ ready(async function () {
     });
 
     ractive.on('importdelete', function (e, im) {
-        var index = DeepNest.imports.indexOf(im);
-        DeepNest.imports.splice(index, 1);
+        var index = window.DeepNest.imports.indexOf(im);
+        window.DeepNest.imports.splice(index, 1);
 
-        if (DeepNest.imports.length > 0) {
-            if (!DeepNest.imports[index]) {
+        if (window.DeepNest.imports.length > 0) {
+            if (!window.DeepNest.imports[index]) {
                 index = 0;
             }
 
-            DeepNest.imports[index].selected = true;
+            window.DeepNest.imports[index].selected = true;
         }
 
         ractive.update('imports');
 
-        if (DeepNest.imports.length > 0) {
+        if (window.DeepNest.imports.length > 0) {
             applyzoom();
         }
     });
 
     var deleteparts = function (e) {
-        for (var i = 0; i < DeepNest.parts.length; i++) {
-            if (DeepNest.parts[i].selected) {
-                for (var j = 0; j < DeepNest.parts[i].svgelements.length; j++) {
-                    var node = DeepNest.parts[i].svgelements[j];
+        for (var i = 0; i < window.DeepNest.parts.length; i++) {
+            if (window.DeepNest.parts[i].selected) {
+                for (var j = 0; j < window.DeepNest.parts[i].svgelements.length; j++) {
+                    var node = window.DeepNest.parts[i].svgelements[j];
                     if (node.parentNode) {
                         node.parentNode.removeChild(node);
                     }
                 }
-                DeepNest.parts.splice(i, 1);
+                window.DeepNest.parts.splice(i, 1);
                 i--;
             }
         }
@@ -657,7 +657,7 @@ ready(async function () {
         ractive.update('parts');
         ractive.update('imports');
 
-        if (DeepNest.imports.length > 0) {
+        if (window.DeepNest.imports.length > 0) {
             applyzoom();
         }
 
@@ -687,7 +687,7 @@ ready(async function () {
                     reverse = true;
                 }
 
-                DeepNest.parts.sort(function (a, b) {
+                window.DeepNest.parts.sort(function (a, b) {
                     var av = a[sortfield];
                     var bv = b[sortfield];
                     if (av < bv) {
@@ -868,11 +868,11 @@ ready(async function () {
     function importData(data, filename, dirpath, scalingFactor, dxfFlag) {
         window.DeepNest.importsvg(filename, dirpath, data, scalingFactor, dxfFlag);
 
-        DeepNest.imports.forEach(function (im) {
+        window.DeepNest.imports.forEach(function (im) {
             im.selected = false;
         });
 
-        DeepNest.imports[DeepNest.imports.length - 1].selected = true;
+        window.DeepNest.imports[window.DeepNest.imports.length - 1].selected = true;
 
         ractive.update('imports');
         ractive.update('parts');
@@ -968,7 +968,7 @@ ready(async function () {
         rect.setAttribute('height', height.value * conversion);
         rect.setAttribute('class', 'sheet');
         svg.appendChild(rect);
-        const sheet = DeepNest.importsvg(null, null, (new XMLSerializer()).serializeToString(svg))[0];
+        const sheet = window.DeepNest.importsvg(null, null, (new XMLSerializer()).serializeToString(svg))[0];
         sheet.sheet = true;
 
         width.className = '';
@@ -1094,25 +1094,25 @@ ready(async function () {
 
         return false;*/
 
-        for (var i = 0; i < DeepNest.parts.length; i++) {
-            if (DeepNest.parts[i].sheet) {
+        for (var i = 0; i < window.DeepNest.parts.length; i++) {
+            if (window.DeepNest.parts[i].sheet) {
                 // need at least one sheet
                 document.querySelector('#main').className = '';
                 document.querySelector('#nest').className = 'active';
 
                 var displayCallback = function () {
                     // render latest nest if none are selected
-                    var selected = this.DeepNest.nests.filter(function (n) {
+                    var selected = window.DeepNest.nests.filter(function (n) {
                         return n.selected;
                     });
 
                     // only change focus if latest nest is selected
-                    if (selected.length == 0 || (this.DeepNest.nests.length > 1 && this.DeepNest.nests[1].selected)) {
-                        this.DeepNest.nests.forEach(function (n) {
+                    if (selected.length == 0 || (window.DeepNest.nests.length > 1 && window.DeepNest.nests[1].selected)) {
+                        window.DeepNest.nests.forEach(function (n) {
                             n.selected = false;
                         });
-                        displayNest(this.DeepNest.nests[0]);
-                        this.DeepNest.nests[0].selected = true;
+                        displayNest(window.DeepNest.nests[0]);
+                        window.DeepNest.nests[0].selected = true;
                     }
 
                     this.nest.update('nests');
@@ -1124,12 +1124,12 @@ ready(async function () {
 
                 deleteCache();
 
-                DeepNest.start(null, displayCallback.bind(window));
+                window.DeepNest.start(null, displayCallback.bind(window));
                 return;
             }
         }
 
-        if (DeepNest.parts.length == 0) {
+        if (window.DeepNest.parts.length == 0) {
             message("Please import some parts first");
         }
         else {
@@ -1143,7 +1143,7 @@ ready(async function () {
     stop.onclick = function (e) {
         if (stop.className == 'button stop') {
             ipcRenderer.send('background-stop');
-            DeepNest.stop();
+            window.DeepNest.stop();
             document.querySelectorAll('li.progress').forEach(function (p) {
                 p.removeAttribute('id');
                 p.className = 'progress';
@@ -1171,15 +1171,15 @@ ready(async function () {
     back.onclick = function (e) {
 
         setTimeout(function () {
-            if (DeepNest.working) {
+            if (window.DeepNest.working) {
                 ipcRenderer.send('background-stop');
-                DeepNest.stop();
+                window.DeepNest.stop();
                 document.querySelectorAll('li.progress').forEach(function (p) {
                     p.removeAttribute('id');
                     p.className = 'progress';
                 });
             }
-            DeepNest.reset();
+            window.DeepNest.reset();
             deleteCache();
 
             window.nest.update('nests');
@@ -1222,7 +1222,7 @@ ready(async function () {
                 fileName = fileName + fileExt;
             }
 
-            var selected = DeepNest.nests.filter(function (n) {
+            var selected = window.DeepNest.nests.filter(function (n) {
                 return n.selected;
             });
 
@@ -1254,7 +1254,7 @@ ready(async function () {
                 fileName = fileName + fileExt;
             }
 
-            var selected = DeepNest.nests.filter(function (n) {
+            var selected = window.DeepNest.nests.filter(function (n) {
                 return n.selected;
             });
 
@@ -1374,7 +1374,7 @@ ready(async function () {
 
             if (!!config.getSync("exportWithSheetBoundboarders")) {
                 // create sheet boundings if it doesn't exist
-                DeepNest.parts[s.sheet].svgelements.forEach(function (e) {
+                window.DeepNest.parts[s.sheet].svgelements.forEach(function (e) {
                     var node = e.cloneNode(false);
                     node.setAttribute('stroke', '#00ff00');
                     node.setAttribute('fill', 'none');
@@ -1382,7 +1382,7 @@ ready(async function () {
                 });
             }
 
-            var sheetbounds = DeepNest.parts[s.sheet].bounds;
+            var sheetbounds = window.DeepNest.parts[s.sheet].bounds;
 
             group.setAttribute('transform', 'translate(' + (-sheetbounds.x) + ' ' + (svgheight - sheetbounds.y) + ')');
             if (svgwidth < sheetbounds.width) {
@@ -1390,7 +1390,7 @@ ready(async function () {
             }
 
             s.sheetplacements.forEach(function (p) {
-                var part = DeepNest.parts[p.source];
+                var part = window.DeepNest.parts[p.source];
                 var partgroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
                 part.svgelements.forEach(function (e, index) {
@@ -1442,11 +1442,11 @@ ready(async function () {
         svg.setAttribute('viewBox', '0 0 ' + svgwidth + ' ' + svgheight);
 
         if (config.getSync('mergeLines') && n.mergedLength > 0) {
-            SvgParser.applyTransform(svg);
-            SvgParser.flatten(svg);
-            SvgParser.splitLines(svg);
-            SvgParser.mergeOverlap(svg, 0.1 * config.getSync('curveTolerance'));
-            SvgParser.mergeLines(svg);
+            window.SvgParser.applyTransform(svg);
+            window.SvgParser.flatten(svg);
+            window.SvgParser.splitLines(svg);
+            window.SvgParser.mergeOverlap(svg, 0.1 * config.getSync('curveTolerance'));
+            window.SvgParser.mergeLines(svg);
 
             // set stroke and fill for all
             var elements = Array.prototype.slice.call(svg.children);
@@ -1504,7 +1504,7 @@ ready(async function () {
                 svg.appendChild(group);
                 groupelement = document.querySelector('#sheet' + s.sheetid);
 
-                DeepNest.parts[s.sheet].svgelements.forEach(function (e) {
+                window.DeepNest.parts[s.sheet].svgelements.forEach(function (e) {
                     var node = e.cloneNode(false);
                     node.setAttribute('stroke', '#ffffff');
                     node.setAttribute('fill', 'none');
@@ -1516,7 +1516,7 @@ ready(async function () {
             // reset class (make visible)
             groupelement.setAttribute('class', 'sheet active');
 
-            var sheetbounds = DeepNest.parts[s.sheet].bounds;
+            var sheetbounds = window.DeepNest.parts[s.sheet].bounds;
             groupelement.setAttribute('transform', 'translate(' + (-sheetbounds.x) + ' ' + (svgheight - sheetbounds.y) + ')');
             if (svgwidth < sheetbounds.width) {
                 svgwidth = sheetbounds.width;
@@ -1525,7 +1525,7 @@ ready(async function () {
             s.sheetplacements.forEach(function (p) {
                 var partelement = document.querySelector('#part' + p.id);
                 if (!partelement) {
-                    var part = DeepNest.parts[p.source];
+                    var part = window.DeepNest.parts[p.source];
                     var partgroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     partgroup.setAttribute('id', 'part' + p.id);
 
@@ -1551,7 +1551,7 @@ ready(async function () {
                         pattern.setAttribute('id', 'part' + p.source + 'hatch');
                         pattern.setAttribute('patternUnits', 'userSpaceOnUse');
 
-                        var psize = parseInt(DeepNest.parts[s.sheet].bounds.width / 120);
+                        var psize = parseInt(window.DeepNest.parts[s.sheet].bounds.width / 120);
 
                         psize = psize || 10;
 
@@ -1559,7 +1559,7 @@ ready(async function () {
                         pattern.setAttribute('height', psize);
                         var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                         path.setAttribute('d', 'M-1,1 l2,-2 M0,' + psize + ' l' + psize + ',-' + psize + ' M' + (psize - 1) + ',' + (psize + 1) + ' l2,-2');
-                        path.setAttribute('style', 'stroke: hsl(' + (360 * (p.source / DeepNest.parts.length)) + ', 100%, 80%) !important; stroke-width:1');
+                        path.setAttribute('style', 'stroke: hsl(' + (360 * (p.source / window.DeepNest.parts.length)) + ', 100%, 80%) !important; stroke-width:1');
                         pattern.appendChild(path);
 
                         groupelement.appendChild(pattern);
@@ -1614,7 +1614,7 @@ ready(async function () {
         //magic: true,
         template: '#nest-template',
         data: {
-            nests: DeepNest.nests,
+            nests: window.DeepNest.nests,
             getSelected: function () {
                 var ne = this.get('nests');
                 return ne.filter(function (n) {
@@ -1632,7 +1632,7 @@ ready(async function () {
                 return p;
             },
             getColorBySource: function (id) {
-                return 'hsl(' + (360 * (id / DeepNest.parts.length)) + ', 100%, 80%)';
+                return 'hsl(' + (360 * (id / window.DeepNest.parts.length)) + ', 100%, 80%)';
             },
             getPartsPlaced: function () {
                 var ne = this.get('nests');
@@ -1652,9 +1652,9 @@ ready(async function () {
                 }
 
                 var total = 0;
-                for (i = 0; i < DeepNest.parts.length; i++) {
-                    if (!DeepNest.parts[i].sheet) {
-                        total += DeepNest.parts[i].quantity;
+                for (i = 0; i < window.DeepNest.parts.length; i++) {
+                    if (!window.DeepNest.parts[i].sheet) {
+                        total += window.DeepNest.parts[i].quantity;
                     }
                 }
 
@@ -1689,8 +1689,8 @@ ready(async function () {
     });
 
     nest.on('selectnest', function (e, n) {
-        for (var i = 0; i < DeepNest.nests.length; i++) {
-            DeepNest.nests[i].selected = false;
+        for (var i = 0; i < window.DeepNest.nests.length; i++) {
+            window.DeepNest.nests[i].selected = false;
         }
         n.selected = true;
         window.nest.update('nests');
@@ -1745,9 +1745,9 @@ function message(txt, error) {
     content.innerHTML = txt;
 }
 
-_now = Date.now || function () { return new Date().getTime(); };
+const _now = Date.now || function () { return new Date().getTime(); };
 
-throttle = function (func, wait, options) {
+function throttle(func, wait, options) {
     var context, args, result;
     var timeout = null;
     var previous = 0;
