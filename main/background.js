@@ -498,7 +498,7 @@ function getHull(polygon) {
 
 	var hull = [];
 	for (let i = 0; i < hullpoints.length; i++) {
-		hull.push({ x: hullpoints[i][0], y: hullpoints[i][1] });
+		hull.push(new Point(hullpoints[i][0], hullpoints[i]));
 	}
 
 	return hull;
