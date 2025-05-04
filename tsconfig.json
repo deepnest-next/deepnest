@@ -1,10 +1,13 @@
 {
   "compilerOptions": {
     "target": "es2023",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "esModuleInterop": true, // Enables emit interoperability between CommonJS and ES
+    "sourceMap": true, // Generates corresponding '.map' file.
+    "outDir": "./build",
+    "strict": true, // Enable all strict type-checking options.
+    "forceConsistentCasingInFileNames": true, // Disallow inconsistently-cased references to the same file.
+    "skipLibCheck": true, // Skip type checking of all declaration files (*.d.ts). Good for development compile speed, but worth disabling for release.
     "declaration": true,
-    "strict": false,
     "noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
     "strictNullChecks": true /* Enable strict null checks. */,
     "strictFunctionTypes": true /* Enable strict checking of function types. */,
@@ -13,13 +16,9 @@
     "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
     "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
     "importHelpers": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "experimentalDecorators": true,
-    "sourceMap": true,
-    "outDir": "./dist/tsc/",
     "types": [
       "node"
     ],

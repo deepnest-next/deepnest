@@ -8,7 +8,6 @@
 	<link rel="stylesheet" type="text/css" href="style.css" />
 
 	<script src="util/pathsegpolyfill.js"></script>
-	<script src="util/matrix.js"></script>
 	<script src="util/clipper.js"></script>
 	<script src="util/parallel.js"></script>
 	<script src="util/geometryutil.js"></script>
@@ -19,10 +18,14 @@
 	<script src="util/d3-polygon.js"></script>
 	<script src="util/simplify.js"></script>
 
-	<script src="svgparser.js"></script>
-	<script src="deepnest.js"></script>
+	<script type="module">
+		import { SvgParser } from './svgparser.js';
+		window.SvgParser = new SvgParser();
+		import { DeepNest, GeneticAlgorithm } from './deepnest.js';
+		window.DeepNest = new DeepNest(require("electron").ipcRenderer);
 
-	<script src="page.js"></script>
+		import * as page from "./page.js";
+	</script>
 </head>
 
 <body>

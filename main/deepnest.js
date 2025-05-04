@@ -3,54 +3,53 @@
  * Licensed under GPLv3
  */
 
-(function (root) {
-  "use strict";
+import { Point } from '../build/point.js';
 
-  root.DeepNest = new DeepNest(require("electron").ipcRenderer);
+var config = {
+  clipperScale: 10000000,
+  curveTolerance: 0.3,
+  spacing: 0,
+  rotations: 4,
+  populationSize: 10,
+  mutationRate: 10,
+  threads: 4,
+  placementType: "gravity",
+  mergeLines: true,
+  timeRatio: 0.5,
+  scale: 72,
+  simplify: false,
+  overlapTolerance: 0.0001,
+};
 
-  function DeepNest(eventEmitter) {
-    var svg = null;
+export class DeepNest {
+    constructor(eventEmitter) {
+      var svg = null;
 
-    var config = {
-      clipperScale: 10000000,
-      curveTolerance: 0.3,
-      spacing: 0,
-      rotations: 4,
-      populationSize: 10,
-      mutationRate: 10,
-      threads: 4,
-      placementType: "gravity",
-      mergeLines: true,
-      timeRatio: 0.5,
-      scale: 72,
-      simplify: false,
-      overlapTolerance: 0.0001,
-    };
+      // list of imported files
+      // import: {filename: 'blah.svg', svg: svgroot}
+      this.imports = [];
 
-    // list of imported files
-    // import: {filename: 'blah.svg', svg: svgroot}
-    this.imports = [];
+      // list of all extracted parts
+      // part: {name: 'part name', quantity: ...}
+      this.parts = [];
 
-    // list of all extracted parts
-    // part: {name: 'part name', quantity: ...}
-    this.parts = [];
+      // a pure polygonal representation of parts that lives only during the nesting step
+      this.partsTree = [];
 
-    // a pure polygonal representation of parts that lives only during the nesting step
-    this.partsTree = [];
+      this.working = false;
 
-    this.working = false;
+      this.GA = null;
+      this.workerTimer = null;
 
-    var GA = null;
-    var best = null;
-    var workerTimer = null;
-    var progress = 0;
+      this.progressCallback = null;
+      this.displayCallback = null;
+      // a running list of placements
+      this.nests = [];
 
-    var progressCallback = null;
-    var displayCallback = null;
-    // a running list of placements
-    this.nests = [];
+      this.eventEmitter = eventEmitter;
+    }
 
-    this.importsvg = function (
+    importsvg(
       filename,
       dirpath,
       svgstring,
@@ -60,8 +59,8 @@
       // parse svg
       // config.scale is the default scale, and may not be applied
       // scalingFactor is an absolute scaling that must be applied regardless of input svg contents
-      svg = SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
-      svg = SvgParser.clean(dxfFlag);
+      var svg = window.SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
+      svg = window.SvgParser.cleanInput(dxfFlag);
 
       if (filename) {
         this.imports.push({
@@ -94,7 +93,7 @@
     };
 
     // debug function
-    this.renderPolygon = function (poly, svg, highlight) {
+    renderPolygon(poly, svg, highlight) {
       if (!poly || poly.length == 0) {
         return;
       }
@@ -116,7 +115,7 @@
     };
 
     // debug function
-    this.renderPoints = function (points, svg, highlight) {
+    renderPoints(points, svg, highlight) {
       for (var i = 0; i < points.length; i++) {
         var circle = window.document.createElementNS(
           "http://www.w3.org/2000/svg",
@@ -131,7 +130,7 @@
       }
     };
 
-    this.getHull = function (polygon) {
+    getHull(polygon) {
       var points = [];
       for (var i = 0; i < polygon.length; i++) {
         points.push([polygon[i].x, polygon[i].y]);
@@ -144,14 +143,14 @@
 
       var hull = [];
       for (i = 0; i < hullpoints.length; i++) {
-        hull.push({ x: hullpoints[i][0], y: hullpoints[i][1] });
+        hull.push(new Point(hullpoints[i][0], hullpoints[i][1]));
       }
 
       return hull;
     };
 
     // use RDP simplification, then selectively offset
-    this.simplifyPolygon = function (polygon, inside) {
+    simplifyPolygon(polygon, inside) {
       var tolerance = 4 * config.curveTolerance;
 
       // give special treatment to line segments above this length (squared)
@@ -516,7 +515,7 @@
       }
     };
 
-    this.config = function (c) {
+    config(c) {
       // clean up inputs
 
       if (!c) {
@@ -572,20 +571,19 @@
         config.scale = parseFloat(c.scale);
       }
 
-      SvgParser.config({
+      window.SvgParser.config({
         tolerance: config.curveTolerance,
         endpointTolerance: c.endpointTolerance,
       });
 
-      best = null;
       //nfpCache = {};
       //binPolygon = null;
-      GA = null;
+      this.GA = null;
 
       return config;
     };
 
-    this.pointInPolygon = function (point, polygon) {
+    pointInPolygon(point, polygon) {
       // scaling is deliberately coarse to filter out points that lie *on* the polygon
       var p = this.svgToClipper(polygon, 1000);
       var pt = new ClipperLib.IntPoint(1000 * point.x, 1000 * point.y);
@@ -687,22 +685,22 @@
 
     // assuming no intersections, return a tree where odd leaves are parts and even ones are holes
     // might be easier to use the DOM, but paths can't have paths as children. So we'll just make our own tree.
-    this.getParts = function (paths, filename) {
+    getParts(paths, filename) {
       var i, j;
       var polygons = [];
 
       var numChildren = paths.length;
       for (i = 0; i < numChildren; i++) {
-        if (SvgParser.polygonElements.indexOf(paths[i].tagName) < 0) {
+        if (window.SvgParser.polygonElements.indexOf(paths[i].tagName) < 0) {
           continue;
         }
 
         // don't use open paths
-        if (!SvgParser.isClosed(paths[i], 2 * config.curveTolerance)) {
+        if (!window.SvgParser.isClosed(paths[i], 2 * config.curveTolerance)) {
           continue;
         }
 
-        var poly = SvgParser.polygonify(paths[i]);
+        var poly = window.SvgParser.polygonify(paths[i]);
         poly = this.cleanPolygon(poly);
 
         // todo: warn user if poly could not be processed and is excluded from the nest
@@ -913,15 +911,13 @@
             var width = Number(el.getAttribute("width"));
             var height = Number(el.getAttribute("height"));
 
-            var mid = { x: x + width / 2, y: y + height / 2 };
+            var mid = new Point(x + width / 2, y + height / 2);
 
             var transformString = el.getAttribute("transform");
             if (transformString) {
-              var transform = SvgParser.transformParse(transformString);
+              var transform = window.SvgParser.transformParse(transformString);
               if (transform) {
-                var transformed = transform.calc(mid.x, mid.y);
-                mid.x = transformed[0];
-                mid.y = transformed[1];
+                mid = transform.calc(mid);
               }
             }
             // just test midpoint for images
@@ -933,7 +929,7 @@
           } else if (el.tagName == "path" || el.tagName == "polyline") {
             var k;
             if (el.tagName == "path") {
-              var p = SvgParser.polygonifyPath(el);
+              var p = window.SvgParser.polygonifyPath(el);
             } else {
               var p = [];
               for (k = 0; k < el.points.length; k++) {
@@ -998,7 +994,7 @@
       return parts;
     };
 
-    this.cloneTree = function (tree) {
+    cloneTree(tree) {
       var newtree = [];
       tree.forEach(function (t) {
         newtree.push({ x: t.x, y: t.y, exact: t.exact });
@@ -1017,9 +1013,9 @@
 
     // progressCallback is called when progress is made
     // displayCallback is called when a new placement has been made
-    this.start = function (p, d) {
-      progressCallback = p;
-      displayCallback = d;
+    start(p, d) {
+      this.progressCallback = p;
+      this.displayCallback = d;
 
       var parts = [];
 
@@ -1101,29 +1097,28 @@
       var self = this;
       this.working = true;
 
-      if (!workerTimer) {
-        workerTimer = setInterval(function () {
+      if (!this.workerTimer) {
+        this.workerTimer = setInterval(function () {
           self.launchWorkers.call(
             self,
             parts,
             config,
-            progressCallback,
-            displayCallback
+            this.progressCallback,
+            this.displayCallback
           );
           //progressCallback(progress);
         }, 100);
       }
-    };
 
-    eventEmitter.on("background-response", (event, payload) => {
-      eventEmitter.send("setPlacements", payload);
+    this.eventEmitter.on("background-response", (event, payload) => {
+      this.eventEmitter.send("setPlacements", payload);
       console.log("ipc response", payload);
-      if (!GA) {
+      if (!this.GA) {
         // user might have quit while we're away
         return;
       }
-      GA.population[payload.index].processing = false;
-      GA.population[payload.index].fitness = payload.fitness;
+      this.GA.population[payload.index].processing = false;
+      this.GA.population[payload.index].fitness = payload.fitness;
 
       // render placement
       if (this.nests.length == 0 || this.nests[0].fitness > payload.fitness) {
@@ -1131,7 +1126,7 @@
 
         // Check if we should keep a long list (more than 100 results)
         const keepLongList = process.env.DEEPNEST_LONGLIST;
-        
+
         if (keepLongList) {
           // Keep up to 100 results without sorting
           if (this.nests.length > 100) {
@@ -1143,9 +1138,9 @@
             this.nests.pop();
           }
         }
-        
-        if (displayCallback) {
-          displayCallback();
+
+        if (this.displayCallback) {
+          this.displayCallback();
         }
       } else if (process.env.DEEPNEST_LONGLIST) {
         // With DEEPNEST_LONGLIST, we add the result to the list regardless of fitness
@@ -1154,38 +1149,39 @@
         if (this.nests.length < 100 || payload.fitness > worstFitness) {
           // Find where to insert this result to maintain insertion order
           this.nests.push(payload);
-          
+
           // If we exceeded 100 results, remove the worst one
           if (this.nests.length > 100) {
             // Find the worst fitness
             let worstIndex = 0;
             let worstFitness = this.nests[0].fitness;
-            
+
             for (let i = 1; i < this.nests.length; i++) {
               if (this.nests[i].fitness > worstFitness) {
                 worstIndex = i;
                 worstFitness = this.nests[i].fitness;
               }
             }
-            
+
             // Remove the worst fitness item
             this.nests.splice(worstIndex, 1);
           }
-          
-          if (displayCallback) {
-            displayCallback();
+
+          if (this.displayCallback) {
+            this.displayCallback();
           }
         }
       }
     });
+    };
 
-    this.padNumber = (n, width, z) => {
+    padNumber(n, width, z) {
       z = z || '0';
       n = n + '';
       return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
     }
 
-    this.launchWorkers = function (
+    launchWorkers(
       parts,
       config,
       progressCallback,
@@ -1213,7 +1209,7 @@
 
       var i, j;
 
-      if (GA === null) {
+      if (this.GA === null) {
         // initiate new GA
 
         var adam = [];
@@ -1240,14 +1236,14 @@
           );
         });
 
-        GA = new GeneticAlgorithm(adam, config);
+        this.GA = new GeneticAlgorithm(adam, config);
         //console.log(GA.population[1].placement);
       }
 
       // check if current generation is finished
       var finished = true;
-      for (i = 0; i < GA.population.length; i++) {
-        if (!GA.population[i].fitness) {
+      for (i = 0; i < this.GA.population.length; i++) {
+        if (!this.GA.population[i].fitness) {
           finished = false;
           break;
         }
@@ -1256,10 +1252,10 @@
       if (finished) {
         console.log("new generation!");
         // all individuals have been evaluated, start next generation
-        GA.generation();
+        this.GA.generation();
       }
 
-      var running = GA.population.filter(function (p) {
+      var running = this.GA.population.filter(function (p) {
         return !!p.processing;
       }).length;
 
@@ -1282,15 +1278,15 @@
         }
       }
 
-      for (i = 0; i < GA.population.length; i++) {
+      for (i = 0; i < this.GA.population.length; i++) {
         //if(running < config.threads && !GA.population[i].processing && !GA.population[i].fitness){
         // only one background window now...
         if (
           running < 1 &&
-          !GA.population[i].processing &&
-          !GA.population[i].fitness
+          !this.GA.population[i].processing &&
+          !this.GA.population[i].fitness
         ) {
-          GA.population[i].processing = true;
+          this.GA.population[i].processing = true;
 
           // hash values on arrays don't make it across ipc, store them in an array and reassemble on the other side....
           var ids = [];
@@ -1298,24 +1294,24 @@
           var children = [];
           var filenames = [];
 
-          for (j = 0; j < GA.population[i].placement.length; j++) {
-            var id = GA.population[i].placement[j].id;
-            var source = GA.population[i].placement[j].source;
-            var child = GA.population[i].placement[j].children;
-            var filename = GA.population[i].placement[j].filename;
+          for (j = 0; j < this.GA.population[i].placement.length; j++) {
+            var id = this.GA.population[i].placement[j].id;
+            var source = this.GA.population[i].placement[j].source;
+            var child = this.GA.population[i].placement[j].children;
+            var filename = this.GA.population[i].placement[j].filename;
             ids[j] = id;
             sources[j] = source;
             children[j] = child;
             filenames[j] = filename;
           }
 
-          eventEmitter.send("background-start", {
+          this.eventEmitter.send("background-start", {
             index: i,
             sheets: sheets,
             sheetids: sheetids,
             sheetsources: sheetsources,
             sheetchildren: sheetchildren,
-            individual: GA.population[i],
+            individual: this.GA.population[i],
             config: config,
             ids: ids,
             sources: sources,
@@ -1329,7 +1325,7 @@
 
     // use the clipper library to return an offset to the given polygon. Positive offset expands the polygon, negative contracts
     // note that this returns an array of polygons
-    this.polygonOffset = function (polygon, offset) {
+    polygonOffset(polygon, offset) {
       if (!offset || offset == 0 || GeometryUtil.almostEqual(offset, 0)) {
         return polygon;
       }
@@ -1359,7 +1355,7 @@
     };
 
     // returns a less complex polygon that satisfies the curve tolerance
-    this.cleanPolygon = function (polygon) {
+    cleanPolygon(polygon) {
       var p = this.svgToClipper(polygon);
       // remove self-intersections and find the biggest polygon that's left
       var simple = ClipperLib.Clipper.SimplifyPolygon(
@@ -1408,7 +1404,7 @@
     };
 
     // converts a polygon from normal float coordinates to integer coordinates used by clipper, as well as x/y -> X/Y
-    this.svgToClipper = function (polygon, scale) {
+    svgToClipper(polygon, scale) {
       var clip = [];
       for (var i = 0; i < polygon.length; i++) {
         clip.push({ X: polygon[i].x, Y: polygon[i].y });
@@ -1419,7 +1415,7 @@
       return clip;
     };
 
-    this.clipperToSvg = function (polygon) {
+    clipperToSvg(polygon) {
       var normal = [];
 
       for (var i = 0; i < polygon.length; i++) {
@@ -1433,7 +1429,7 @@
     };
 
     // returns an array of SVG elements that represent the placement, for export or rendering
-    this.applyPlacement = function (placement) {
+    applyPlacement(placement) {
       var i, j, k;
       var clone = [];
       for (i = 0; i < parts.length; i++) {
@@ -1505,30 +1501,31 @@
       return svglist;
     };
 
-    this.stop = function () {
+    stop() {
       this.working = false;
-      if (GA && GA.population && GA.population.length > 0) {
-        GA.population.forEach(function (i) {
+      if (this.GA && this.GA.population && this.GA.population.length > 0) {
+        this.GA.population.forEach(function (i) {
           i.processing = false;
         });
       }
-      if (workerTimer) {
-        clearInterval(workerTimer);
-        workerTimer = null;
+      if (this.workerTimer) {
+        clearInterval(this.workerTimer);
+        this.workerTimer = null;
       }
     };
 
-    this.reset = function () {
-      GA = null;
+    reset() {
+      this.GA = null;
       while (this.nests.length > 0) {
         this.nests.pop();
       }
-      progressCallback = null;
-      displayCallback = null;
+      this.progressCallback = null;
+      this.displayCallback = null;
     };
-  }
+}
 
-  function GeneticAlgorithm(adam, config) {
+export class GeneticAlgorithm {
+  constructor(adam, config) {
     this.config = config || {
       populationSize: 10,
       mutationRate: 10,
@@ -1553,7 +1550,7 @@
   }
 
   // returns a mutated individual with the given mutation rate
-  GeneticAlgorithm.prototype.mutate = function (individual) {
+  mutate(individual) {
     var clone = {
       placement: individual.placement.slice(0),
       rotation: individual.rotation.slice(0),
@@ -1583,7 +1580,7 @@
   };
 
   // single point crossover
-  GeneticAlgorithm.prototype.mate = function (male, female) {
+  mate(male, female) {
     var cutpoint = Math.round(
       Math.min(Math.max(Math.random(), 0.1), 0.9) * (male.placement.length - 1)
     );
@@ -1625,7 +1622,7 @@
     ];
   };
 
-  GeneticAlgorithm.prototype.generation = function () {
+  generation() {
     // Individuals with higher fitness are more likely to be selected for mating
     this.population.sort(function (a, b) {
       return a.fitness - b.fitness;
@@ -1653,7 +1650,7 @@
   };
 
   // returns a random individual from the population, weighted to the front of the list (lower fitness value is more likely to be selected)
-  GeneticAlgorithm.prototype.randomWeightedIndividual = function (exclude) {
+  randomWeightedIndividual(exclude) {
     var pop = this.population.slice(0);
 
     if (exclude && pop.indexOf(exclude) >= 0) {
@@ -1677,4 +1674,4 @@
 
     return pop[0];
   };
-})(this);
+}
