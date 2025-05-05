@@ -190,7 +190,7 @@ export class DeepNest {
       // mark all segments greater than ~0.25 in to be kept
       // the PD simplification algo doesn't care about the accuracy of long lines, only the absolute distance of each point
       // we care a great deal
-      for (i = 0; i < copy.length - 1; i++) {
+      for (var i = 0; i < copy.length - 1; i++) {
         var p1 = copy[i];
         var p2 = copy[i + 1];
         var sqd = (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y);
@@ -229,7 +229,7 @@ export class DeepNest {
       }
 
       // mark any points that are exact
-      for (i = 0; i < simple.length; i++) {
+      for (var i = 0; i < simple.length; i++) {
         var seg = [simple[i], simple[i + 1 == simple.length ? 0 : i + 1]];
         var index1 = find(seg[0], polygon);
         var index2 = find(seg[1], polygon);
@@ -248,7 +248,7 @@ export class DeepNest {
       var numshells = 4;
       var shells = [];
 
-      for (j = 1; j < numshells; j++) {
+      for (var j = 1; j < numshells; j++) {
         var delta = j * (tolerance / numshells);
         delta = inside ? -delta : delta;
         var shell = this.polygonOffset(simple, delta);
@@ -263,7 +263,7 @@ export class DeepNest {
       }
 
       // selective reversal of offset
-      for (i = 0; i < offset.length; i++) {
+      for (var i = 0; i < offset.length; i++) {
         var o = offset[i];
         var target = getTarget(o, simple, 2 * tolerance);
 
@@ -276,7 +276,7 @@ export class DeepNest {
           o.y = target.y;
         } else {
           // a shell is an intermediate offset between simple and offset
-          for (j = 1; j < numshells; j++) {
+          for (var j = 1; j < numshells; j++) {
             if (shells[j]) {
               var shell = shells[j];
               var delta = j * (tolerance / numshells);
@@ -298,7 +298,7 @@ export class DeepNest {
 
       var straightened = false;
 
-      for (i = 0; i < offset.length; i++) {
+      for (var i = 0; i < offset.length; i++) {
         var p1 = offset[i];
         var p2 = offset[i + 1 == offset.length ? 0 : i + 1];
 
@@ -307,7 +307,7 @@ export class DeepNest {
         if (sqd < fixedTolerance) {
           continue;
         }
-        for (j = 0; j < simple.length; j++) {
+        for (var j = 0; j < simple.length; j++) {
           var s1 = simple[j];
           var s2 = simple[j + 1 == simple.length ? 0 : j + 1];
 
@@ -365,7 +365,7 @@ export class DeepNest {
         )
       ) {
         var largestArea = null;
-        for (i = 0; i < combined.length; i++) {
+        for (var i = 0; i < combined.length; i++) {
           var n = toNestCoordinates(combined[i], 10000000);
           var sarea = -GeometryUtil.polygonArea(n);
           if (largestArea === null || largestArea < sarea) {
@@ -382,7 +382,7 @@ export class DeepNest {
       }
 
       // mark any points that are exact (for line merge detection)
-      for (i = 0; i < offset.length; i++) {
+      for (var i = 0; i < offset.length; i++) {
         var seg = [offset[i], offset[i + 1 == offset.length ? 0 : i + 1]];
         var index1 = find(seg[0], polygon);
         var index2 = find(seg[1], polygon);
@@ -431,7 +431,7 @@ export class DeepNest {
           target = inrange[0].point;
         } else {
           var mind = null;
-          for (j = 0; j < simple.length; j++) {
+          for (var j = 0; j < simple.length; j++) {
             var s = simple[j];
             var d2 = (o.x - s.x) * (o.x - s.x) + (o.y - s.y) * (o.y - s.y);
             if (mind === null || d2 < mind) {
@@ -686,11 +686,11 @@ export class DeepNest {
     // assuming no intersections, return a tree where odd leaves are parts and even ones are holes
     // might be easier to use the DOM, but paths can't have paths as children. So we'll just make our own tree.
     getParts(paths, filename) {
-      var i, j;
+      var j;
       var polygons = [];
 
       var numChildren = paths.length;
-      for (i = 0; i < numChildren; i++) {
+      for (var i = 0; i < numChildren; i++) {
         if (window.SvgParser.polygonElements.indexOf(paths[i].tagName) < 0) {
           continue;
         }
@@ -739,16 +739,15 @@ export class DeepNest {
           return ClipperLib.Clipper.PointInPolygon(pt, polygon) > 0;
         }
         var parents = [];
-        var i, j, k;
 
         // assign a unique id to each leaf
         var id = idstart || 0;
 
-        for (i = 0; i < list.length; i++) {
+        for (var i = 0; i < list.length; i++) {
           var p = list[i];
 
           var ischild = false;
-          for (j = 0; j < list.length; j++) {
+          for (var j = 0; j < list.length; j++) {
             if (j == i) {
               continue;
             }
@@ -761,7 +760,7 @@ export class DeepNest {
             // sample about 10 points
             var clipper_polygon = svgToClipper(list[j]);
 
-            for (k = 0; k < fullinside; k++) {
+            for (var k = 0; k < fullinside; k++) {
               if (pointInClipperPolygon(p[k], clipper_polygon) === true) {
                 inside++;
               }
@@ -785,19 +784,19 @@ export class DeepNest {
           }
         }
 
-        for (i = 0; i < list.length; i++) {
+        for (var i = 0; i < list.length; i++) {
           if (parents.indexOf(list[i]) < 0) {
             list.splice(i, 1);
             i--;
           }
         }
 
-        for (i = 0; i < parents.length; i++) {
+        for (var i = 0; i < parents.length; i++) {
           parents[i].id = id;
           id++;
         }
 
-        for (i = 0; i < parents.length; i++) {
+        for (var i = 0; i < parents.length; i++) {
           if (parents[i].children) {
             id = toTree(parents[i].children, id);
           }
@@ -811,7 +810,7 @@ export class DeepNest {
       var svgelements = Array.prototype.slice.call(paths);
       var openelements = svgelements.slice(); // elements that are not a part of the poly tree but may still be a part of the part (images, lines, possibly text..)
 
-      for (i = 0; i < polygons.length; i++) {
+      for (var i = 0; i < polygons.length; i++) {
         var part = {};
         part.polygontree = polygons[i];
         part.svgelements = [];
@@ -849,7 +848,7 @@ export class DeepNest {
         }
 
         // load all elements that lie within the outer polygon
-        for (j = 0; j < svgelements.length; j++) {
+        for (var j = 0; j < svgelements.length; j++) {
           if (
             j != part.polygontree.source &&
             findElementById(j, part.polygontree)
@@ -881,11 +880,11 @@ export class DeepNest {
         return false;
       }
 
-      for (i = 0; i < parts.length; i++) {
+      for (var i = 0; i < parts.length; i++) {
         var part = parts[i];
         // the elements left are either erroneous or open
         // we want to include open segments that also lie within the part boundaries
-        for (j = 0; j < openelements.length; j++) {
+        for (var j = 0; j < openelements.length; j++) {
           var el = openelements[j];
           if (el.tagName == "line") {
             var x1 = Number(el.getAttribute("x1"));
@@ -1033,7 +1032,7 @@ export class DeepNest {
         });
       }
 
-      for (i = 0; i < parts.length; i++) {
+      for (var i = 0; i < parts.length; i++) {
         if (parts[i].sheet) {
           offsetTree(
             parts[i].polygontree,
@@ -1214,9 +1213,9 @@ export class DeepNest {
 
         var adam = [];
         var id = 0;
-        for (i = 0; i < parts.length; i++) {
+        for (var i = 0; i < parts.length; i++) {
           if (!parts[i].sheet) {
-            for (j = 0; j < parts[i].quantity; j++) {
+            for (var j = 0; j < parts[i].quantity; j++) {
               var poly = this.cloneTree(parts[i].polygontree); // deep copy
               poly.id = id; // id is the unique id of all parts that will be nested, including cloned duplicates
               poly.source = i; // source is the id of each unique part from the main part list
@@ -1242,7 +1241,7 @@ export class DeepNest {
 
       // check if current generation is finished
       var finished = true;
-      for (i = 0; i < this.GA.population.length; i++) {
+      for (var i = 0; i < this.GA.population.length; i++) {
         if (!this.GA.population[i].fitness) {
           finished = false;
           break;
@@ -1265,10 +1264,10 @@ export class DeepNest {
       var sheetchildren = [];
       var sid = 0;
 
-      for (i = 0; i < parts.length; i++) {
+      for (var i = 0; i < parts.length; i++) {
         if (parts[i].sheet) {
           var poly = parts[i].polygontree;
-          for (j = 0; j < parts[i].quantity; j++) {
+          for (var j = 0; j < parts[i].quantity; j++) {
             sheets.push(poly);
             sheetids.push(this.padNumber(sid,4)+'-'+this.padNumber(j,4));
             sheetsources.push(i);
@@ -1278,7 +1277,7 @@ export class DeepNest {
         }
       }
 
-      for (i = 0; i < this.GA.population.length; i++) {
+      for (var i = 0; i < this.GA.population.length; i++) {
         //if(running < config.threads && !GA.population[i].processing && !GA.population[i].fitness){
         // only one background window now...
         if (
@@ -1294,7 +1293,7 @@ export class DeepNest {
           var children = [];
           var filenames = [];
 
-          for (j = 0; j < this.GA.population[i].placement.length; j++) {
+          for (var j = 0; j < this.GA.population[i].placement.length; j++) {
             var id = this.GA.population[i].placement[j].id;
             var source = this.GA.population[i].placement[j].source;
             var child = this.GA.population[i].placement[j].children;
@@ -1430,15 +1429,14 @@ export class DeepNest {
 
     // returns an array of SVG elements that represent the placement, for export or rendering
     applyPlacement(placement) {
-      var i, j, k;
       var clone = [];
-      for (i = 0; i < parts.length; i++) {
+      for (var i = 0; i < parts.length; i++) {
         clone.push(parts[i].cloneNode(false));
       }
 
       var svglist = [];
 
-      for (i = 0; i < placement.length; i++) {
+      for (var i = 0; i < placement.length; i++) {
         var newsvg = svg.cloneNode(false);
         newsvg.setAttribute(
           "viewBox",
@@ -1455,7 +1453,7 @@ export class DeepNest {
         );
         newsvg.appendChild(binclone);
 
-        for (j = 0; j < placement[i].length; j++) {
+        for (var j = 0; j < placement[i].length; j++) {
           var p = placement[i][j];
           var part = tree[p.id];
 
@@ -1469,7 +1467,7 @@ export class DeepNest {
 
           if (part.children && part.children.length > 0) {
             var flattened = _flattenTree(part.children, true);
-            for (k = 0; k < flattened.length; k++) {
+            for (var k = 0; k < flattened.length; k++) {
               var c = clone[flattened[k].source];
               if (flattened[k].hole) {
                 c.setAttribute("class", "hole");
@@ -1591,16 +1589,14 @@ export class GeneticAlgorithm {
     var gene2 = female.placement.slice(0, cutpoint);
     var rot2 = female.rotation.slice(0, cutpoint);
 
-    var i;
-
-    for (i = 0; i < female.placement.length; i++) {
+    for (var i = 0; i < female.placement.length; i++) {
       if (!contains(gene1, female.placement[i].id)) {
         gene1.push(female.placement[i]);
         rot1.push(female.rotation[i]);
       }
     }
 
-    for (i = 0; i < male.placement.length; i++) {
+    for (var i = 0; i < male.placement.length; i++) {
       if (!contains(gene2, male.placement[i].id)) {
         gene2.push(male.placement[i]);
         rot2.push(male.rotation[i]);
