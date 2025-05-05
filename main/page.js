@@ -188,7 +188,7 @@ ready(async function () {
                 activepage.className = 'page';
 
                 this.className = 'active';
-                tabpage = document.querySelector('#' + this.dataset.page);
+                var tabpage = document.querySelector('#' + this.dataset.page);
                 tabpage.className = 'page active';
 
                 if (tabpage.getAttribute('id') == 'home') {
