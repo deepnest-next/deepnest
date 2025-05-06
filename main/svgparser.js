@@ -4,10 +4,10 @@
  * Licensed under the MIT license
  */
 // Polifill for DOMParser
-import '../build/domparser.js';
+import '../build/util/domparser.js';
 // Dependencies
-import { Matrix } from '../build/matrix.js';
-import { Point } from '../build/point.js';
+import { Matrix } from '../build/util/matrix.js';
+import { Point } from '../build/util/point.js';
 
 export class SvgParser {
 	constructor(){
