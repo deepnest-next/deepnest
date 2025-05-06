@@ -39,7 +39,7 @@
     if (_almostEqual(v.x * v.x + v.y * v.y, 1)) {
       return v; // given vector was already a unit vector
     }
-    var len = Math.sqrt(v.x * v.x + v.y * v.y);
+    var len = Math.hypot(v.x, v.y);
     var inverse = 1 / len;
 
     return {
@@ -516,14 +516,14 @@
         var uy = (y1 - cy1) / ry;
         var vx = (-x1 - cx1) / rx;
         var vy = (-y1 - cy1) / ry;
-        var n = Math.sqrt(ux * ux + uy * uy);
+        var n = Math.hypot(ux, uy);
         var p = ux;
         sign = uy < 0 ? -1 : 1;
 
         var theta = sign * Math.acos(p / n);
         theta = _radiansToDegrees(theta);
 
-        n = Math.sqrt((ux * ux + uy * uy) * (vx * vx + vy * vy));
+        n = Math.hypot(ux, uy) * Math.hypot(vx, vy);
         p = ux * vx + uy * vy;
         sign = ux * vy - uy * vx < 0 ? -1 : 1;
         var delta = sign * Math.acos(p / n);
@@ -1141,11 +1141,11 @@
         var ABnorm = { x: B.y - A.y, y: A.x - B.x };
         var EFnorm = { x: F.y - E.y, y: E.x - F.x };
 
-        var ABnormlength = Math.sqrt(ABnorm.x * ABnorm.x + ABnorm.y * ABnorm.y);
+        var ABnormlength = Math.hypot(ABnorm.x, ABnorm.y);
         ABnorm.x /= ABnormlength;
         ABnorm.y /= ABnormlength;
 
-        var EFnormlength = Math.sqrt(EFnorm.x * EFnorm.x + EFnorm.y * EFnorm.y);
+        var EFnormlength = Math.hypot(EFnorm.x, EFnorm.y);
         EFnorm.x /= EFnormlength;
         EFnorm.y /= EFnormlength;
 
@@ -1449,7 +1449,7 @@
             var vd2 = vx * vx + vy * vy;
 
             if (d * d < vd2 && !_almostEqual(d * d, vd2)) {
-              var vd = Math.sqrt(vx * vx + vy * vy);
+              var vd = Math.hypot(vx, vy);
               vx *= d / vd;
               vy *= d / vd;
             }
@@ -1793,16 +1793,16 @@
               vectors[i].y * prevvector.y + vectors[i].x * prevvector.x < 0
             ) {
               // compare magnitude with unit vectors
-              var vectorlength = Math.sqrt(
-                vectors[i].x * vectors[i].x + vectors[i].y * vectors[i].y
+              var vectorlength = Math.hypot(
+                vectors[i].x, vectors[i].y
               );
               var unitv = {
                 x: vectors[i].x / vectorlength,
                 y: vectors[i].y / vectorlength,
               };
 
-              var prevlength = Math.sqrt(
-                prevvector.x * prevvector.x + prevvector.y * prevvector.y
+              var prevlength = Math.hypot(
+                prevvector.x, prevvector.y
               );
               var prevunit = {
                 x: prevvector.x / prevlength,
@@ -1822,8 +1822,8 @@
               vectors[i].x * vectors[i].x + vectors[i].y * vectors[i].y;
 
             if (d === null || d * d > vecd2) {
-              var vecd = Math.sqrt(
-                vectors[i].x * vectors[i].x + vectors[i].y * vectors[i].y
+              var vecd = Math.hypot(
+                vectors[i].x, vectors[i].y
               );
               d = vecd;
             }
