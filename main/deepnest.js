@@ -3,7 +3,7 @@
  * Licensed under GPLv3
  */
 
-import { Point } from '../build/point.js';
+import { Point } from '../build/util/point.js';
 
 var config = {
   clipperScale: 10000000,
