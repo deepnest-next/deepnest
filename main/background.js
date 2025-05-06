@@ -1,5 +1,7 @@
 'use strict';
 
+import { NfpCache } from '../build/nfpDb.js';
+
 window.onload = function () {
 	const { ipcRenderer } = require('electron');
 	window.ipcRenderer = ipcRenderer;
@@ -13,7 +15,7 @@ window.onload = function () {
 		window.FileQueue = require('filequeue');
 		window.fq = new FileQueue(500);
 	*/
-	window.db = require('./nfpDb.js');
+	window.db = new NfpCache();
 
 	ipcRenderer.on('background-start', (event, data) => {
 		var index = data.index;
