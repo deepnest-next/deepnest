@@ -191,8 +191,8 @@ window.onload = function () {
 				return Parallel.prototype._spawnMapWorker.call(p, i, cb, done, env, wrk);
 			}
 
-			p.require('clipper.js');
-			p.require('geometryutil.js');
+			p.require('../../main/util/clipper.js');
+			p.require('../../main/util/geometryutil.js');
 
 			p.map(process).then(function (processed) {
 				function getPart(source) {
