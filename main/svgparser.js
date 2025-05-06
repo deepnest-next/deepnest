@@ -970,7 +970,7 @@ export class SvgParser {
 
 		// decompose affine matrix to rotate, scale components (translate is just the 3rd column)
 		var rotate = Math.atan2(tarray[1], tarray[3])*180/Math.PI;
-		var scale = Math.sqrt(tarray[0]*tarray[0]+tarray[2]*tarray[2]);
+		var scale = Math.hypot(tarray[0],tarray[2]);
 
 		if(element.tagName == 'g' || element.tagName == 'svg' || element.tagName == 'defs'){
 			element.removeAttribute('transform');
