@@ -3,6 +3,9 @@
  * A library to convert an SVG string to parse-able segments for CAD/CAM use
  * Licensed under the MIT license
  */
+// Polifill for DOMParser
+import '../build/domparser.js';
+// Dependencies
 import { Matrix } from '../build/matrix.js';
 import { Point } from '../build/point.js';
 
