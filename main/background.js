@@ -179,7 +179,7 @@ window.onload = function () {
 
 		if (pairs.length > 0) {
 			var p = new Parallel(pairs, {
-				evalPath: 'util/eval.js',
+				evalPath: '../build/util/eval.js',
 				synchronous: false
 			});
 
