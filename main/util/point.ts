@@ -26,7 +26,7 @@ export class Point {
   plus(dx: number, dy: number): Point {
     return new Point(this.x + dx, this.y + dy);
   }
-  
+
   to(other: Point): Vector {
     return new Vector(this.x - other.x, this.y - other.y);
   }
@@ -35,10 +35,10 @@ export class Point {
     return new Point((this.x + other.x) / 2, (this.y + other.y) / 2);
   }
 
-  public equals(obj: Point) : boolean { 
+  public equals(obj: Point): boolean {
     return this.x === obj.x && this.y === obj.y;
   }
-  public toString() : String {
+  public toString(): String {
     return "<" + this.x.toFixed(1) + ", " + this.y.toFixed(1) + ">";
   }
 }
