@@ -31,21 +31,21 @@
   ],
   "devDependencies": {
     "@electron/packager": "18.3.6",
-    "@electron/rebuild": "3.7.2",
+    "@electron/rebuild": "4.0.1",
     "@playwright/test": "1.52.0",
-    "@types/node": "22.14.1",
+    "@types/node": "22.15.14",
     "cross-replace": "0.2.0",
     "electron": "34.5.2",
     "typescript": "^5.8.2"
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "202503.13.155300",
-    "@deepnest/svg-preprocessor": "0.1.10",
+    "@deepnest/svg-preprocessor": "0.2.0",
     "@electron/remote": "2.1.2",
-    "axios": "1.8.4",
+    "axios": "1.9.0",
     "form-data": "4.0.2",
     "graceful-fs": "4.2.11",
-    "marked": "15.0.9"
+    "marked": "15.0.11"
   },
   "files": [
     "main.js",
