@@ -1,6 +1,7 @@
 'use strict';
 
 import { NfpCache } from '../build/nfpDb.js';
+import { HullPolygon } from '../build/util/HullPolygon.js';
 
 window.onload = function () {
   const { ipcRenderer } = require('electron');
@@ -481,29 +482,23 @@ function toNestCoordinates(polygon, scale) {
 };
 
 function getHull(polygon) {
-  // convert to hulljs format
-  /*var hull = new ConvexHullGrahamScan();
-  for(let i=0; i<polygon.length; i++){
-    hull.addPoint(polygon[i].x, polygon[i].y);
-  }
+	// Convert the polygon points to proper Point objects for HullPolygon
+	var points = [];
+	for (let i = 0; i < polygon.length; i++) {
+		points.push({
+			x: polygon[i].x,
+			y: polygon[i].y
+		});
+	}
 
-  return hull.getHull();*/
-  var points = [];
-  for (let i = 0; i < polygon.length; i++) {
-    points.push([polygon[i].x, polygon[i].y]);
-  }
-  var hullpoints = d3.polygonHull(points);
+	var hullpoints = HullPolygon.hull(points);
 
-  if (!hullpoints) {
-    return polygon;
-  }
+	// If hull calculation failed, return original polygon
+	if (!hullpoints) {
+		return polygon;
+	}
 
-  var hull = [];
-  for (let i = 0; i < hullpoints.length; i++) {
-    hull.push(new Point(hullpoints[i][0], hullpoints[i]));
-  }
-
-  return hull;
+	return hullpoints;
 }
 
 function rotatePolygon(polygon, degrees) {
