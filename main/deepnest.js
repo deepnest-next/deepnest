@@ -6,6 +6,8 @@
 import { Point } from '../build/util/point.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
 
+const { simplifyPolygon: simplifyPoly } = require("@deepnest/svg-preprocessor");
+
 var config = {
   clipperScale: 10000000,
   curveTolerance: 0.3,
@@ -183,7 +185,7 @@ export class DeepNest {
       }
     }
 
-    var simple = window.simplify(copy, tolerance, true);
+    var simple = simplifyPoly(copy, tolerance, true);
     // now a polygon again
     simple.pop();
 
