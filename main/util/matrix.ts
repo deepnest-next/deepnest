@@ -71,7 +71,7 @@ class ArbitraryMatrix implements Transformation {
   constructor(matrix?: Array<number>) {
     if (matrix?.length != 6) {
       throw new RangeError(
-        "Matrix data must contain exactly six values, got " + matrix
+        "Matrix data must contain exactly six values, got " + matrix,
       );
     }
     this.matrix = matrix ?? [1, 0, 0, 1, 0, 0];
@@ -115,8 +115,8 @@ export class Matrix {
     return Matrix.isIdentityMatrix(this.cache);
   }
 
-  matrix(m: Array<number>): Matrix
-  matrix(m: ArbitraryMatrix): Matrix
+  matrix(m: Array<number>): Matrix;
+  matrix(m: ArbitraryMatrix): Matrix;
   matrix(m: any): Matrix {
     this.cache = null;
     if (Array.isArray(m)) {
@@ -181,7 +181,7 @@ export class Matrix {
 
     var cache = this.v;
     this.queue.forEach(
-      (item) => (cache = Matrix.combine(cache, item.matrix6()))
+      (item) => (cache = Matrix.combine(cache, item.matrix6())),
     );
 
     this.cache = cache;
@@ -211,12 +211,8 @@ export class Matrix {
 
     // Apply matrix to point
     return new Point(
-      point.x * m[0] +
-        point.y * m[2] +
-        (isRelative ? 0 : m[4]),
-      point.x * m[1] +
-        point.y * m[3] +
-        (isRelative ? 0 : m[5])
+      point.x * m[0] + point.y * m[2] + (isRelative ? 0 : m[4]),
+      point.x * m[1] + point.y * m[3] + (isRelative ? 0 : m[5]),
     );
   }
   // combine 2 matrixes

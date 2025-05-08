@@ -16,10 +16,10 @@ export class NfpCache {
   private db: Record<string, Nfp | Nfp[]> = {};
 
   private clone(nfp: Nfp): Nfp {
-    const newnfp: Nfp = nfp.map(p => new Point(p.x, p.y));
+    const newnfp: Nfp = nfp.map((p) => new Point(p.x, p.y));
     if (nfp.children && nfp.children.length > 0) {
-      newnfp.children = nfp.children.map(child =>
-        child.map(p => new Point(p.x, p.y))
+      newnfp.children = nfp.children.map((child) =>
+        child.map((p) => new Point(p.x, p.y)),
       );
     }
     return newnfp;
@@ -29,14 +29,14 @@ export class NfpCache {
     if (!inner) {
       return this.clone(nfp as Nfp);
     }
-    return (nfp as Nfp[]).map(n => this.clone(n));
+    return (nfp as Nfp[]).map((n) => this.clone(n));
   }
 
   private makeKey(doc: NfpDoc, _inner?: boolean): string {
     const Arotation = parseInt(doc.Arotation as string);
     const Brotation = parseInt(doc.Brotation as string);
-    const Aflipped = doc.Aflipped ? '1' : '0';
-    const Bflipped = doc.Bflipped ? '1' : '0';
+    const Aflipped = doc.Aflipped ? "1" : "0";
+    const Bflipped = doc.Bflipped ? "1" : "0";
     return `${doc.A}-${doc.B}-${Arotation}-${Brotation}-${Aflipped}-${Bflipped}`;
   }
 
