@@ -1,220 +1,218 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Deepnest Notification</title>
     <style>
-        /* Chrome, Edge and Safari */
-        *::-webkit-scrollbar {
-            height: 10px;
-            width: 10px;
-        }
+      /* Chrome, Edge and Safari */
+      *::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+      }
 
-        *::-webkit-scrollbar-track {
-            /*border-radius: 5px;*/
-            background-color: #384F71;
-        }
+      *::-webkit-scrollbar-track {
+        /*border-radius: 5px;*/
+        background-color: #384f71;
+      }
 
-        *::-webkit-scrollbar-track:hover {
-            background-color: #4A4D4E;
-        }
+      *::-webkit-scrollbar-track:hover {
+        background-color: #4a4d4e;
+      }
 
-        *::-webkit-scrollbar-track:active {
-            background-color: #3E556A;
-        }
+      *::-webkit-scrollbar-track:active {
+        background-color: #3e556a;
+      }
 
-        *::-webkit-scrollbar-thumb {
-            /*border-radius: 0px;*/
-            background-color: #3276A4;
-        }
+      *::-webkit-scrollbar-thumb {
+        /*border-radius: 0px;*/
+        background-color: #3276a4;
+      }
 
-        *::-webkit-scrollbar-thumb:hover {
-            background-color: #327AA3;
-        }
+      *::-webkit-scrollbar-thumb:hover {
+        background-color: #327aa3;
+      }
 
-        *::-webkit-scrollbar-thumb:active {
-            background-color: #3774A3;
-        }
+      *::-webkit-scrollbar-thumb:active {
+        background-color: #3774a3;
+      }
 
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
 
-        .notification-container {
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            flex: 1;
-        }
+      .notification-container {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        flex: 1;
+      }
 
-        h1 {
-            color: #2c3e50;
-            border-bottom: 1px solid #ddd;
-            padding: 0;
-            margin: 0;
-        }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 1px solid #ddd;
+        padding: 0;
+        margin: 0;
+      }
 
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            margin: 20px 0;
-        }
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        margin: 20px 0;
+      }
 
-        .button-container {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 20px;
-            padding-bottom: 20px;
-        }
+      .button-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 20px;
+        padding-bottom: 20px;
+      }
 
-        .btn {
-            background-color: #3498db;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
 
-        .btn:hover {
-            background-color: #2980b9;
-        }
+      .btn:hover {
+        background-color: #2980b9;
+      }
 
-        .release-info {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
+      .release-info {
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+      }
 
-        .release-info > h2:first-of-type {
-            margin-top: 0;
-            color: #2c3e50;
-        }
+      .release-info > h2:first-of-type {
+        margin-top: 0;
+        color: #2c3e50;
+      }
 
-        /* Styles for merged notifications */
-        .merged-notification {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
+      /* Styles for merged notifications */
+      .merged-notification {
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+      }
 
-        .merged-notification h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
+      .merged-notification h3 {
+        margin-top: 0;
+        color: #2c3e50;
+      }
 
-        .notification-date {
-            color: #7f8c8d;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
+      .notification-date {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-top: 5px;
+      }
 
-        .notification-content {
-            margin: 10px 0;
-        }
+      .notification-content {
+        margin: 10px 0;
+      }
 
-        hr {
-            border: 0;
-            height: 1px;
-            background-color: #ddd;
-            margin: 15px 0;
-        }
+      hr {
+        border: 0;
+        height: 1px;
+        background-color: #ddd;
+        margin: 15px 0;
+      }
 
-        .additional-notice {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #ffecb3;
-            border-left: 4px solid #ffa000;
-            border-radius: 4px;
-        }
+      .additional-notice {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #ffecb3;
+        border-left: 4px solid #ffa000;
+        border-radius: 4px;
+      }
 
-        /* Styles for release assets */
-        .release-assets {
-            margin-top: 25px;
-            padding: 15px;
-            background-color: #f1f8ff;
-            border-radius: 6px;
-            border-left: 4px solid #0366d6;
-        }
-        
-        .assets-list {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        
-        .asset-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #e1e4e8;
-        }
-        
-        .asset-item:last-child {
-            border-bottom: none;
-        }
-        
-        .asset-link {
-            color: #0366d6;
-            font-weight: 600;
-            text-decoration: none;
-            display: block;
-        }
-        
-        .asset-link:hover {
-            text-decoration: underline;
-        }
-        
-        .asset-size {
-            color: #6a737d;
-            font-weight: normal;
-            font-size: 0.9em;
-        }
-        
-        .asset-info {
-            margin-top: 5px;
-            font-size: 0.85em;
-            color: #586069;
-        }
+      /* Styles for release assets */
+      .release-assets {
+        margin-top: 25px;
+        padding: 15px;
+        background-color: #f1f8ff;
+        border-radius: 6px;
+        border-left: 4px solid #0366d6;
+      }
+
+      .assets-list {
+        list-style-type: none;
+        padding-left: 0;
+      }
+
+      .asset-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #e1e4e8;
+      }
+
+      .asset-item:last-child {
+        border-bottom: none;
+      }
+
+      .asset-link {
+        color: #0366d6;
+        font-weight: 600;
+        text-decoration: none;
+        display: block;
+      }
+
+      .asset-link:hover {
+        text-decoration: underline;
+      }
+
+      .asset-size {
+        color: #6a737d;
+        font-weight: normal;
+        font-size: 0.9em;
+      }
+
+      .asset-info {
+        margin-top: 5px;
+        font-size: 0.85em;
+        color: #586069;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="notification-container">
-        <h1 id="title">Notification</h1>
-        <div class="content" id="content">
-            <!-- Content will be inserted here -->
-        </div>
-        <div class="button-container">
-            <button class="btn" id="okButton">OK</button>
-        </div>
+      <h1 id="title">Notification</h1>
+      <div class="content" id="content">
+        <!-- Content will be inserted here -->
+      </div>
+      <div class="button-container">
+        <button class="btn" id="okButton">OK</button>
+      </div>
     </div>
 
     <script>
-        const { ipcRenderer } = require('electron');
+      const { ipcRenderer } = require("electron");
 
-        // When the window loads, request the notification data
-        window.addEventListener('DOMContentLoaded', () => {
-            ipcRenderer.send('get-notification-data');
-        });
+      // When the window loads, request the notification data
+      window.addEventListener("DOMContentLoaded", () => {
+        ipcRenderer.send("get-notification-data");
+      });
 
-        // Handle the notification data sent from main process
-        ipcRenderer.on('notification-data', (event, data) => {
-            document.getElementById('title').textContent = data.title;
-            document.getElementById('content').innerHTML = data.content;
-        });
+      // Handle the notification data sent from main process
+      ipcRenderer.on("notification-data", (event, data) => {
+        document.getElementById("title").textContent = data.title;
+        document.getElementById("content").innerHTML = data.content;
+      });
 
-        // Close the notification window when OK is clicked
-        document.getElementById('okButton').addEventListener('click', () => {
-            ipcRenderer.send('close-notification');
-        });
+      // Close the notification window when OK is clicked
+      document.getElementById("okButton").addEventListener("click", () => {
+        ipcRenderer.send("close-notification");
+      });
     </script>
-</body>
-
+  </body>
 </html>
