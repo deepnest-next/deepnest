@@ -15,7 +15,6 @@ const { dialog } = remote;
 const fs = require('graceful-fs');
 const FormData = require('form-data');
 const axios = require('axios').default;
-const http = require('http');
 const path = require('path');
 const svgPreProcessor = require('@deepnest/svg-preprocessor');
 
