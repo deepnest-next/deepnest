@@ -45,23 +45,23 @@ test("Nest", async ({}, testInfo) => {
                   {
                     location: `${file}:${lineNumber}:${columnNumber}`,
                     args: await Promise.all(
-                      message.args().map((x) => x.jsonValue())
+                      message.args().map((x) => x.jsonValue()),
                     ),
                     type: message.type(),
                   },
                   null,
-                  2
-                ) + ",\n\n"
+                  2,
+                ) + ",\n\n",
               );
             },
-            { box: true }
+            { box: true },
           );
         };
 
         window.on("console", logMessage);
         electronApp.on("window", (win) => win.on("console", logMessage));
       },
-      { box: true }
+      { box: true },
     );
 
   await test.step("Config", async () => {
@@ -166,19 +166,19 @@ test("Nest", async ({}, testInfo) => {
           window
             .locator("id=nestlist")
             .locator("span")
-            .nth(n - 1)
-        ).toBeVisible()
+            .nth(n - 1),
+        ).toBeVisible(),
       ).toPass());
 
   await expect(window.locator("id=progressbar")).toBeVisible();
   await waitForIteration(1);
   await expect(window.locator("id=nestinfo").locator("h1").nth(0)).toHaveText(
-    "1"
+    "1",
   );
   await expect(() =>
     expect(window.locator("id=nestinfo").locator("h1").nth(1)).toHaveText(
-      "54/54"
-    )
+      "54/54",
+    ),
   ).toPass();
 
   await test.step("Attachments", async () => {
@@ -197,15 +197,13 @@ test("Nest", async ({}, testInfo) => {
     existsSync(consoleDump) &&
       (await testInfo.attach("console.json", {
         body: JSON.stringify(
-          (
-            await readFile(consoleDump)
-          )
+          (await readFile(consoleDump))
             .toString()
             .split(",\n\n")
             .filter((x) => !!x)
             .map((x) => JSON.parse(x)),
           null,
-          2
+          2,
         ),
         contentType: "application/json",
       }));
@@ -217,12 +215,10 @@ test("Nest", async ({}, testInfo) => {
 test.afterAll(async ({}, testInfo) => {
   const { outputDir } = testInfo;
   await Promise.all(
-    (
-      await readdir(outputDir)
-    ).map((file) => {
+    (await readdir(outputDir)).map((file) => {
       return testInfo.attach(file, {
         path: path.resolve(outputDir, file),
       });
-    })
+    }),
   );
 });

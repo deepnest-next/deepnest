@@ -22,13 +22,13 @@ export class Vector {
   squaredLength(): number {
     return this.dx * this.dx + this.dy * this.dy;
   }
-  length() : number {
+  length(): number {
     return Math.sqrt(this.squaredLength());
   }
   scaled(scale: number): Vector {
     return new Vector(this.dx * scale, this.dy * scale);
   }
-  
+
   normalized(): Vector {
     const sqLen = this.squaredLength();
     if (_almostEqual(sqLen, 1)) {
