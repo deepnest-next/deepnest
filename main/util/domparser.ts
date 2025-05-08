@@ -15,7 +15,10 @@
     // Fallback for unsupported types
   }
 
-  proto.parseFromString = function (markup: string, type: DOMParserSupportedType): Document {
+  proto.parseFromString = function (
+    markup: string,
+    type: DOMParserSupportedType,
+  ): Document {
     if (/^\s*text\/html\s*(?:;|$)/i.test(type)) {
       const doc = document.implementation.createHTMLDocument("");
 

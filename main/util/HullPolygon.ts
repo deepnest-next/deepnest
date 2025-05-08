@@ -202,7 +202,7 @@ export class HullPolygon {
         HullPolygon.cross(
           new Point(points[indexes[size - 2]].x, points[indexes[size - 2]].y),
           new Point(points[indexes[size - 1]].x, points[indexes[size - 1]].y),
-          new Point(points[i].x, points[i].y)
+          new Point(points[i].x, points[i].y),
         ) <= 0
       )
         --size;
