@@ -34,6 +34,7 @@ html {
   overflow: hidden;
   --nav-width: 4.375em;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Dark theme */
