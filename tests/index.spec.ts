@@ -1,3 +1,4 @@
+/*eslint no-empty-pattern: ["error", { "allowObjectPatternsAsParameters": true }]*/
 import {
   ConsoleMessage,
   _electron as electron,
@@ -15,18 +16,19 @@ import { DeepNestConfig, NestingResult } from "../index";
 
 test("Nest", async ({}, testInfo) => {
   const { pipeConsole } = testInfo.config.metadata;
-  !existsSync(testInfo.outputDir) &&
+  if (existsSync(testInfo.outputDir)) {
     mkdir(testInfo.outputDir, { recursive: true });
+  }
 
   const electronApp = await electron.launch({
     args: ["main.js"],
     recordVideo: { dir: testInfo.outputDir },
   });
 
-  const window = await electronApp.firstWindow();
+  const mainWindow = await electronApp.firstWindow();
 
   const consoleDump = testInfo.outputPath("console.txt");
-  pipeConsole &&
+  if (pipeConsole) {
     test.step(
       "Pipe browser console logs",
       () => {
@@ -38,7 +40,10 @@ test("Nest", async ({}, testInfo) => {
               let file = url;
               try {
                 file = path.relative(process.cwd(), fileURLToPath(url));
-              } catch (error) {}
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              } catch (error) {
+                // ignore
+              }
               await appendFile(
                 consoleDump,
                 JSON.stringify(
@@ -58,15 +63,15 @@ test("Nest", async ({}, testInfo) => {
           );
         };
 
-        window.on("console", logMessage);
+        mainWindow.on("console", logMessage);
         electronApp.on("window", (win) => win.on("console", logMessage));
       },
       { box: true },
     );
-
+  }
   await test.step("Config", async () => {
-    await window.locator("#config_tab").click();
-    const configTab = window.getByText("Nesting configuration Display");
+    await mainWindow.locator("#config_tab").click();
+    const configTab = mainWindow.getByText("Nesting configuration Display");
     await configTab.getByRole("link", { name: "set all to default" }).click();
     await test.step("units mm", () =>
       configTab.getByRole("radio").nth(1).check());
@@ -78,10 +83,10 @@ test("Nest", async ({}, testInfo) => {
       configTab
         .locator('select[name="placementType"]')
         .selectOption("gravity"));
-    const config = await window.evaluate(() => {
+    const config = await mainWindow.evaluate(() => {
       return window.config.getSync();
     });
-    const deepNestConfig = await window.evaluate(() => {
+    const deepNestConfig = await mainWindow.evaluate(() => {
       return window.DeepNest.config();
     });
     const sharedConfig: Partial<DeepNestConfig> = {
@@ -109,7 +114,7 @@ test("Nest", async ({}, testInfo) => {
       ...sharedConfig,
       clipperScale: 10000000,
     });
-    await window.locator("#home_tab").click();
+    await mainWindow.locator("#home_tab").click();
   });
 
   await test.step("Upload files", async () => {
@@ -123,26 +128,26 @@ test("Nest", async ({}, testInfo) => {
         canceled: false,
       });
     }, files);
-    await window.click("id=import");
-    await expect(window.locator("#importsnav li")).toHaveCount(2);
+    await mainWindow.click("id=import");
+    await expect(mainWindow.locator("#importsnav li")).toHaveCount(2);
   });
 
   await test.step("Add sheet", async () => {
     const sheet = { width: 300, height: 200 };
-    await window.click("id=addsheet");
-    await window.fill("id=sheetwidth", sheet.width.toString());
-    await window.fill("id=sheetheight", sheet.height.toString());
-    await window.click("id=confirmsheet");
+    await mainWindow.click("id=addsheet");
+    await mainWindow.fill("id=sheetwidth", sheet.width.toString());
+    await mainWindow.fill("id=sheetheight", sheet.height.toString());
+    await mainWindow.click("id=confirmsheet");
   });
 
   // await expect(window).toHaveScreenshot("loaded.png", {
   //   clip: { x: 100, y: 100, width: 2000, height: 1000 },
   // });
-  await window.click("id=startnest");
+  await mainWindow.click("id=startnest");
 
   const stopNesting = () =>
     test.step("Stop nesting", async () => {
-      const button = window.locator("#stopnest");
+      const button = mainWindow.locator("#stopnest");
       await button.click();
       await expect(() => expect(button).toHaveText("Start nest")).toPass();
     });
@@ -153,9 +158,9 @@ test("Nest", async ({}, testInfo) => {
       electronApp.evaluate(({ dialog }, path) => {
         dialog.showSaveDialogSync = () => path;
       }, file);
-      await window.click("id=export");
-      await expect(window.locator("id=exportsvg")).toBeVisible();
-      await window.click("id=exportsvg");
+      await mainWindow.click("id=export");
+      await expect(mainWindow.locator("id=exportsvg")).toBeVisible();
+      await mainWindow.click("id=exportsvg");
       return (await readFile(file)).toString();
     });
 
@@ -163,20 +168,20 @@ test("Nest", async ({}, testInfo) => {
     test.step(`Wait for iteration #${n}`, () =>
       expect(() =>
         expect(
-          window
+          mainWindow
             .locator("id=nestlist")
             .locator("span")
             .nth(n - 1),
         ).toBeVisible(),
       ).toPass());
 
-  await expect(window.locator("id=progressbar")).toBeVisible();
+  await expect(mainWindow.locator("id=progressbar")).toBeVisible();
   await waitForIteration(1);
-  await expect(window.locator("id=nestinfo").locator("h1").nth(0)).toHaveText(
-    "1",
-  );
+  await expect(
+    mainWindow.locator("id=nestinfo").locator("h1").nth(0),
+  ).toHaveText("1");
   await expect(() =>
-    expect(window.locator("id=nestinfo").locator("h1").nth(1)).toHaveText(
+    expect(mainWindow.locator("id=nestinfo").locator("h1").nth(1)).toHaveText(
       "54/54",
     ),
   ).toPass();
@@ -184,7 +189,7 @@ test("Nest", async ({}, testInfo) => {
   await test.step("Attachments", async () => {
     const svg = await downloadSvg();
     const data = (): Promise<NestingResult> =>
-      window.evaluate(() => window.DeepNest.nests);
+      mainWindow.evaluate(() => window.DeepNest.nests);
 
     await testInfo.attach("nesting.svg", {
       body: svg,
@@ -194,8 +199,8 @@ test("Nest", async ({}, testInfo) => {
       body: JSON.stringify(await data(), null, 2),
       contentType: "application/json",
     });
-    existsSync(consoleDump) &&
-      (await testInfo.attach("console.json", {
+    if (existsSync(consoleDump)) {
+      await testInfo.attach("console.json", {
         body: JSON.stringify(
           (await readFile(consoleDump))
             .toString()
@@ -206,7 +211,8 @@ test("Nest", async ({}, testInfo) => {
           2,
         ),
         contentType: "application/json",
-      }));
+      });
+    }
   });
 
   await stopNesting();
