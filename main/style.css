@@ -25,7 +25,12 @@ html {
   margin: 0;
   padding: 0;
   border: 0;
-  font: normal 14px/1.4 "LatoLatinWeb", helvetica, arial, verdana, sans-serif;
+  font:
+    normal 14px/1.4 "LatoLatinWeb",
+    helvetica,
+    arial,
+    verdana,
+    sans-serif;
   overflow: hidden;
   --nav-width: 4.375em;
   -webkit-user-select: none;
@@ -497,11 +502,11 @@ ul.dropdown li:hover {
     flex-direction: row;
     flex-wrap: wrap;
   }
-  
+
   #config dl dt {
     width: 50%;
   }
-  
+
   #config dl dd {
     width: 50%;
   }
@@ -569,7 +574,7 @@ ul.dropdown li:hover {
 .config_explain {
   display: none;
   position: absolute;
-  top:0;
+  top: 0;
   left: 50%;
   width: 25em;
   padding: 5em 2% 0 5%;
@@ -667,7 +672,6 @@ ul.dropdown li:hover {
   line-height: 3em;
   padding: 0;
   border-bottom: 1px solid var(--border-color);
-
 }
 
 #parts table thead tr th span {
@@ -888,7 +892,7 @@ body.dark-mode #parts table tbody tr td input[type="number"]:focus {
   position: absolute;
   width: 100%;
   height: 2.7em;
- left: 0;
+  left: 0;
   margin: 0;
   padding: 0;
   cursor: default;
@@ -1079,7 +1083,11 @@ body.dark-mode #parts table tbody tr td input[type="number"]:focus {
   right: 0;
   z-index: 21;
   padding: 1.2em 3em 1.2em 10em;
-  background-image: linear-gradient(to right top, rgba(255, 255, 255, 0), var(--message-bg));
+  background-image: linear-gradient(
+    to right top,
+    rgba(255, 255, 255, 0),
+    var(--message-bg)
+  );
   opacity: 0;
   transition: opacity 0.5s;
   cursor: default;
@@ -1678,28 +1686,28 @@ textarea:focus {
 }
 *::-webkit-scrollbar-track {
   /*border-radius: 5px;*/
-  background-color: #384F71;
+  background-color: #384f71;
 }
 
 *::-webkit-scrollbar-track:hover {
-  background-color: #4A4D4E;
+  background-color: #4a4d4e;
 }
 
 *::-webkit-scrollbar-track:active {
-  background-color: #3E556A;
+  background-color: #3e556a;
 }
 
 *::-webkit-scrollbar-thumb {
   /*border-radius: 0px;*/
-  background-color: #3276A4;
+  background-color: #3276a4;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #327AA3;
+  background-color: #327aa3;
 }
 
 *::-webkit-scrollbar-thumb:active {
-  background-color: #3774A3;
+  background-color: #3774a3;
 }
 
 body.dark-mode .unit-label {
@@ -1720,8 +1728,6 @@ body.dark-mode #home .topnav li.button {
 body.dark-mode #home .topnav li.button.disabled {
   color: var(--text-secondary);
 }
-
-
 
 #parts .button {
   background-color: var(--button-primary);
@@ -1763,7 +1769,7 @@ body.dark-mode #home .topnav li.button.disabled {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-content {
@@ -1774,7 +1780,7 @@ body.dark-mode #home .topnav li.button.disabled {
   width: 300px;
   min-height: 150px;
   border-radius: 5px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 body.dark-mode .modal-content {
