@@ -22,7 +22,8 @@
     "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore'",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
     "prepare": "husky || true",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "pw:codegen": "node helper_scripts/playwright_codegen.js"
   },
   "husky": {
     "hooks": {

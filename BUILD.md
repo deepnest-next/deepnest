@@ -27,7 +27,7 @@ brew install boost
 
 ### LINUX
 
-Have a look in the workflow file: 
+Have a look in the workflow file:
 https://github.com/deepnest-next/deepnest/blob/main/.github/workflows/build.yml#L28
 
 - gcc
@@ -67,7 +67,6 @@ npm run build-all
 ### Clean builds
 
 ```sh
-
 npm run clean  && npm run build
 
 # full clean, incl. `node_modules`
@@ -75,7 +74,9 @@ npm run clean-all && npm install && npm run build
 ```
 
 ### Running the tests
+
 First, one-time setup:
+
 ```sh
 npx playwright install chromium
 ```
@@ -83,6 +84,28 @@ npx playwright install chromium
 Without this, you may encounter tests timing out after 30000 milliseconds.
 
 Then, simply run `npm run test`.
+
+### Add tests via playwright codegen
+
+To create new tests you can run:
+
+```sh
+npm run pw:codegen
+```
+
+or
+
+Linux/MacOS:
+```sh
+node ./helper_scripts/playwright_codegen.js
+```
+
+or
+
+Windows:
+```sh
+node .\helper_scripts\playwright_codegen.js
+```
 
 ### Create a Distribution
 
