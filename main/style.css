@@ -1093,10 +1093,12 @@ body.dark-mode #parts table tbody tr td input[type="number"]:focus {
   cursor: default;
   display: flex;
   align-items: center;
+  pointer-events: none; /* Prevent interaction when no message is displayed */
 }
 
 #messagewrapper.active {
   opacity: 1;
+  pointer-events: auto; /* Allow interaction when a message is displayed */
 }
 
 #messagewrapper .close {
