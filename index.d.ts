@@ -42,3 +42,15 @@ export type NestingResult = {
     sheetplacements: SheetPlacement[];
   }[];
 };
+
+declare global {
+  interface Window {
+    config: {
+      getSync: () => DeepNestConfig;
+    };
+    DeepNest: {
+      config: () => DeepNestConfig;
+      nests: NestingResult;
+    };
+  }
+}
