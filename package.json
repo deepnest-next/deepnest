@@ -20,7 +20,21 @@
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
     "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
     "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore'",
-    "dist-all": "npm run clean-all && npm install && npm run build && npm run dist"
+    "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
+    "prepare": "husky",
+    "precommit": "lint-staged"
+  },
+  "husky": {
+    "hooks": {
+        "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*.{ts,html,css,scss,less}": [
+        "prettier --write",
+        "eslint --fix",
+        "git add"
+    ]
   },
   "repository": "https://github.com/deepnest-next/deepnest",
   "keywords": [
@@ -36,6 +50,9 @@
     "@types/node": "22.15.14",
     "cross-replace": "0.2.0",
     "electron": "34.5.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.5.3",
     "typescript": "^5.8.2"
   },
   "dependencies": {

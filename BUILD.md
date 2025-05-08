@@ -74,6 +74,16 @@ npm run clean  && npm run build
 npm run clean-all && npm install && npm run build
 ```
 
+### Running the tests
+First, one-time setup:
+```sh
+npx playwright install chromium
+```
+
+Without this, you may encounter tests timing out after 30000 milliseconds.
+
+Then, simply run `npm run test`.
+
 ### Create a Distribution
 
 ```sh
