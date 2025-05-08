@@ -572,8 +572,8 @@ ready(async function () {
                         controlIconsEnabled: false,
                         fit: true,
                         center: true,
-                        maxZoom: 50,
-                        minZoom: 0.1
+                        maxZoom: 500,
+                        minZoom: 0.01
                     });
 
                     if (zoom) {
