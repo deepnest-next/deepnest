@@ -19,10 +19,14 @@
     "build": "tsc && electron-rebuild",
     "clean": "rmdir /s /q build dist >nul 2>&1|echo . >nul",
     "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
-    "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore'",
+    "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='\\.husky' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore' --ignore='playwright-report' --ignore='test.log'",
+    "build-dist": "electron-builder build --win",
+    "build-dist-signed": "electron-builder build --win --publish never",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
+    "dist-all-signed": "npm run clean-all && npm install && npm run build && npm run build-dist-signed",
     "prepare": "husky || true",
     "precommit": "lint-staged",
+    "postinstall": "electron-builder install-app-deps",
     "pw:codegen": "node helper_scripts/playwright_codegen.js"
   },
   "husky": {
@@ -46,10 +50,11 @@
   ],
   "devDependencies": {
     "@electron/packager": "18.3.6",
+    "electron-builder": "26.0.15",
     "@electron/rebuild": "4.0.1",
     "@eslint/js": "^9.26.0",
     "@playwright/test": "1.52.0",
-    "@types/node": "22.15.16",
+    "@types/node": "22.15.17",
     "cross-replace": "0.2.0",
     "electron": "34.5.5",
     "eslint": "^9.26.0",
@@ -79,15 +84,64 @@
   ],
   "build": {
     "appId": "net.deepnest.app",
-    "copyright": "2024 deepnest-next Community",
-    "compression": "maximum",
+    "copyright": "2025 deepnest-next Community",
     "nodeGypRebuild": false,
+    "files": [
+      "**/*",
+      "build/**/*.js",
+      "!**/deepnest-v*",
+      "!**/out",
+      "!**/playwright-*",
+      "!**/test*",
+      "!**/*.ts",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/package-lock.json",
+      "!test**",
+      "!.readthedocs.yaml",
+      "!**/._*",
+      "!{examples,helper_scripts}",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.vscode,.husky,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "directories": {
+      "app": ".",
+      "output": "deepnest-v${version}-win32-${arch}"
+    },
+    "win": {
+      "target": [
+        "dir",
+        "zip"
+      ],
+      "icon": "icon.ico",
+      "artifactName": "${name}-v${version}-win32-${arch}.${ext}",
+      "signAndEditExecutable": true,
+      "forceCodeSigning": true,
+      "signExts": [
+        ".node",
+        ".exe",
+        ".dll",
+        ".sys",
+        ".msi",
+        ".appx",
+        ".appxbundle"
+      ],
+      "signtoolOptions": {
+        "sign": "./helper_scripts/sign_windows.js",
+        "signingHashAlgorithms": [
+          "sha256"
+        ]
+      }
+    },
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "icon.icns"
-    },
-    "win": {
-      "icon": "icon.ico"
     }
   },
   "contributors": [
