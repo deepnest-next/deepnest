@@ -19,20 +19,9 @@
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "experimentalDecorators": true,
-    "types": [
-      "node"
-    ],
-    "lib": [
-      "ES2020",
-      "ES6",
-      "DOM"
-    ]
+    "types": ["node"],
+    "lib": ["ES2020", "ES6", "DOM"]
   },
-  "include": [
-    "main/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.test.ts"
-  ]
+  "include": ["main/**/*.ts"],
+  "exclude": ["node_modules", "**/*.test.ts"]
 }
