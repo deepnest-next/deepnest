@@ -1086,17 +1086,99 @@ export class SvgParser {
 
 					element.removeAttribute('transform');
 				break;
-				case 'circle':
+        case 'circle':
 					if(skipClosed){
 						element.setAttribute('transform', transformString);
 						return;
 					}
-					var transformed = transform.calc(new Point(element.getAttribute('cx'), element.getAttribute('cy')));
-					element.setAttribute('cx', transformed.x);
-					element.setAttribute('cy', transformed.y);
 
-					// skew not supported
-					element.setAttribute('r', element.getAttribute('r')*scale);
+					// For circles, convert to path for better transform handling
+					var path = this.svg.createElementNS('http://www.w3.org/2000/svg', 'path');
+					var cx = parseFloat(element.getAttribute('cx')) || 0;
+					var cy = parseFloat(element.getAttribute('cy')) || 0;
+					var r = parseFloat(element.getAttribute('r')) || 0;
+
+					// Create circle path using arc commands
+					var d = 'M ' + (cx - r) + ',' + cy +
+						' A ' + r + ',' + r + ' 0 1,0 ' + (cx + r) + ',' + cy +
+						' A ' + r + ',' + r + ' 0 1,0 ' + (cx - r) + ',' + cy +
+						' Z';
+
+					path.setAttribute('d', d);
+
+					// Copy other attributes that might be relevant
+					if(element.hasAttribute('style')) {
+						path.setAttribute('style', element.getAttribute('style'));
+					}
+
+					if(element.hasAttribute('fill')) {
+						path.setAttribute('fill', element.getAttribute('fill'));
+					}
+
+					if(element.hasAttribute('stroke')) {
+						path.setAttribute('stroke', element.getAttribute('stroke'));
+					}
+
+					if(element.hasAttribute('stroke-width')) {
+						path.setAttribute('stroke-width', element.getAttribute('stroke-width'));
+					}
+
+					// Apply the transform to the path instead
+					if(transformString) {
+						path.setAttribute('transform', transformString);
+					}
+
+					// Replace the circle with the path
+					element.parentElement.replaceChild(path, element);
+					element = path;
+
+					// Process the path with the existing path transformation code
+					this.pathToAbsolute(element);
+					var seglist = element.pathSegList;
+					var prevx = 0;
+					var prevy = 0;
+
+					for(var i=0; i<seglist.numberOfItems; i++){
+						var s = seglist.getItem(i);
+						var command = s.pathSegTypeAsLetter;
+
+						if(command == 'H'){
+							seglist.replaceItem(element.createSVGPathSegLinetoAbs(s.x,prevy),i);
+							s = seglist.getItem(i);
+						}
+						else if(command == 'V'){
+							seglist.replaceItem(element.createSVGPathSegLinetoAbs(prevx,s.y),i);
+							s = seglist.getItem(i);
+						}
+						else if(command == 'A'){
+							var arcrotate = s.angle + rotate;
+							var arcsweep = s.sweepFlag;
+
+							seglist.replaceItem(element.createSVGPathSegArcAbs(s.x,s.y,s.r1*scale,s.r2*scale,arcrotate,s.largeArcFlag,arcsweep),i);
+							s = seglist.getItem(i);
+						}
+
+						if('x' in s && 'y' in s){
+							var transformed = transform.calc(new Point(s.x, s.y));
+							prevx = s.x;
+							prevy = s.y;
+
+							s.x = transformed.x;
+							s.y = transformed.y;
+						}
+						if('x1' in s && 'y1' in s){
+							var transformed = transform.calc(new Point(s.x1, s.y1));
+							s.x1 = transformed.x;
+							s.y1 = transformed.y;
+						}
+						if('x2' in s && 'y2' in s){
+							var transformed = transform.calc(new Point(s.x2, s.y2));
+							s.x2 = transformed.x;
+							s.y2 = transformed.y;
+						}
+					}
+
+					element.removeAttribute('transform');
 				break;
 
 				case 'rect':
@@ -1316,7 +1398,7 @@ export class SvgParser {
 				poly.push(p3);
 				poly.push(p4);
 			break;
-			case 'circle':
+      case 'circle':
 				var radius = parseFloat(element.getAttribute('r'));
 				var cx = parseFloat(element.getAttribute('cx'));
 				var cy = parseFloat(element.getAttribute('cy'));
@@ -1324,11 +1406,12 @@ export class SvgParser {
 				// num is the smallest number of segments required to approximate the circle to the given tolerance
 				var num = Math.ceil((2*Math.PI)/Math.acos(1 - (this.conf.tolerance/radius)));
 
-				if(num < 3){
-					num = 3;
+				if(num < 12){
+					num = 12;
 				}
 
-				for(var i=0; i<num; i++){
+				// Ensure we create a complete polygon by going full circle
+				for(var i=0; i<=num; i++){
 					var theta = i * ( (2*Math.PI) / num);
 					var point = {};
 					point.x = radius*Math.cos(theta) + cx;
@@ -1348,11 +1431,11 @@ export class SvgParser {
 
 				var num = Math.ceil((2*Math.PI)/Math.acos(1 - (this.conf.tolerance/maxradius)));
 
-				if(num < 3){
-					num = 3;
+				if(num < 12){
+					num = 12;
 				}
 
-				for(var i=0; i<num; i++){
+				for(var i=0; i<=num; i++){
 					var theta = i * ( (2*Math.PI) / num);
 					var point = {};
 					point.x = rx*Math.cos(theta) + cx;
