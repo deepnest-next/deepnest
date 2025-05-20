@@ -1,6 +1,6 @@
 // geometryutil.ts
-import { Point } from "./point";
-//import { Vector } from "./vector";
+import { Point } from "./point.js";
+//import { Vector } from "./vector.js";
 
 // --- START OF INTERFACE/TYPE DEFINITIONS ---
 export interface Polygon extends Array<Point> {

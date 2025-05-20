@@ -2,6 +2,7 @@
 
 import { NfpCache } from '../build/nfpDb.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import * as GeometryUtil from '../build/util/geometryutil.js';
 
 window.onload = function () {
   const { ipcRenderer } = require('electron');
