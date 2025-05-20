@@ -194,7 +194,7 @@ window.onload = function () {
       }
 
       p.require('../../main/util/clipper.js');
-      p.require('../../main/util/geometryutil.js');
+      p.require('../../build/util/umd/geometryutil.umd.js');
 
       p.map(process).then(function (processed) {
         function getPart(source) {

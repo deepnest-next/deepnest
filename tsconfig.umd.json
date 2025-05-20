@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./build/util/umd",
+    "module": "umd",
+    "target": "es6",
+    "declaration": false,
+    "sourceMap": true,
+    "importHelpers": false,
+    "noEmitHelpers": false,
+    "removeComments": false
+  },
+  "include": [
+    "./main/util/*.umd.ts"
+  ]
+}
