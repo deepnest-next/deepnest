@@ -1,5 +1,6 @@
 import typescript from '@rollup/plugin-typescript';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { minify } from 'rollup-plugin-swc-minify'
 
 export default {
   input: 'main/util/geometryutil.ts',
@@ -9,8 +10,9 @@ export default {
     name: 'GeometryUtil',
     sourcemap: true
   },
+  treeshake:true,
   plugins: [
-    nodeResolve(),
+    nodeResolve({}),
     typescript({
       tsconfig: './tsconfig.umd.json',
       compilerOptions: {
@@ -18,6 +20,7 @@ export default {
         target: 'es5',
         module: 'esnext', // Using esnext for Rollup to handle modules
       }
-    })
+    }),
+    minify()
   ]
 };
