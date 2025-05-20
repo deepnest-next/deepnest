@@ -3,6 +3,7 @@ import { Vector } from "./vector.js";
 export class Point {
   x: number;
   y: number;
+  marked?: boolean; // For NFP generation
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
@@ -38,7 +39,7 @@ export class Point {
   public equals(obj: Point): boolean {
     return this.x === obj.x && this.y === obj.y;
   }
-  public toString(): String {
+  public toString(): string {
     return "<" + this.x.toFixed(1) + ", " + this.y.toFixed(1) + ">";
   }
 }

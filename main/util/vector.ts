@@ -1,5 +1,5 @@
 // floating point comparison tolerance
-var TOL = Math.pow(10, -9); // Floating point error is likely to be above 1 epsilon
+const TOL = Math.pow(10, -9); // Floating point error is likely to be above 1 epsilon
 
 function _almostEqual(a: number, b: number, tolerance?: number) {
   if (!tolerance) {
@@ -34,7 +34,7 @@ export class Vector {
     if (_almostEqual(sqLen, 1)) {
       return this; // given vector was already a unit vector
     }
-    var len = Math.sqrt(sqLen);
+    const len = Math.sqrt(sqLen);
     return new Vector(this.dx / len, this.dy / len);
   }
 }

@@ -117,6 +117,7 @@ export class Matrix {
 
   matrix(m: Array<number>): Matrix;
   matrix(m: ArbitraryMatrix): Matrix;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   matrix(m: any): Matrix {
     this.cache = null;
     if (Array.isArray(m)) {
@@ -179,7 +180,7 @@ export class Matrix {
       return this.cache;
     }
 
-    var cache = this.v;
+    let cache = this.v;
     this.queue.forEach(
       (item) => (cache = Matrix.combine(cache, item.matrix6())),
     );
@@ -191,8 +192,6 @@ export class Matrix {
   // Apply list of matrixes to (x,y) point.
   // If `isRelative` set, `translate` component of matrix will be skipped
   calc(point: Point, isRelative?: boolean): Point {
-    var m;
-
     // Don't change point on empty transforms queue
     if (!this.queue.length) {
       return point;
@@ -207,7 +206,7 @@ export class Matrix {
       this.cache = this.toArray();
     }
 
-    m = this.cache;
+    const m = this.cache;
 
     // Apply matrix to point
     return new Point(
@@ -233,7 +232,7 @@ export class Matrix {
   applyTransformString(transformString: string): Matrix {
     if (!transformString) return this;
 
-    var operations = {
+    const operations = {
       matrix: true,
       scale: true,
       rotate: true,
@@ -246,8 +245,8 @@ export class Matrix {
       /\s*(matrix|translate|scale|rotate|skewX|skewY)\s*\(\s*(.+?)\s*\)[\s,]*/;
     const PARAMS_SPLIT_RE = /[\s,]+/;
 
-    var cmd: string = "";
-    var params: Array<number>;
+    let cmd: string = "";
+    let params: Array<number>;
 
     // Split value into ['', 'translate', '10 50', '', 'scale', '2', '', 'rotate',  '-45', '']
     for (const item of transformString.split(CMD_SPLIT_RE)) {
@@ -257,7 +256,7 @@ export class Matrix {
       }
 
       // remember operation
-      if (operations.hasOwnProperty(item)) {
+      if (Object.prototype.hasOwnProperty.call(operations, item)) {
         cmd = item;
         continue;
       }
