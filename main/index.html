@@ -11,7 +11,10 @@
     />
     <link rel="stylesheet" type="text/css" href="style.css" />
 
-    <script src="util/pathsegpolyfill.js"></script>
+    <script type="module">
+      import "../build/util/pathsegpolyfill.js";
+    </script>
+
     <script src="util/clipper.js"></script>
     <script src="util/parallel.js"></script>
     <script src="util/interact.js"></script>
