@@ -1508,6 +1508,85 @@ export class SvgParser {
 			if (command=='M' || command=='m') x0=x, y0=y;
 		}
 
+		// After generating the polygon points, check for self-intersection.
+		if (poly.length > 0) {
+			let uniquePolyForCheck = poly.slice();
+
+			// Remove duplicate last point if it's the same as the first (for closed paths)
+			if (uniquePolyForCheck.length > 1 && GeometryUtil.almostEqualPoints(uniquePolyForCheck[0], uniquePolyForCheck[uniquePolyForCheck.length - 1], this.conf.toleranceSvg)) {
+				uniquePolyForCheck.pop();
+			}
+
+      if (uniquePolyForCheck.length >= 3 && this.isPolygonSelfIntersecting(uniquePolyForCheck)) {
+				console.warn('SVG Import: Path was skipped due to self-intersection. Source path d:', path.getAttribute('d') || 'N/A');
+        console.trace();
+				return []; // Return an empty array to indicate this path should be skipped
+			}
+		}
+
 		return poly;
 	};
 }
+
+SvgParser.prototype.isPolygonSelfIntersecting = function(uniquePolygonPoints) {
+    const n = uniquePolygonPoints.length;
+    // console.log('[isPolygonSelfIntersecting] Checking polygon with points:', JSON.parse(JSON.stringify(uniquePolygonPoints)));
+    // A simple polygon needs at least 4 vertices to self-intersect.
+    // Triangles (n=3) cannot self-intersect in this context.
+    if (n < 4) {
+        // console.log('[isPolygonSelfIntersecting] Polygon has less than 4 points, cannot self-intersect.');
+        return false;
+    }
+
+    for (let i = 0; i < n; i++) {
+        const p1 = uniquePolygonPoints[i];
+        const p2 = uniquePolygonPoints[(i + 1) % n]; // End of the first segment
+
+        // Iterate over subsequent segments for comparison
+        // Start j from i + 1 to get unique pairs of segments.
+        // The adjacency check will filter out immediate neighbors.
+        for (let j = i + 1; j < n; j++) {
+            const p3 = uniquePolygonPoints[j];
+            const p4 = uniquePolygonPoints[(j + 1) % n]; // End of the second segment
+
+            // console.log(`[isPolygonSelfIntersecting] Comparing segment ${i}-${(i + 1) % n} [(${p1.x},${p1.y})-(${p2.x},${p2.y})] with segment ${j}-${(j + 1) % n} [(${p3.x},${p3.y})-(${p4.x},${p4.y})]`);
+
+            // Avoid checking adjacent segments.
+            if (((i + 1) % n === j) || (i === (j + 1) % n)) {
+                // console.log(`[isPolygonSelfIntersecting] Segments ${i}-${(i + 1) % n} and ${j}-${(j + 1) % n} are adjacent. Skipping.`);
+                continue;
+            }
+
+            const intersection = GeometryUtil.lineIntersect(p1, p2, p3, p4, false);
+
+            if (intersection) {
+                //console.log(`[isPolygonSelfIntersecting] Raw intersection found between segment ${i}-${(i+1)%n} and ${j}-${(j+1)%n}:`, JSON.parse(JSON.stringify(intersection)), 'P1,P2:', JSON.parse(JSON.stringify(p1)), JSON.parse(JSON.stringify(p2)), 'P3,P4:', JSON.parse(JSON.stringify(p3)), JSON.parse(JSON.stringify(p4)));
+
+                const tol = this.conf.toleranceSvg || 0.01;
+
+                // Check if the intersection point is an endpoint of the first segment
+                let isEndpointForSeg1 = GeometryUtil.almostEqualPoints(intersection, p1, tol) ||
+                                        GeometryUtil.almostEqualPoints(intersection, p2, tol);
+
+                // Check if the intersection point is an endpoint of the second segment
+                let isEndpointForSeg2 = GeometryUtil.almostEqualPoints(intersection, p3, tol) ||
+                                        GeometryUtil.almostEqualPoints(intersection, p4, tol);
+
+                //console.log(`[isPolygonSelfIntersecting] Endpoint checks for intersection: isEndpointForSeg1=${isEndpointForSeg1}, isEndpointForSeg2=${isEndpointForSeg2}`);
+
+                // A true self-intersection occurs if the intersection is NOT a shared vertex for both segments.
+                // If it's an endpoint for one segment but lies in the interior of the other (or vice-versa),
+                // or if it's in the interior of both, it's a self-intersection.
+                // It's NOT a self-intersection if it's an endpoint of seg1 AND an endpoint of seg2 (segments touch at a common vertex).
+                if (!(isEndpointForSeg1 && isEndpointForSeg2)) {
+                    console.warn('[isPolygonSelfIntersecting] Self-intersecting path segment DETECTED. Intersection at:', JSON.parse(JSON.stringify(intersection)), 'Segments:', {i, p1: JSON.parse(JSON.stringify(p1)), p2: JSON.parse(JSON.stringify(p2))}, {j, p3: JSON.parse(JSON.stringify(p3)), p4: JSON.parse(JSON.stringify(p4))});
+                    return true; // Found a true self-intersection
+                } /* else {
+                    console.log('[isPolygonSelfIntersecting] Intersection is a shared vertex (endpoint of both segments). Not a self-intersection in this context. Details:', {i, j, p1: JSON.parse(JSON.stringify(p1)), p2: JSON.parse(JSON.stringify(p2)), p3: JSON.parse(JSON.stringify(p3)), p4: JSON.parse(JSON.stringify(p4)), intersection: JSON.parse(JSON.stringify(intersection))});
+                } */
+            }
+        }
+    }
+    // console.log('[isPolygonSelfIntersecting] No self-intersection detected for polygon:', JSON.parse(JSON.stringify(uniquePolygonPoints)));
+    return false; // No self-intersections found
+};
