@@ -1699,7 +1699,7 @@ if (!("SVGPathSeg" in window)) {
         const command = match[1];
         const paramsString = match[2].trim();
         const params = paramsString
-          ? (paramsString.match(/-?\d*\.?\d+(?:[eE][+-]?\d+)?/gi) || [])
+          ? (paramsString.match(/-?\d*\.?\d*(?:[eE][+-]?\d+)?/gi) || []) // Updated regex
               .map(parseFloat)
               .filter((p) => !isNaN(p))
           : [];
