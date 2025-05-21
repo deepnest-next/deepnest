@@ -1096,134 +1096,70 @@ export class SvgParser {
 					var path = this.svg.createElementNS('http://www.w3.org/2000/svg', 'path');
 					var cx = parseFloat(element.getAttribute('cx')) || 0;
 					var cy = parseFloat(element.getAttribute('cy')) || 0;
-					var r = parseFloat(element.getAttribute('r')) || 0;
+					var r = parseFloat(element.getAttribute('r'));
 
-					// Create circle path using arc commands
-					var d = 'M ' + (cx - r) + ',' + cy +
-						' A ' + r + ',' + r + ' 0 1,0 ' + (cx + r) + ',' + cy +
-						' A ' + r + ',' + r + ' 0 1,0 ' + (cx - r) + ',' + cy +
-						' Z';
+					if (isNaN(r) || r === 0) {
+						console.warn('Degenerate circle encountered and will be removed or ignored:', element);
+						if(element.parentNode) element.parentNode.removeChild(element);
+						return;
+					}
 
+					// Create a path representing the circle
+					// M cx-r,cy A r,r 0 1,0 cx+r,cy A r,r 0 1,0 cx-r,cy Z
+					var d = `M ${cx - r},${cy} A ${r},${r} 0 1,0 ${cx + r},${cy} A ${r},${r} 0 1,0 ${cx - r},${cy} Z`;
 					path.setAttribute('d', d);
+					path.setAttribute('transform', transformString); // Apply the original transform to the new path
 
-					// Copy other attributes that might be relevant
-					if(element.hasAttribute('style')) {
-						path.setAttribute('style', element.getAttribute('style'));
-					}
-
-					if(element.hasAttribute('fill')) {
-						path.setAttribute('fill', element.getAttribute('fill'));
-					}
-
-					if(element.hasAttribute('stroke')) {
-						path.setAttribute('stroke', element.getAttribute('stroke'));
-					}
-
-					if(element.hasAttribute('stroke-width')) {
-						path.setAttribute('stroke-width', element.getAttribute('stroke-width'));
-					}
-
-					// Apply the transform to the path instead
-					if(transformString) {
-						path.setAttribute('transform', transformString);
-					}
-
-					// Replace the circle with the path
-					element.parentElement.replaceChild(path, element);
-					element = path;
-
-					// Process the path with the existing path transformation code
-					this.pathToAbsolute(element);
-					var seglist = element.pathSegList;
-					var prevx = 0;
-					var prevy = 0;
-
-					for(var i=0; i<seglist.numberOfItems; i++){
-						var s = seglist.getItem(i);
-						var command = s.pathSegTypeAsLetter;
-
-						if(command == 'H'){
-							seglist.replaceItem(element.createSVGPathSegLinetoAbs(s.x,prevy),i);
-							s = seglist.getItem(i);
-						}
-						else if(command == 'V'){
-							seglist.replaceItem(element.createSVGPathSegLinetoAbs(prevx,s.y),i);
-							s = seglist.getItem(i);
-						}
-						else if(command == 'A'){
-							var arcrotate = s.angle + rotate;
-							var arcsweep = s.sweepFlag;
-
-							seglist.replaceItem(element.createSVGPathSegArcAbs(s.x,s.y,s.r1*scale,s.r2*scale,arcrotate,s.largeArcFlag,arcsweep),i);
-							s = seglist.getItem(i);
-						}
-
-						if('x' in s && 'y' in s){
-							var transformed = transform.calc(new Point(s.x, s.y));
-							prevx = s.x;
-							prevy = s.y;
-
-							s.x = transformed.x;
-							s.y = transformed.y;
-						}
-						if('x1' in s && 'y1' in s){
-							var transformed = transform.calc(new Point(s.x1, s.y1));
-							s.x1 = transformed.x;
-							s.y1 = transformed.y;
-						}
-						if('x2' in s && 'y2' in s){
-							var transformed = transform.calc(new Point(s.x2, s.y2));
-							s.x2 = transformed.x;
-							s.y2 = transformed.y;
+					// Copy other relevant attributes
+					for (var k = 0; k < element.attributes.length; k++) {
+						var attr = element.attributes[k];
+						if (attr.name !== 'cx' && attr.name !== 'cy' && attr.name !== 'r' && attr.name !== 'transform') {
+							path.setAttribute(attr.name, attr.value);
 						}
 					}
 
-					element.removeAttribute('transform');
-				break;
+					element.parentNode.replaceChild(path, element);
+					// After replacing, we need to process this new path with its transform
+					this.applyTransform(path, '', skipClosed, dxfFlag);
+					break;
 
 				case 'rect':
 					if(skipClosed){
 						element.setAttribute('transform', transformString);
 						return;
 					}
-					// similar to the ellipse, we'll replace rect with polygon
+					var x = parseFloat(element.getAttribute('x')) || 0;
+					var y = parseFloat(element.getAttribute('y')) || 0;
+					var width = parseFloat(element.getAttribute('width'));
+					var height = parseFloat(element.getAttribute('height'));
+
+					// If width or height is 0 or NaN, this rect is degenerate
+					if (isNaN(width) || isNaN(height) || width === 0 || height === 0) {
+						console.warn('Degenerate rect encountered and will be removed or ignored:', element);
+						// Optionally remove the element if it makes sense for the application
+						if(element.parentNode) element.parentNode.removeChild(element);
+						return; // Stop processing this element
+					}
+
+					var p1 = transform.calc(x,y);
+					var p2 = transform.calc(x+width,y);
+					var p3 = transform.calc(x+width,y+height);
+					var p4 = transform.calc(x,y+height);
+
 					var polygon = this.svg.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+					polygon.setAttribute('points', p1.x+','+p1.y+' '+p2.x+','+p2.y+' '+p3.x+','+p3.y+' '+p4.x+','+p4.y);
 
-
-					var p1 = this.svgRoot.createSVGPoint();
-					var p2 = this.svgRoot.createSVGPoint();
-					var p3 = this.svgRoot.createSVGPoint();
-					var p4 = this.svgRoot.createSVGPoint();
-
-					p1.x = parseFloat(element.getAttribute('x')) || 0;
-					p1.y = parseFloat(element.getAttribute('y')) || 0;
-
-					p2.x = p1.x + parseFloat(element.getAttribute('width'));
-					p2.y = p1.y;
-
-					p3.x = p2.x;
-					p3.y = p1.y + parseFloat(element.getAttribute('height'));
-
-					p4.x = p1.x;
-					p4.y = p3.y;
-
-					polygon.points.appendItem(p1);
-					polygon.points.appendItem(p2);
-					polygon.points.appendItem(p3);
-					polygon.points.appendItem(p4);
-
-					// OnShape exports a rectangle at position 0/0, drop it
-					if (p1.x === 0 && p1.y === 0) {
-						polygon.points.clear();
+					// Copy other relevant attributes (like fill, stroke, id, class etc.) from rect to polygon
+					for (var k = 0; k < element.attributes.length; k++) {
+						var attr = element.attributes[k];
+						// Avoid copying attributes that are specific to rect or already handled
+						if (attr.name !== 'x' && attr.name !== 'y' && attr.name !== 'width' && attr.name !== 'height' && attr.name !== 'transform') {
+							polygon.setAttribute(attr.name, attr.value);
+						}
 					}
 
-					var transformProperty = element.getAttribute('transform');
-					if(transformProperty){
-						polygon.setAttribute('transform', transformProperty);
-					}
-
-					element.parentElement.replaceChild(polygon, element);
-					element = polygon;
+					element.parentNode.replaceChild(polygon, element);
+					break;
 
 				case 'polygon':
 				case 'polyline':
