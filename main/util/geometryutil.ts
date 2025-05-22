@@ -48,16 +48,6 @@ export interface ArcSvgParams {
   sweep: 0 | 1;
 }
 
-interface TouchingInfo {
-  type: 0 | 1 | 2;
-  A: number;
-  B: number;
-}
-
-interface VectorWithPathInfo extends Point {
-  start: Point;
-  end: Point;
-}
 // --- END OF INTERFACE/TYPE DEFINITIONS ---
 
 // --- MODULE-SCOPED CONSTANTS & HELPERS (not exported) ---
@@ -77,30 +67,13 @@ function _normalizeVector(v: Point): Point {
     // Compare with TOL^2 for squared length
     return new Point(v.x, v.y);
   }
-  const len = Math.sqrt(sqLength);
+
+  const len = Math.hypot(v.x, v.y);
   if (len === 0) {
     return new Point(0, 0);
   }
   const inverse = 1 / len;
   return new Point(v.x * inverse, v.y * inverse);
-}
-
-function _internalAlmostEqual(
-  a: number,
-  b: number,
-  tolerance: number = TOL,
-): boolean {
-  return Math.abs(a - b) < tolerance;
-}
-
-function _internalAlmostEqualPoints(
-  a: Point,
-  b: Point,
-  tolerance: number = TOL,
-): boolean {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return dx * dx + dy * dy < tolerance * tolerance;
 }
 
 function _onSegment(
@@ -110,12 +83,12 @@ function _onSegment(
   tolerance: number = TOL,
 ): boolean {
   if (
-    _internalAlmostEqual(A.x, B.x, tolerance) &&
-    _internalAlmostEqual(p.x, A.x, tolerance)
+    almostEqual(A.x, B.x, tolerance) &&
+    almostEqual(p.x, A.x, tolerance)
   ) {
     if (
-      !_internalAlmostEqual(p.y, B.y, tolerance) &&
-      !_internalAlmostEqual(p.y, A.y, tolerance) &&
+      !almostEqual(p.y, B.y, tolerance) &&
+      !almostEqual(p.y, A.y, tolerance) &&
       p.y < Math.max(B.y, A.y) + tolerance &&
       p.y > Math.min(B.y, A.y) - tolerance
     ) {
@@ -125,12 +98,12 @@ function _onSegment(
     return false;
   }
   if (
-    _internalAlmostEqual(A.y, B.y, tolerance) &&
-    _internalAlmostEqual(p.y, A.y, tolerance)
+    almostEqual(A.y, B.y, tolerance) &&
+    almostEqual(p.y, A.y, tolerance)
   ) {
     if (
-      !_internalAlmostEqual(p.x, B.x, tolerance) &&
-      !_internalAlmostEqual(p.x, A.x, tolerance) &&
+      !almostEqual(p.x, B.x, tolerance) &&
+      !almostEqual(p.x, A.x, tolerance) &&
       p.x < Math.max(B.x, A.x) + tolerance &&
       p.x > Math.min(B.x, A.x) - tolerance
     ) {
@@ -140,9 +113,9 @@ function _onSegment(
     return false;
   }
 
-  const dAP = Math.sqrt((p.x - A.x) ** 2 + (p.y - A.y) ** 2);
-  const dBP = Math.sqrt((p.x - B.x) ** 2 + (p.y - B.y) ** 2);
-  const dAB = Math.sqrt((B.x - A.x) ** 2 + (B.y - A.y) ** 2);
+  const dAP = Math.hypot(p.x - A.x, p.y - A.y);
+  const dBP = Math.hypot(p.x - B.x, p.y - B.y);
+  const dAB = Math.hypot(B.x - A.x, B.y - A.y);
 
   // Check if p is on the line defined by A, B (collinearity)
   // (p.y - A.y) * (B.x - A.x) - (p.x - A.x) * (B.y - A.y) == 0
@@ -156,8 +129,8 @@ function _onSegment(
 
   // Check if p is between A and B (and not an endpoint)
   if (
-    _internalAlmostEqualPoints(p, A, tolerance) ||
-    _internalAlmostEqualPoints(p, B, tolerance)
+    almostEqualPoints(p, A, tolerance) ||
+    almostEqualPoints(p, B, tolerance)
   ) {
     return false; // p is an endpoint
   }
@@ -165,7 +138,69 @@ function _onSegment(
   return Math.abs(dAP + dBP - dAB) < tolerance;
 }
 
-function _internalLineIntersect(
+function _getSafePolygonPoint(
+  poly: Polygon,
+  index: number,
+  offsetx: number = 0,
+  offsety: number = 0,
+): Point {
+  const p = poly[((index % poly.length) + poly.length) % poly.length];
+  return new Point(p.x + offsetx, p.y + offsety);
+}
+
+// function _inNfp(p: Point, nfpList: Polygon[] | undefined): boolean {
+//   if (!nfpList || nfpList.length === 0) return false;
+//   for (const nfp of nfpList) {
+//     for (const nfpPoint of nfp) {
+//       if (
+//         almostEqual(p.x, nfpPoint.x) &&
+//         almostEqual(p.y, nfpPoint.y)
+//       ) {
+//         return true;
+//       }
+//     }
+//     if (pointInPolygon(p, nfp)) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
+
+// Helper function for linear interpolation between two points
+function _lerpPoint(p1: Point, p2: Point, t: number): Point {
+  return new Point(p1.x + (p2.x - p1.x) * t, p1.y + (p2.y - p1.y) * t);
+}
+
+// --- END OF MODULE-SCOPED HELPERS ---
+
+// --- START OF PUBLIC API ---
+export function almostEqual(a: number, b: number, tolerance?: number): boolean {
+  return Math.abs(a - b) < (tolerance || TOL);
+}
+
+export function almostEqualPoints(
+  a: Point,
+  b: Point,
+  tolerance?: number,
+): boolean {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy) < (tolerance || TOL);
+}
+
+export function withinDistance(
+  p1: Point,
+  p2: Point,
+  distance: number,
+): boolean {
+  const dx = p1.x - p2.x;
+  const dy = p1.y - p2.y;
+  // todo: check if we need to use squared distance
+  // origin: return Math.hypot(dx, dy) < (distance || TOL) * (distance || TOL);
+  return Math.hypot(dx, dy) < (distance || TOL);
+}
+
+export function lineIntersect(
   A: Point,
   B: Point,
   E: Point,
@@ -180,7 +215,7 @@ function _internalLineIntersect(
   const c2 = F.x * E.y - E.x * F.y;
 
   const denom = a1 * b2 - a2 * b1;
-  if (_internalAlmostEqual(denom, 0)) return null;
+  if (almostEqual(denom, 0)) return null;
 
   const x = (b1 * c2 - b2 * c1) / denom;
   const y = (a2 * c1 - a1 * c2) / denom;
@@ -202,118 +237,96 @@ function _internalLineIntersect(
   return new Point(x, y);
 }
 
-function _getSafePolygonPoint(
-  poly: Polygon,
-  index: number,
-  offsetx: number = 0,
-  offsety: number = 0,
-): Point {
-  const p = poly[((index % poly.length) + poly.length) % poly.length];
-  return new Point(p.x + offsetx, p.y + offsety);
-}
-
-function _inNfp(p: Point, nfpList: Polygon[] | undefined): boolean {
-  if (!nfpList || nfpList.length === 0) return false;
-  for (const nfp of nfpList) {
-    for (const nfpPoint of nfp) {
-      if (
-        _internalAlmostEqual(p.x, nfpPoint.x) &&
-        _internalAlmostEqual(p.y, nfpPoint.y)
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-// --- END OF MODULE-SCOPED HELPERS ---
-
-// --- START OF PUBLIC API ---
-export function almostEqual(a: number, b: number, tolerance?: number): boolean {
-  return _internalAlmostEqual(a, b, tolerance);
-}
-
-export function almostEqualPoints(
-  a: Point,
-  b: Point,
-  tolerance?: number,
-): boolean {
-  return _internalAlmostEqualPoints(a, b, tolerance);
-}
-
-export function withinDistance(
-  p1: Point,
-  p2: Point,
-  distance: number,
-): boolean {
-  const dx = p1.x - p2.x;
-  const dy = p1.y - p2.y;
-  return dx * dx + dy * dy < distance * distance;
-}
-
-export function lineIntersect(
-  A: Point,
-  B: Point,
-  E: Point,
-  F: Point,
-  infinite?: boolean,
-): Point | null {
-  return _internalLineIntersect(A, B, E, F, infinite);
-}
-
-export const QuadraticBezier = {
-  isFlat: function (p1: Point, p2: Point, c1: Point, tol: number): boolean {
+export class QuadraticBezier {
+  private static isFlat(p1: Point, p2: Point, c1: Point, tol: number): boolean {
     const flatnessThreshold = 4 * tol * tol;
     let ux = 2 * c1.x - p1.x - p2.x;
     ux *= ux;
     let uy = 2 * c1.y - p1.y - p2.y;
     uy *= uy;
     return ux + uy <= flatnessThreshold;
-  },
+  }
 
-  linearize: function (p1: Point, p2: Point, c1: Point, tol: number): Point[] {
-    const finished: Point[] = [p1];
+  static linearize(p1: Point, p2: Point, c1: Point, tol: number): Point[] {
+    if (tol <= 0) { // Ensure tol is positive
+      // console.warn("QuadraticBezier.linearize: tol must be positive. Clamping to 1e-6.");
+      tol = 1e-6;
+    }
+
+    // If start and end points of the whole curve are already very close,
+    // no need for complex linearization.
+    if (almostEqualPoints(p1, p2, tol / 10)) {
+      return [new Point(p1.x, p1.y), new Point(p2.x, p2.y)];
+    }
+
+    const finished: Point[] = [new Point(p1.x, p1.y)];
     const todo: QuadraticBezierSegmentDef[] = [{ p1, p2, c1 }];
+
+    let iterations = 0;
+    const MAX_ITERATIONS_SAFETY = 30000;
+
     while (todo.length > 0) {
+      iterations++;
+      if (iterations > MAX_ITERATIONS_SAFETY) {
+        console.error(
+          `QuadraticBezier.linearize: Exceeded MAX_ITERATIONS_SAFETY (${MAX_ITERATIONS_SAFETY}). Output may be incomplete.`,
+        );
+        if (finished.length === 0 || !almostEqualPoints(finished[finished.length - 1], p2, tol)) {
+          finished.push(new Point(p2.x, p2.y));
+        }
+        break;
+      }
+
       const segment = todo.shift()!;
+
+      if (almostEqualPoints(segment.p1, segment.p2, tol / 1000)) {
+        if (finished.length === 0 || !almostEqualPoints(finished[finished.length - 1], segment.p2, tol / 100)) {
+          finished.push(new Point(segment.p2.x, segment.p2.y));
+        }
+        continue;
+      }
+
       if (this.isFlat(segment.p1, segment.p2, segment.c1, tol)) {
-        finished.push(new Point(segment.p2.x, segment.p2.y));
+        if (finished.length === 0 || !almostEqualPoints(finished[finished.length - 1], segment.p2, tol / 100)) {
+           finished.push(new Point(segment.p2.x, segment.p2.y));
+        }
       } else {
         const divided = this.subdivide(segment.p1, segment.p2, segment.c1, 0.5);
         todo.unshift(divided[1]);
         todo.unshift(divided[0]);
       }
     }
-    return finished;
-  },
 
-  subdivide: function (
+    if (finished.length > 0 && !almostEqualPoints(finished[finished.length - 1], p2, tol / 10)) {
+      finished.push(new Point(p2.x, p2.y));
+    } else if (finished.length === 0) {
+      finished.push(new Point(p1.x, p1.y));
+      if (!almostEqualPoints(p1, p2, tol/10)) {
+          finished.push(new Point(p2.x, p2.y));
+      }
+    }
+
+    return finished;
+  }
+
+  private static subdivide(
     p1: Point,
     p2: Point,
     c1: Point,
     t: number,
   ): [QuadraticBezierSegmentDef, QuadraticBezierSegmentDef] {
-    const mid1: Point = new Point(
-      p1.x + (c1.x - p1.x) * t,
-      p1.y + (c1.y - p1.y) * t,
-    );
-    const mid2: Point = new Point(
-      c1.x + (p2.x - c1.x) * t,
-      c1.y + (p2.y - c1.y) * t,
-    );
-    const mid3: Point = new Point(
-      mid1.x + (mid2.x - mid1.x) * t,
-      mid1.y + (mid2.y - mid1.y) * t,
-    );
+    const mid1 = _lerpPoint(p1, c1, t);
+    const mid2 = _lerpPoint(c1, p2, t);
+    const mid3 = _lerpPoint(mid1, mid2, t);
     return [
       { p1, p2: mid3, c1: mid1 },
       { p1: mid3, p2, c1: mid2 },
     ];
-  },
-};
+  }
+}
 
-export const CubicBezier = {
-  isFlat: function (
+export class CubicBezier {
+  private static isFlat(
     p1: Point,
     p2: Point,
     c1: Point,
@@ -330,21 +343,55 @@ export const CubicBezier = {
     let vy = 3 * c2.y - 2 * p2.y - p1.y;
     vy *= vy;
     return Math.max(ux, vx) + Math.max(uy, vy) <= flatnessThreshold;
-  },
+  }
 
-  linearize: function (
+  static linearize(
     p1: Point,
     p2: Point,
     c1: Point,
     c2: Point,
     tol: number,
   ): Point[] {
-    const finished: Point[] = [p1];
+    if (tol <= 0) { // Ensure tol is positive
+      // console.warn("CubicBezier.linearize: tol must be positive. Clamping to 1e-6.");
+      tol = 1e-6;
+    }
+
+    if (almostEqualPoints(p1, p2, tol / 10)) {
+      return [new Point(p1.x, p1.y), new Point(p2.x, p2.y)];
+    }
+
+    const finished: Point[] = [new Point(p1.x, p1.y)];
     const todo: CubicBezierSegmentDef[] = [{ p1, p2, c1, c2 }];
+
+    let iterations = 0;
+    const MAX_ITERATIONS_SAFETY = 30000;
+
     while (todo.length > 0) {
+      iterations++;
+      if (iterations > MAX_ITERATIONS_SAFETY) {
+        console.error(
+          `CubicBezier.linearize: Exceeded MAX_ITERATIONS_SAFETY (${MAX_ITERATIONS_SAFETY}). Output may be incomplete.`,
+        );
+        if (finished.length === 0 || !almostEqualPoints(finished[finished.length - 1], p2, tol)) {
+          finished.push(new Point(p2.x, p2.y));
+        }
+        break;
+      }
+
       const segment = todo.shift()!;
+
+      if (almostEqualPoints(segment.p1, segment.p2, tol / 1000)) {
+        if (finished.length === 0 || !almostEqualPoints(finished[finished.length - 1], segment.p2, tol / 100)) {
+          finished.push(new Point(segment.p2.x, segment.p2.y));
+        }
+        continue;
+      }
+
       if (this.isFlat(segment.p1, segment.p2, segment.c1, segment.c2, tol)) {
-        finished.push(new Point(segment.p2.x, segment.p2.y));
+        if (finished.length === 0 || !almostEqualPoints(finished[finished.length - 1], segment.p2, tol / 100)) {
+           finished.push(new Point(segment.p2.x, segment.p2.y));
+        }
       } else {
         const divided = this.subdivide(
           segment.p1,
@@ -357,53 +404,41 @@ export const CubicBezier = {
         todo.unshift(divided[0]);
       }
     }
-    return finished;
-  },
 
-  subdivide: function (
+    if (finished.length > 0 && !almostEqualPoints(finished[finished.length - 1], p2, tol / 10)) {
+      finished.push(new Point(p2.x, p2.y));
+    } else if (finished.length === 0) {
+      finished.push(new Point(p1.x, p1.y));
+       if (!almostEqualPoints(p1, p2, tol/10)) {
+          finished.push(new Point(p2.x, p2.y));
+      }
+    }
+
+    return finished;
+  }
+
+  private static subdivide(
     p1: Point,
     p2: Point,
     c1: Point,
     c2: Point,
     t: number,
   ): [CubicBezierSegmentDef, CubicBezierSegmentDef] {
-    const t_p1 = p1,
-      t_c1 = c1,
-      t_c2 = c2,
-      t_p2 = p2;
-    const p1c1: Point = new Point(
-      t_p1.x + (t_c1.x - t_p1.x) * t,
-      t_p1.y + (t_c1.y - t_p1.y) * t,
-    );
-    const c1c2: Point = new Point(
-      t_c1.x + (t_c2.x - t_c1.x) * t,
-      t_c1.y + (t_c2.y - t_c1.y) * t,
-    );
-    const c2p2: Point = new Point(
-      t_c2.x + (t_p2.x - t_c2.x) * t,
-      t_c2.y + (t_p2.y - t_c2.y) * t,
-    );
-    const p1c1_c1c2: Point = new Point(
-      p1c1.x + (c1c2.x - p1c1.x) * t,
-      p1c1.y + (c1c2.y - p1c1.y) * t,
-    );
-    const c1c2_c2p2: Point = new Point(
-      c1c2.x + (c2p2.x - c1c2.x) * t,
-      c1c2.y + (c2p2.y - c1c2.y) * t,
-    );
-    const midPoint: Point = new Point(
-      p1c1_c1c2.x + (c1c2_c2p2.x - p1c1_c1c2.x) * t,
-      p1c1_c1c2.y + (c1c2_c2p2.y - p1c1_c1c2.y) * t,
-    );
+    const p1c1 = _lerpPoint(p1, c1, t);
+    const c1c2 = _lerpPoint(c1, c2, t);
+    const c2p2 = _lerpPoint(c2, p2, t);
+    const p1c1_c1c2 = _lerpPoint(p1c1, c1c2, t);
+    const c1c2_c2p2 = _lerpPoint(c1c2, c2p2, t);
+    const midPoint = _lerpPoint(p1c1_c1c2, c1c2_c2p2, t);
     return [
-      { p1: t_p1, c1: p1c1, c2: p1c1_c1c2, p2: midPoint },
-      { p1: midPoint, c1: c1c2_c2p2, c2: c2p2, p2: t_p2 },
+      { p1: p1, c1: p1c1, c2: p1c1_c1c2, p2: midPoint },
+      { p1: midPoint, c1: c1c2_c2p2, c2: c2p2, p2: p2 },
     ];
-  },
-};
+  }
+}
 
-export const Arc = {
-  linearize: function (
+export class Arc {
+  static linearize(
     p1: Point,
     p2: Point,
     rx: number,
@@ -414,7 +449,13 @@ export const Arc = {
     tol: number,
   ): Point[] {
     const finalPoints: Point[] = [p1];
-    if (_internalAlmostEqualPoints(p1, p2)) return finalPoints;
+    if (almostEqualPoints(p1, p2)) return finalPoints;
+
+    // Moved the zero radius check before calling svgToCenter
+    if (rx <= TOL || ry <= TOL) {
+      finalPoints.push(p2);
+      return finalPoints;
+    }
 
     const initialArcParams = this.svgToCenter(
       p1,
@@ -425,10 +466,6 @@ export const Arc = {
       largearc,
       sweep,
     );
-    if (rx <= TOL || ry <= TOL) {
-      finalPoints.push(p2);
-      return finalPoints;
-    }
 
     const processingQueue: ArcCenterParams[] = [initialArcParams];
     while (processingQueue.length > 0) {
@@ -471,9 +508,9 @@ export const Arc = {
       }
     }
     return finalPoints;
-  },
+  }
 
-  centerToSvg: function (
+  private static centerToSvg(
     center: Point,
     rx: number,
     ry: number,
@@ -506,9 +543,9 @@ export const Arc = {
       largearc,
       sweep: sweepFlag,
     };
-  },
+  }
 
-  svgToCenter: function (
+  private static svgToCenter(
     p1: Point,
     p2: Point,
     rx_in: number,
@@ -519,6 +556,19 @@ export const Arc = {
   ): ArcCenterParams {
     let rx = Math.abs(rx_in);
     let ry = Math.abs(ry_in);
+
+    // Handle zero or near-zero radii early
+    if (rx < TOL || ry < TOL) {
+      return {
+        center: new Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2),
+        rx: rx,
+        ry: ry,
+        theta: 0,
+        extent: 0,
+        angle: angleDegrees,
+      };
+    }
+
     const angleRad = _degreesToRadians(angleDegrees % 360);
     const cosPhi = Math.cos(angleRad),
       sinPhi = Math.sin(angleRad);
@@ -541,11 +591,32 @@ export const Arc = {
     const sign = largearc === sweep ? -1 : 1;
     let num = rx_sq * ry_sq - rx_sq * y1p_sq - ry_sq * x1p_sq;
     if (num < 0) num = 0;
-    let den = rx_sq * y1p_sq + ry_sq * x1p_sq;
-    if (den === 0) den = TOL;
+    const den = rx_sq * y1p_sq + ry_sq * x1p_sq;
+    if (almostEqual(den, 0)) {
+        return {
+            center: new Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2),
+            rx: rx,
+            ry: ry,
+            theta: 0,
+            extent: 0,
+            angle: angleDegrees,
+        };
+    }
     const c_prime_scale = sign * Math.sqrt(num / den);
     const cxp = c_prime_scale * ((rx * y1p) / ry);
     const cyp = c_prime_scale * -((ry * x1p) / rx);
+
+    if (!isFinite(cxp) || !isFinite(cyp)) {
+        return {
+            center: new Point((p1.x + p2.x) / 2, (p1.y + p2.y) / 2),
+            rx: rx,
+            ry: ry,
+            theta: 0,
+            extent: 0,
+            angle: angleDegrees,
+        };
+    }
+
     const cx = cosPhi * cxp - sinPhi * cyp + (p1.x + p2.x) / 2;
     const cy = sinPhi * cxp + cosPhi * cyp + (p1.y + p2.y) / 2;
     const vecAngle = (
@@ -555,10 +626,13 @@ export const Arc = {
       vy: number,
     ): number => {
       const dot = ux * vx + uy * vy;
-      const lenSq1 = ux * ux + uy * uy,
-        lenSq2 = vx * vx + vy * vy;
+      const len1 = Math.hypot(ux, uy);
+      const len2 = Math.hypot(vx, vy);
+      const denominator = len1 * len2;
+      if (almostEqual(denominator, 0)) return 0; // Avoid division by zero if either vector has zero length
+
       let angRad = Math.acos(
-        Math.max(-1, Math.min(1, dot / Math.sqrt(lenSq1 * lenSq2))),
+        Math.max(-1, Math.min(1, dot / denominator)),
       );
       if (ux * vy - uy * vx < 0) angRad = -angRad;
       return angRad;
@@ -581,8 +655,8 @@ export const Arc = {
       extent: _radiansToDegrees(deltaThetaRad),
       angle: angleDegrees,
     };
-  },
-};
+  }
+}
 
 export function getPolygonBounds(polygon: Polygon): Bounds | null {
   if (!polygon || polygon.length === 0) return null;
@@ -613,11 +687,11 @@ export function pointInPolygon(
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
     const pi = new Point(poly[i].x + offsetx, poly[i].y + offsety);
     const pj = new Point(poly[j].x + offsetx, poly[j].y + offsety);
-    if (_internalAlmostEqualPoints(point, pi, tolerance)) return null;
+    if (almostEqualPoints(point, pi, tolerance)) return null;
     if (_onSegment(pi, pj, point, tolerance)) return null;
     if (
-      _internalAlmostEqual(pi.x, pj.x, tolerance) &&
-      _internalAlmostEqual(pi.y, pj.y, tolerance)
+      almostEqual(pi.x, pj.x, tolerance) &&
+      almostEqual(pi.y, pj.y, tolerance)
     )
       continue;
     if (
@@ -630,6 +704,8 @@ export function pointInPolygon(
   return inside;
 }
 
+// returns the area of the polygon, assuming no self-intersections
+// a negative area indicates counter-clockwise winding direction
 export function polygonArea(polygon: Polygon): number {
   let area = 0;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -638,6 +714,8 @@ export function polygonArea(polygon: Polygon): number {
   return 0.5 * area;
 }
 
+// todo: swap this for a more efficient sweep-line implementation
+// returnEdges: if set, return all edges on A that have intersections
 export function intersect(
   polyA_path: Polygon,
   polyB_path: Polygon,
@@ -653,14 +731,14 @@ export function intersect(
   for (let i = 0; i < A_pts.length; i++) {
     const a1 = new Point(A_pts[i].x + Aoffsetx, A_pts[i].y + Aoffsety);
     const a2 = _getSafePolygonPoint(A_pts, i + 1, Aoffsetx, Aoffsety);
-    if (_internalAlmostEqualPoints(a1, a2, TOL)) continue;
+    if (almostEqualPoints(a1, a2, TOL)) continue;
 
     for (let j = 0; j < B_pts.length; j++) {
       const b1 = new Point(B_pts[j].x + Boffsetx, B_pts[j].y + Boffsety);
       const b2 = _getSafePolygonPoint(B_pts, j + 1, Boffsetx, Boffsety);
-      if (_internalAlmostEqualPoints(b1, b2, TOL)) continue;
+      if (almostEqualPoints(b1, b2, TOL)) continue;
 
-      if (_internalLineIntersect(a1, a2, b1, b2, false) !== null) return true;
+      if (lineIntersect(a1, a2, b1, b2, false) !== null) return true;
 
       const a0 = _getSafePolygonPoint(A_pts, i - 1, Aoffsetx, Aoffsety);
       const a_next_next = _getSafePolygonPoint(
@@ -679,7 +757,7 @@ export function intersect(
 
       if (
         _onSegment(a1, a2, b1, TOL) ||
-        _internalAlmostEqualPoints(a1, b1, TOL)
+        almostEqualPoints(a1, b1, TOL)
       ) {
         const b0_in_A = pointInPolygon(b0, polyA_path, TOL);
         const b2_in_A = pointInPolygon(b2, polyA_path, TOL);
@@ -691,7 +769,7 @@ export function intersect(
       }
       if (
         _onSegment(a1, a2, b2, TOL) ||
-        _internalAlmostEqualPoints(a2, b2, TOL)
+        almostEqualPoints(a2, b2, TOL)
       ) {
         const b1_in_A = pointInPolygon(b1, polyA_path, TOL);
         const b_next_next_in_A = pointInPolygon(b_next_next, polyA_path, TOL);
@@ -703,7 +781,7 @@ export function intersect(
       }
       if (
         _onSegment(b1, b2, a1, TOL) ||
-        _internalAlmostEqualPoints(b1, a1, TOL)
+        almostEqualPoints(b1, a1, TOL)
       ) {
         const a0_in_B = pointInPolygon(a0, polyB_path, TOL);
         const a2_in_B = pointInPolygon(a2, polyB_path, TOL);
@@ -715,7 +793,7 @@ export function intersect(
       }
       if (
         _onSegment(b1, b2, a2, TOL) ||
-        _internalAlmostEqualPoints(b2, a2, TOL)
+        almostEqualPoints(b2, a2, TOL)
       ) {
         const a1_in_B = pointInPolygon(a1, polyB_path, TOL);
         const a_next_next_in_B = pointInPolygon(a_next_next, polyB_path, TOL);
@@ -763,14 +841,14 @@ export function polygonEdge(
   let normalMin = -Infinity,
     normalMax = -Infinity;
   for (let i = 0; i < polygon.length; i++) {
-    if (_internalAlmostEqual(dotProducts[i], minDot)) {
+    if (almostEqual(dotProducts[i], minDot)) {
       const normalDot = polygon[i].x * normal.x + polygon[i].y * normal.y;
       if (normalDot > normalMin) {
         normalMin = normalDot;
         indexMin = i;
       }
     }
-    if (_internalAlmostEqual(dotProducts[i], maxDot)) {
+    if (almostEqual(dotProducts[i], maxDot)) {
       const normalDot = polygon[i].x * normal.x + polygon[i].y * normal.y;
       if (normalDot > normalMax) {
         normalMax = normalDot;
@@ -789,19 +867,19 @@ export function polygonEdge(
   };
   const vecToNext = {
     x: nextVertex.x - minVertex.x,
-    y: nextVertex.y - minVertex.y,
+    y: nextVertex.y - minVertex.x,
   };
   const dotPrev = vecToPrev.x * direction.x + vecToPrev.y * direction.y;
   const dotNext = vecToNext.x * direction.x + vecToNext.y * direction.y;
   let scanDirection = 0;
-  if (_internalAlmostEqual(dotPrev, 0)) scanDirection = 1;
-  else if (_internalAlmostEqual(dotNext, 0)) scanDirection = -1;
+  if (almostEqual(dotPrev, 0)) scanDirection = 1;
+  else if (almostEqual(dotNext, 0)) scanDirection = -1;
   else {
     const normalDotPrev = vecToPrev.x * normal.x + vecToPrev.y * normal.y;
     const normalDotNext = vecToNext.x * normal.x + vecToNext.y * normal.y;
     let scaledNormalDotPrev = normalDotPrev,
       scaledNormalDotNext = normalDotNext;
-    if (!_internalAlmostEqual(dotPrev, dotNext)) {
+    if (!almostEqual(dotPrev, dotNext)) {
       if (dotPrev < dotNext)
         scaledNormalDotNext = normalDotNext * (dotPrev / dotNext);
       else scaledNormalDotPrev = normalDotPrev * (dotNext / dotPrev);
@@ -844,12 +922,12 @@ export function pointLineDistance(
     return null;
   if (p_dot_dir > max_s_dot_dir + TOL && !s1inclusive && !s2inclusive)
     return null;
-  if (_internalAlmostEqual(p_dot_dir, s1_dot_dir)) {
+  if (almostEqual(p_dot_dir, s1_dot_dir)) {
     if (s1inclusive) return p_dot_norm - s1_dot_norm;
     if (!(p_dot_dir > min_s_dot_dir - TOL && p_dot_dir < max_s_dot_dir + TOL))
       return null;
   }
-  if (_internalAlmostEqual(p_dot_dir, s2_dot_dir)) {
+  if (almostEqual(p_dot_dir, s2_dot_dir)) {
     if (s2inclusive) return p_dot_norm - s2_dot_norm;
     if (!(p_dot_dir > min_s_dot_dir - TOL && p_dot_dir < max_s_dot_dir + TOL))
       return null;
@@ -857,17 +935,17 @@ export function pointLineDistance(
   if (
     !s1inclusive &&
     p_dot_dir < min_s_dot_dir + TOL &&
-    !_internalAlmostEqual(p_dot_dir, min_s_dot_dir)
+    !almostEqual(p_dot_dir, min_s_dot_dir)
   )
     return null;
   if (
     !s2inclusive &&
     p_dot_dir > max_s_dot_dir - TOL &&
-    !_internalAlmostEqual(p_dot_dir, max_s_dot_dir)
+    !almostEqual(p_dot_dir, max_s_dot_dir)
   )
     return null;
 
-  if (_internalAlmostEqual(s1_dot_dir, s2_dot_dir)) {
+  if (almostEqual(s1_dot_dir, s2_dot_dir)) {
     if (
       p_dot_norm >= Math.min(s1_dot_norm, s2_dot_norm) - TOL &&
       p_dot_norm <= Math.max(s1_dot_norm, s2_dot_norm) + TOL
@@ -892,7 +970,7 @@ export function pointDistance(
   infinite?: boolean,
 ): number | null {
   const normal = _normalizeVector(normalVec);
-  const dir = { x: normal.y, y: -normal.x };
+  const dir = { x: normal.y, y: -normal.x }; // Direction perpendicular to normalVec, along the line s1s2 if normalVec is its normal
   const p_dot_dir = p.x * dir.x + p.y * dir.y;
   const s1_dot_dir = s1.x * dir.x + s1.y * dir.y;
   const s2_dot_dir = s2.x * dir.x + s2.y * dir.y;
@@ -903,143 +981,213 @@ export function pointDistance(
   if (!infinite) {
     const min_s_dot_dir = Math.min(s1_dot_dir, s2_dot_dir);
     const max_s_dot_dir = Math.max(s1_dot_dir, s2_dot_dir);
-    if (p_dot_dir < min_s_dot_dir - TOL || p_dot_dir > max_s_dot_dir + TOL) {
-      if (
-        _internalAlmostEqual(p_dot_dir, s1_dot_dir) &&
-        _internalAlmostEqual(p_dot_dir, s2_dot_dir)
-      ) {
-        if (p_dot_norm > s1_dot_norm && p_dot_norm > s2_dot_norm)
-          return Math.min(p_dot_norm - s1_dot_norm, p_dot_norm - s2_dot_norm);
-        if (p_dot_norm < s1_dot_norm && p_dot_norm < s2_dot_norm)
-          return -Math.min(s1_dot_norm - p_dot_norm, s2_dot_norm - p_dot_norm);
+
+    if (almostEqualPoints(s1, s2, TOL)) { // Segment is a point
+      if (!almostEqual(p_dot_dir, s1_dot_dir, TOL)) {
+        return null; // p does not project onto the point along dir
       }
-      return null;
+      // If it projects onto the point, distance is along normalVec
+      return p_dot_norm - s1_dot_norm;
+    }
+
+    // Check if p's projection on 'dir' is outside segment's projection on 'dir'
+    if (
+      (p_dot_dir < min_s_dot_dir - TOL && !almostEqual(p_dot_dir, min_s_dot_dir, TOL)) ||
+      (p_dot_dir > max_s_dot_dir + TOL && !almostEqual(p_dot_dir, max_s_dot_dir, TOL))
+    ) {
+      return null; // p's projection is outside segment's projection
     }
   }
-  if (_internalAlmostEqual(s1_dot_dir, s2_dot_dir, TOL)) {
-    return -(p_dot_norm - s1_dot_norm);
+
+  // If s1s2 is a line perpendicular to 'dir' (i.e., s1_dot_dir is very close to s2_dot_dir)
+  if (almostEqual(s1_dot_dir, s2_dot_dir, TOL)) {
+    return p_dot_norm - s1_dot_norm; // Distance is simply along normalVec
   }
+
+  // General case: p's projection is on the segment (or infinite line)
+  // Calculate where p projects onto the line s1s2 in terms of 'normalVec'
   const projected_p_on_line_norm =
     s1_dot_norm +
     ((s2_dot_norm - s1_dot_norm) * (p_dot_dir - s1_dot_dir)) /
       (s2_dot_dir - s1_dot_dir);
-  return -(p_dot_norm - projected_p_on_line_norm);
+
+  return p_dot_norm - projected_p_on_line_norm; // Positive if p is on positive side of line along normalVec
 }
 
 export function segmentDistance(
-  A: Point,
-  B: Point,
-  E: Point,
-  F: Point,
-  directionVec: Point,
+  A: Point, // Point 1 of Segment 1 (moving segment)
+  B: Point, // Point 2 of Segment 1
+  E: Point, // Point 1 of Segment 2 (fixed segment)
+  F: Point, // Point 2 of Segment 2
+  directionVec: Point, // Direction Segment 1 (AB) moves
 ): number | null {
-  const normal = _normalizeVector(new Point(directionVec.y, -directionVec.x));
-  const direction = _normalizeVector(directionVec);
-  const reverseDirection = new Point(-direction.x, -direction.y);
+  const slideNormal = _normalizeVector(new Point(directionVec.y, -directionVec.x)); // Perpendicular to slide direction
+  const slideDirection = _normalizeVector(directionVec); // Normalized slide direction
+  const reverseSlideDirection = new Point(-slideDirection.x, -slideDirection.y);
 
-  const dotA_normal = A.x * normal.x + A.y * normal.y;
-  const dotB_normal = B.x * normal.x + B.y * normal.y;
-  const dotE_normal = E.x * normal.x + E.y * normal.y;
-  const dotF_normal = F.x * normal.x + F.y * normal.y;
+  // Project segments onto slideNormal. If they don't overlap, they are separated
+  // in a way that sliding along slideDirection won't make them touch unless they are aligned with slideNormal.
+  const dotA_slideNormal = A.x * slideNormal.x + A.y * slideNormal.y;
+  const dotB_slideNormal = B.x * slideNormal.x + B.y * slideNormal.y;
+  const dotE_slideNormal = E.x * slideNormal.x + E.y * slideNormal.y;
+  const dotF_slideNormal = F.x * slideNormal.x + F.y * slideNormal.y;
 
-  const AB_normal_min = Math.min(dotA_normal, dotB_normal);
-  const AB_normal_max = Math.max(dotA_normal, dotB_normal);
-  const EF_normal_min = Math.min(dotE_normal, dotF_normal);
-  const EF_normal_max = Math.max(dotE_normal, dotF_normal);
+  const S1_slideNormal_min = Math.min(dotA_slideNormal, dotB_slideNormal);
+  const S1_slideNormal_max = Math.max(dotA_slideNormal, dotB_slideNormal);
+  const S2_slideNormal_min = Math.min(dotE_slideNormal, dotF_slideNormal);
+  const S2_slideNormal_max = Math.max(dotE_slideNormal, dotF_slideNormal);
 
   if (
-    AB_normal_max < EF_normal_min + TOL ||
-    AB_normal_min > EF_normal_max - TOL
-  )
-    return null;
-
-  const crossABE = (E.y - A.y) * (B.x - A.x) - (E.x - A.x) * (B.y - A.y);
-  const crossABF = (F.y - A.y) * (B.x - A.x) - (F.x - A.x) * (B.y - A.y);
-
-  if (_internalAlmostEqual(crossABE, 0) && _internalAlmostEqual(crossABF, 0)) {
-    const AB_line_normal = _normalizeVector(new Point(B.y - A.y, A.x - B.x));
-    const norm_dot_dir =
-      AB_line_normal.x * direction.x + AB_line_normal.y * direction.y;
-    if (norm_dot_dir > TOL) {
-      const crossA_dir = A.x * direction.x + A.y * direction.y;
-      const crossB_dir = B.x * direction.x + B.y * direction.y;
-      const crossE_dir = E.x * direction.x + E.y * direction.y;
-      const crossF_dir = F.x * direction.x + F.y * direction.y;
-      const dist_AE = crossE_dir - crossA_dir,
-        dist_AF = crossF_dir - crossA_dir;
-      const dist_BE = crossE_dir - crossB_dir,
-        dist_BF = crossF_dir - crossB_dir;
-      let minPositiveDist: number | null = null;
-      [dist_AE, dist_AF, dist_BE, dist_BF].forEach((d) => {
-        if (d > -TOL) {
-          if (minPositiveDist === null || d < minPositiveDist)
-            minPositiveDist = d;
-        }
-      });
-      return minPositiveDist;
-    }
-    return null;
+    S1_slideNormal_max < S2_slideNormal_min - TOL ||
+    S1_slideNormal_min > S2_slideNormal_max + TOL
+  ) {
+    return null; // Separated perpendicularly to slide direction
   }
 
+  // Check for collinearity of segments AB and EF
+  const vecABx = B.x - A.x;
+  const vecABy = B.y - A.y;
+  const crossABE = (E.y - A.y) * vecABx - (E.x - A.x) * vecABy;
+  const crossABF = (F.y - A.y) * vecABx - (F.x - A.x) * vecABy;
+
+  if (almostEqual(crossABE, 0, TOL) && almostEqual(crossABF, 0, TOL)) {
+    // Segments are collinear
+    // Project all points onto the slideDirection
+    const A_proj_slide = A.x * slideDirection.x + A.y * slideDirection.y;
+    const B_proj_slide = B.x * slideDirection.x + B.y * slideDirection.y;
+    const E_proj_slide = E.x * slideDirection.x + E.y * slideDirection.y;
+    const F_proj_slide = F.x * slideDirection.x + F.y * slideDirection.y;
+
+    const S1_min_proj = Math.min(A_proj_slide, B_proj_slide);
+    const S1_max_proj = Math.max(A_proj_slide, B_proj_slide);
+    const S2_min_proj = Math.min(E_proj_slide, F_proj_slide);
+    const S2_max_proj = Math.max(E_proj_slide, F_proj_slide);
+
+    // S1 (AB) is moving, S2 (EF) is fixed. We want smallest positive distance d for S1 to touch S2.
+    // If S1 is [s1min, s1max] and S2 is [s2min, s2max] on the line of projection.
+
+    // Case 1: S1 is entirely before S2 (S1_max_proj <= S2_min_proj)
+    if (S1_max_proj < S2_min_proj + TOL) {
+      const dist = S2_min_proj - S1_max_proj;
+      return dist < -TOL ? null : (dist < TOL ? 0 : dist) ; // if dist is small negative, treat as 0, else positive
+    }
+    // Case 2: S2 is entirely before S1 (S2_max_proj <= S1_min_proj)
+    // S1 moving in slideDirection will move further away or is already past.
+    // (Unless slideDirection is negative of the projection line, then S1_min_proj would be "later")
+    // This case should yield null if we only consider positive slide distances.
+    // However, if S1 is "behind" S2 (e.g. S1_min_proj > S2_max_proj) but slideDirection points from S1 to S2,
+    // then this is covered by S1_max_proj < S2_min_proj if points are ordered by slideDirection.
+    // The current logic assumes slideDirection aligns with increasing projection values.
+    // If S1 needs to move "backwards" (negative distance), it's not a valid result.
+    // So, if S1_min_proj > S2_max_proj - TOL, return null.
+    if (S1_min_proj > S2_max_proj - TOL) {
+      return null;
+    }
+
+    // Case 3: Overlap
+    // (S1_max_proj > S2_min_proj - TOL && S1_min_proj < S2_max_proj + TOL)
+    return 0; // Overlapping or touching
+  }
+
+  // Segments are not collinear (typically parallel and offset, or angled)
   const distances: number[] = [];
   let d: number | null;
-  d = pointDistance(A, E, F, reverseDirection, false);
-  if (d !== null && d > -TOL) distances.push(d);
-  d = pointDistance(B, E, F, reverseDirection, false);
-  if (d !== null && d > -TOL) distances.push(d);
-  d = pointDistance(E, A, B, direction, false);
-  if (d !== null && d > -TOL) distances.push(d);
-  d = pointDistance(F, A, B, direction, false);
-  if (d !== null && d > -TOL) distances.push(d);
+
+  // Distances for AB (Seg1) to move along slideDirection to meet line EF (Seg2)
+  // This is equivalent to distance from points of AB to line EF, measured along slideDirection.
+  // pointDistance(point_on_AB, E, F, slideDirection)
+  d = pointDistance(A, E, F, reverseSlideDirection, true);
+  if (d !== null) distances.push(d); // Allow negative d
+  d = pointDistance(B, E, F, reverseSlideDirection, true);
+  if (d !== null) distances.push(d); // Allow negative d
+
+  // Distances for EF (Seg2) to move along slideDirection to meet line AB (Seg1)
+  // This is equivalent to distance from points of EF to line AB, measured along slideDirection.
+  // pointDistance(point_on_EF, A, B, slideDirection)
+  // This also represents how far AB has to move in slideDirection for line AB to meet points of EF.
+  d = pointDistance(E, A, B, slideDirection, true);
+  if (d !== null) distances.push(d); // Allow negative d
+  d = pointDistance(F, A, B, slideDirection, true);
+  if (d !== null) distances.push(d); // Allow negative d
 
   if (distances.length === 0) return null;
   return Math.min(...distances);
 }
 
 export function polygonSlideDistance(
-  polyA_path: Polygon,
-  polyB_path: Polygon,
+  polyA: Polygon,
+  polyB: Polygon,
   direction: Point,
-  ignoreNegative: boolean = false,
+  ignoreNegative?: boolean,
 ): number | null {
-  const Aoffsetx = polyA_path.offsetx || 0,
-    Aoffsety = polyA_path.offsety || 0;
-  const Boffsetx = polyB_path.offsetx || 0,
-    Boffsety = polyB_path.offsety || 0;
-  const A_pts = polyA_path.slice(),
-    B_pts = polyB_path.slice();
-  if (
-    A_pts.length > 0 &&
-    !_internalAlmostEqualPoints(A_pts[0], A_pts[A_pts.length - 1])
-  )
-    A_pts.push(A_pts[0]);
-  if (
-    B_pts.length > 0 &&
-    !_internalAlmostEqualPoints(B_pts[0], B_pts[B_pts.length - 1])
-  )
-    B_pts.push(B_pts[0]);
-  if (A_pts.length < 2 || B_pts.length < 2) return null;
-  let minDistance: number | null = null;
-  for (let i = 0; i < A_pts.length - 1; i++) {
-    const A1 = new Point(A_pts[i].x + Aoffsetx, A_pts[i].y + Aoffsety);
-    const A2 = new Point(A_pts[i + 1].x + Aoffsetx, A_pts[i + 1].y + Aoffsety);
-    if (_internalAlmostEqualPoints(A1, A2, TOL)) continue;
-    for (let j = 0; j < B_pts.length - 1; j++) {
-      const B1 = new Point(B_pts[j].x + Boffsetx, B_pts[j].y + Boffsety);
-      const B2 = new Point(
-        B_pts[j + 1].x + Boffsetx,
-        B_pts[j + 1].y + Boffsety,
+  if (!polyA || !polyB || polyA.length < 1 || polyB.length < 1 || !direction) {
+    return null;
+  }
+  if (almostEqual(direction.x, 0) && almostEqual(direction.y, 0)) {
+    return null;
+  }
+
+  let minDistance = Infinity;
+  let foundInteraction = false;
+  const normalizedDirection = _normalizeVector(direction);
+
+  for (let i = 0; i < polyA.length; i++) {
+    const sA1 = polyA[i];
+    const sA2 = polyA[(i + 1) % polyA.length];
+
+    for (let j = 0; j < polyB.length; j++) {
+      const sB1 = polyB[j];
+      const sB2 = polyB[(j + 1) % polyB.length];
+
+      const slideValue = segmentDistance(
+        sA1,
+        sA2,
+        sB1,
+        sB2,
+        normalizedDirection,
       );
-      if (_internalAlmostEqualPoints(B1, B2, TOL)) continue;
-      const d = segmentDistance(A1, A2, B1, B2, direction);
-      if (d !== null) {
-        if (!ignoreNegative || d >= -TOL) {
-          if (minDistance === null || d < minDistance) minDistance = d;
+
+      if (slideValue === null) {
+        continue;
+      }
+      foundInteraction = true;
+
+      if (slideValue < -TOL) { // Segments are overlapping or need to slide opposite to direction
+        if (ignoreNegative) {
+          minDistance = Math.min(minDistance, 0); // Overlap counts as 0 slide
+        }
+        // If not ignoreNegative, a negative slideValue means this pair doesn't contribute to a positive slide in the given direction.
+        // We are looking for the smallest *positive* slide, or 0 if overlapping and ignoreNegative=true.
+        // So, if slideValue is negative and we are not ignoring negatives, we effectively skip this value
+        // unless it's the only interaction found (covered by foundInteraction and minDistance === Infinity check later).
+      } else { // slideValue is >= -TOL (touching, positive slide, or slight overlap treated as touch)
+        if (ignoreNegative && slideValue < 0) { // Slight overlap, treat as 0 if ignoreNegative
+          minDistance = Math.min(minDistance, 0);
+        } else if (slideValue >= -TOL) { // Non-negative or very slightly negative (effectively zero)
+          minDistance = Math.min(minDistance, Math.max(0, slideValue)); // Ensure it's not negative if not ignoreNegative
         }
       }
     }
   }
-  return minDistance;
+
+  if (!foundInteraction || minDistance === Infinity) {
+    // No interaction found, or all interactions resulted in slides opposite to direction (and not ignoreNegative)
+    // Check if they are already overlapping significantly, which segmentDistance might return as a large negative.
+    // However, the current segmentDistance logic aims to return the *closest positive distance* or null.
+    // If ignoreNegative is false, and all slideValues were negative, minDistance would remain Infinity.
+    // If ignoreNegative is true, and they overlap, minDistance should be 0.
+    // If they don't interact at all along the direction, it's null.
+    return null; // No valid slide distance found in the given direction
+  }
+
+  // If ignoreNegative is false, and the smallest interaction was an overlap (negative), this implies
+  // they can't slide *positively* to touch. The test expects null in this case.
+  // However, if minDistance is a very small negative (within TOL), treat as 0.
+  if (!ignoreNegative && minDistance < -TOL) {
+    return null;
+  }
+
+  return Math.max(0, minDistance); // Final safety: distance cannot be negative unless it's a deep overlap and ignoreNegative is false (which is now null)
 }
 
 export function polygonProjectionDistance(
@@ -1055,749 +1203,135 @@ export function polygonProjectionDistance(
     B_pts = polyB_path.slice();
   if (
     A_pts.length > 0 &&
-    !_internalAlmostEqualPoints(A_pts[0], A_pts[A_pts.length - 1])
+    !almostEqualPoints(A_pts[0], A_pts[A_pts.length - 1])
   )
     A_pts.push(A_pts[0]);
   if (A_pts.length < 2 || B_pts.length < 1) return null;
   let overallMaxMinProjection: number | null = null;
   for (const pB_orig of B_pts) {
     const pB = new Point(pB_orig.x + Boffsetx, pB_orig.y + Boffsety);
-    let minProjectionForCurrent_pB: number | null = null;
+    let minPositiveTravelForCurrent_pB: number | null = null;
     for (let i = 0; i < A_pts.length - 1; i++) {
       const sA1 = new Point(A_pts[i].x + Aoffsetx, A_pts[i].y + Aoffsety);
       const sA2 = new Point(
         A_pts[i + 1].x + Aoffsetx,
         A_pts[i + 1].y + Aoffsety,
       );
-      if (_internalAlmostEqualPoints(sA1, sA2, TOL)) continue;
+      if (almostEqualPoints(sA1, sA2, TOL)) continue;
       const segDir_x = sA2.x - sA1.x,
         segDir_y = sA2.y - sA1.y;
-      if (Math.abs(segDir_y * direction.x - segDir_x * direction.y) < TOL)
+      const segLenSq = segDir_x * segDir_x + segDir_y * segDir_y;
+      const dirLenSq = direction.x * direction.x + direction.y * direction.y;
+
+      if (Math.abs(segDir_y * direction.x - segDir_x * direction.y) < TOL * TOL * (segLenSq + dirLenSq))
         continue;
-      const d = pointDistance(pB, sA1, sA2, direction, true);
-      if (d !== null) {
-        if (
-          minProjectionForCurrent_pB === null ||
-          d < minProjectionForCurrent_pB
-        )
-          minProjectionForCurrent_pB = d;
+
+      const d_pd = pointDistance(pB, sA1, sA2, direction, true);
+      if (d_pd !== null) {
+        if (d_pd < -TOL) {
+            const travelDistance = -d_pd;
+            if (minPositiveTravelForCurrent_pB === null || travelDistance < minPositiveTravelForCurrent_pB) {
+                minPositiveTravelForCurrent_pB = travelDistance;
+            }
+        } else if (Math.abs(d_pd) < TOL) {
+             if (minPositiveTravelForCurrent_pB === null || 0 < minPositiveTravelForCurrent_pB) {
+                minPositiveTravelForCurrent_pB = 0;
+            }
+        }
       }
     }
-    if (minProjectionForCurrent_pB !== null) {
+    if (minPositiveTravelForCurrent_pB !== null) {
       if (
         overallMaxMinProjection === null ||
-        minProjectionForCurrent_pB > overallMaxMinProjection
+        minPositiveTravelForCurrent_pB > overallMaxMinProjection
       )
-        overallMaxMinProjection = minProjectionForCurrent_pB;
+        overallMaxMinProjection = minPositiveTravelForCurrent_pB;
     }
   }
   return overallMaxMinProjection;
 }
 
-export function searchStartPoint(
-  polyA_path: Polygon,
-  polyB_path_orig: Polygon,
-  inside: boolean,
-  NFP?: Polygon[],
-): Point | null {
-  const polyA_pts = polyA_path.slice();
-  const polyB_pts_orig_copy = polyB_path_orig.slice(); // Ensure we use a copy for B's vertices
-  if (
-    polyA_pts.length > 0 &&
-    !_internalAlmostEqualPoints(polyA_pts[0], polyA_pts[polyA_pts.length - 1])
-  )
-    polyA_pts.push(polyA_pts[0]);
-  if (polyA_pts.length < 3 || polyB_pts_orig_copy.length < 1) return null;
+// export function searchStartPoint(
+//   A: Polygon,
+//   B: Polygon,
+//   inside: boolean = false,
+//   NFP?: Polygon[],
+// ): Point | null {
+//   // ... implementation ...
+// }
 
-  for (let i = 0; i < polyA_pts.length - 1; i++) {
-    const pA_i = polyA_pts[i];
-    if (!pA_i.marked) {
-      pA_i.marked = true;
-      for (let j = 0; j < polyB_pts_orig_copy.length; j++) {
-        const pB_j = polyB_pts_orig_copy[j];
-        const currentPolyBWithPath: Polygon = [...polyB_pts_orig_copy];
-        currentPolyBWithPath.offsetx = pA_i.x - pB_j.x;
-        currentPolyBWithPath.offsety = pA_i.y - pB_j.y;
-        let B_is_inside_A: boolean | null = null;
-        for (let k = 0; k < currentPolyBWithPath.length; ++k) {
-          const pB_k_transformed = new Point(
-            currentPolyBWithPath[k].x + currentPolyBWithPath.offsetx!,
-            currentPolyBWithPath[k].y + currentPolyBWithPath.offsety!,
-          );
-          const inPolyCheck = pointInPolygon(pB_k_transformed, polyA_path, TOL);
-          if (inPolyCheck !== null) {
-            B_is_inside_A = inPolyCheck;
-            break;
-          }
-        }
-        if (B_is_inside_A === null) continue;
-        const startPointCandidate = new Point(
-          currentPolyBWithPath.offsetx!,
-          currentPolyBWithPath.offsety!,
-        );
-        if (
-          ((B_is_inside_A && inside) || (!B_is_inside_A && !inside)) &&
-          !intersect(polyA_path, currentPolyBWithPath) &&
-          !_inNfp(startPointCandidate, NFP)
-        ) {
-          return startPointCandidate;
-        }
+export function rotatePolygon(polygon: Polygon, angleDegrees: number): Polygon {
+  const angleRad = _degreesToRadians(angleDegrees);
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+  const referencePoint = polygon[0]; // Assuming rotation around the first point
 
-        const pA_i_plus_1 = polyA_pts[i + 1];
-        // should new Point be a vector?
-        const slideVector = new Point(
-          pA_i_plus_1.x - pA_i.x,
-          pA_i_plus_1.y - pA_i.y,
-        );
-        const slideVecLengthSq =
-          slideVector.x * slideVector.x + slideVector.y * slideVector.y;
-        if (slideVecLengthSq < TOL * TOL) continue;
-        const d1 = polygonProjectionDistance(
-          polyA_path,
-          currentPolyBWithPath,
-          slideVector,
-        );
-        // should be a vector?
-        const d2 = polygonProjectionDistance(
-          currentPolyBWithPath,
-          polyA_path,
-          new Point(-slideVector.x, -slideVector.y),
-        );
-        const slideAmount: number | null =
-          d1 === null && d2 === null
-            ? null
-            : d1 === null
-              ? d2
-              : d2 === null
-                ? d1
-                : Math.min(d1, d2);
-
-        if (slideAmount !== null && slideAmount > TOL) {
-          const slideVecLength = Math.sqrt(slideVecLengthSq);
-          const scaleFactor = slideAmount / slideVecLength; // Corrected: slide by 'slideAmount' along vector
-          const translateX = slideVector.x * scaleFactor;
-          const translateY = slideVector.y * scaleFactor;
-          currentPolyBWithPath.offsetx! += translateX;
-          currentPolyBWithPath.offsety! += translateY;
-          B_is_inside_A = null;
-          for (let k = 0; k < currentPolyBWithPath.length; ++k) {
-            const pB_k_transformed = new Point(
-              currentPolyBWithPath[k].x + currentPolyBWithPath.offsetx!,
-              currentPolyBWithPath[k].y + currentPolyBWithPath.offsety!,
-            );
-            const inPolyCheck = pointInPolygon(
-              pB_k_transformed,
-              polyA_path,
-              TOL,
-            );
-            if (inPolyCheck !== null) {
-              B_is_inside_A = inPolyCheck;
-              break;
-            }
-          }
-          if (B_is_inside_A === null) continue;
-          const slidPointCandidate = new Point(
-            currentPolyBWithPath.offsetx!,
-            currentPolyBWithPath.offsety!,
-          );
-          if (
-            ((B_is_inside_A && inside) || (!B_is_inside_A && !inside)) &&
-            !intersect(polyA_path, currentPolyBWithPath) &&
-            !_inNfp(slidPointCandidate, NFP)
-          ) {
-            return slidPointCandidate;
-          }
-        }
-      }
+  return polygon.map((p, index) => {
+    if (index === 0) {
+      return new Point(p.x, p.y); // First point remains the same (rotation origin)
     }
-  }
-  return null;
+    const translatedX = p.x - referencePoint.x;
+    const translatedY = p.y - referencePoint.y;
+    const rotatedX = translatedX * cosA - translatedY * sinA;
+    const rotatedY = translatedX * sinA + translatedY * cosA;
+    return new Point(rotatedX + referencePoint.x, rotatedY + referencePoint.y);
+  });
 }
 
-export function noFitPolygonRectangle(
-  rectA_path: Polygon,
-  polyB_path: Polygon,
-): Polygon[] | null {
-  const boundsA = getPolygonBounds(rectA_path);
-  const boundsB = getPolygonBounds(polyB_path);
-  if (!boundsA || !boundsB || polyB_path.length === 0) return null;
-  if (boundsB.width > boundsA.width || boundsB.height > boundsA.height)
-    return null;
-  const nfp_xmin = boundsA.x - boundsB.x + polyB_path[0].x;
-  const nfp_ymin = boundsA.y - boundsB.y + polyB_path[0].y;
-  const nfp_xmax =
-    boundsA.x + boundsA.width - (boundsB.x + boundsB.width) + polyB_path[0].x;
-  const nfp_ymax =
-    boundsA.y + boundsA.height - (boundsB.y + boundsB.height) + polyB_path[0].y;
-  return [
-    [
-      new Point(nfp_xmin, nfp_ymin),
-      new Point(nfp_xmax, nfp_ymin),
-      new Point(nfp_xmax, nfp_ymax),
-      new Point(nfp_xmin, nfp_ymax),
-    ],
-  ];
-}
-
-export function noFitPolygon(
-  polyA_path: Polygon,
-  polyB_path_orig: Polygon,
-  inside: boolean,
-  searchEdges: boolean,
-): Polygon[] | null {
-  if (
-    !polyA_path ||
-    polyA_path.length < 3 ||
-    !polyB_path_orig ||
-    polyB_path_orig.length < 3
-  )
-    return null;
-  const A_pts_orig = polyA_path.slice() as Polygon;
-  const B_pts_orig_copy = polyB_path_orig.slice() as Polygon; // Use a copy for B operations
-  A_pts_orig.forEach((p) => (p.marked = false));
-  B_pts_orig_copy.forEach((p) => (p.marked = false)); // Mark on B's copy if needed, though original marks A
-  A_pts_orig.offsetx = 0;
-  A_pts_orig.offsety = 0;
-  let startPoint: Point | null;
-  if (!inside) {
-    let minA_y = Infinity,
-      minA_idx = -1,
-      maxB_y = -Infinity,
-      maxB_idx = -1;
-    A_pts_orig.forEach((p, i) => {
-      if (p.y < minA_y) {
-        minA_y = p.y;
-        minA_idx = i;
-      }
-    });
-    B_pts_orig_copy.forEach((p, i) => {
-      if (p.y > maxB_y) {
-        maxB_y = p.y;
-        maxB_idx = i;
-      }
-    });
-    if (minA_idx === -1 || maxB_idx === -1) return null;
-    startPoint = new Point(
-      A_pts_orig[minA_idx].x - B_pts_orig_copy[maxB_idx].x,
-      A_pts_orig[minA_idx].y - B_pts_orig_copy[maxB_idx].y,
-    );
-  } else {
-    startPoint = searchStartPoint(A_pts_orig, B_pts_orig_copy, true);
-  }
-  const NFPlist: Polygon[] = [];
-  while (startPoint !== null) {
-    const currentPolyBWithPath = B_pts_orig_copy.slice() as Polygon; // Fresh copy for this NFP attempt
-    currentPolyBWithPath.offsetx = startPoint.x;
-    currentPolyBWithPath.offsety = startPoint.y;
-    const nfpCurrent: Point[] = [
-      new Point(
-        currentPolyBWithPath[0].x + currentPolyBWithPath.offsetx!,
-        currentPolyBWithPath[0].y + currentPolyBWithPath.offsety!,
-      ),
-    ];
-    const NFP_start_x = nfpCurrent[0].x,
-      NFP_start_y = nfpCurrent[0].y;
-    let prevVector: Point | null = null;
-    let loopCounter = 0;
-    const maxLoop = 10 * (A_pts_orig.length + currentPolyBWithPath.length);
-    while (loopCounter < maxLoop) {
-      loopCounter++;
-      const touching: TouchingInfo[] = [];
-      for (let i = 0; i < A_pts_orig.length; i++) {
-        const pA_i = _getSafePolygonPoint(
-          A_pts_orig,
-          i,
-          A_pts_orig.offsetx,
-          A_pts_orig.offsety,
-        );
-        const pA_next_i = _getSafePolygonPoint(
-          A_pts_orig,
-          i + 1,
-          A_pts_orig.offsetx,
-          A_pts_orig.offsety,
-        );
-        for (let j = 0; j < currentPolyBWithPath.length; j++) {
-          const pB_j = _getSafePolygonPoint(
-            currentPolyBWithPath,
-            j,
-            currentPolyBWithPath.offsetx,
-            currentPolyBWithPath.offsety,
-          );
-          const pB_next_j = _getSafePolygonPoint(
-            currentPolyBWithPath,
-            j + 1,
-            currentPolyBWithPath.offsetx,
-            currentPolyBWithPath.offsety,
-          );
-          if (_internalAlmostEqualPoints(pA_i, pB_j, TOL))
-            touching.push({ type: 0, A: i, B: j });
-          else if (_onSegment(pA_i, pA_next_i, pB_j, TOL))
-            touching.push({ type: 1, A: (i + 1) % A_pts_orig.length, B: j });
-          else if (_onSegment(pB_j, pB_next_j, pA_i, TOL))
-            touching.push({
-              type: 2,
-              A: i,
-              B: (j + 1) % currentPolyBWithPath.length,
-            });
-        }
-      }
-      const vectors: VectorWithPathInfo[] = [];
-      for (const touch of touching) {
-        const vertexA_orig = A_pts_orig[touch.A];
-        vertexA_orig.marked = true;
-        const prevA_orig =
-          A_pts_orig[(touch.A - 1 + A_pts_orig.length) % A_pts_orig.length];
-        const nextA_orig = A_pts_orig[(touch.A + 1) % A_pts_orig.length];
-        const vertexB_orig = currentPolyBWithPath[touch.B];
-        const prevB_orig =
-          currentPolyBWithPath[
-            (touch.B - 1 + currentPolyBWithPath.length) %
-              currentPolyBWithPath.length
-          ];
-        const nextB_orig =
-          currentPolyBWithPath[(touch.B + 1) % currentPolyBWithPath.length];
-        if (touch.type === 0) {
-          vectors.push(
-            Object.assign(
-              new Point(
-                prevA_orig.x - vertexA_orig.x,
-                prevA_orig.y - vertexA_orig.y,
-              ),
-              { start: vertexA_orig, end: prevA_orig },
-            ),
-          );
-          vectors.push(
-            Object.assign(
-              new Point(
-                nextA_orig.x - vertexA_orig.x,
-                nextA_orig.y - vertexA_orig.y,
-              ),
-              { start: vertexA_orig, end: nextA_orig },
-            ),
-          );
-          vectors.push(
-            Object.assign(
-              new Point(
-                vertexB_orig.x - prevB_orig.x,
-                vertexB_orig.y - prevB_orig.y,
-              ),
-              { start: prevB_orig, end: vertexB_orig },
-            ),
-          );
-          vectors.push(
-            Object.assign(
-              new Point(
-                vertexB_orig.x - nextB_orig.x,
-                vertexB_orig.y - nextB_orig.y,
-              ),
-              { start: nextB_orig, end: vertexB_orig },
-            ),
-          );
-        } else if (touch.type === 1) {
-          const segmentStartA =
-            A_pts_orig[(touch.A - 1 + A_pts_orig.length) % A_pts_orig.length];
-          const segmentEndA = vertexA_orig;
-          vectors.push(
-            Object.assign(
-              new Point(
-                segmentEndA.x -
-                  (vertexB_orig.x + currentPolyBWithPath.offsetx!),
-                segmentEndA.y -
-                  (vertexB_orig.y + currentPolyBWithPath.offsety!),
-              ),
-              { start: segmentStartA, end: segmentEndA },
-            ),
-          );
-          vectors.push(
-            Object.assign(
-              new Point(
-                segmentStartA.x -
-                  (vertexB_orig.x + currentPolyBWithPath.offsetx!),
-                segmentStartA.y -
-                  (vertexB_orig.y + currentPolyBWithPath.offsety!),
-              ),
-              { start: segmentEndA, end: segmentStartA },
-            ),
-          );
-        } else if (touch.type === 2) {
-          const segmentStartB =
-            currentPolyBWithPath[
-              (touch.B - 1 + currentPolyBWithPath.length) %
-                currentPolyBWithPath.length
-            ];
-          const segmentEndB = vertexB_orig;
-          vectors.push(
-            Object.assign(
-              new Point(
-                vertexA_orig.x + (A_pts_orig.offsetx || 0) - segmentEndB.x,
-                vertexA_orig.y + (A_pts_orig.offsety || 0) - segmentEndB.y,
-              ),
-              { start: segmentStartB, end: segmentEndB },
-            ),
-          );
-          vectors.push(
-            Object.assign(
-              new Point(
-                vertexA_orig.x + (A_pts_orig.offsetx || 0) - segmentStartB.x,
-                vertexA_orig.y + (A_pts_orig.offsety || 0) - segmentStartB.y,
-              ),
-              { start: segmentEndB, end: segmentStartB },
-            ),
-          );
-        }
-      }
-      let bestTranslate: VectorWithPathInfo | null = null;
-      let maxSlideDist = 0;
-      for (const v of vectors) {
-        if (_internalAlmostEqual(v.x, 0) && _internalAlmostEqual(v.y, 0))
-          continue;
-        if (prevVector && v.x * prevVector.x + v.y * prevVector.y < -TOL) {
-          const v_norm = _normalizeVector(v),
-            prev_norm = _normalizeVector(prevVector);
-          if (
-            _internalAlmostEqual(v_norm.x, -prev_norm.x) &&
-            _internalAlmostEqual(v_norm.y, -prev_norm.y)
-          )
-            continue;
-        }
-        const slideDist = polygonSlideDistance(
-          A_pts_orig,
-          currentPolyBWithPath,
-          v,
-          true,
-        );
-        if (slideDist !== null) {
-          const v_len_sq = v.x * v.x + v.y * v.y;
-          const actualEventDist =
-            slideDist * slideDist > v_len_sq - TOL
-              ? Math.sqrt(v_len_sq)
-              : slideDist;
-          if (actualEventDist > maxSlideDist) {
-            maxSlideDist = actualEventDist;
-            bestTranslate = v;
-          }
-        }
-      }
-      if (bestTranslate === null || _internalAlmostEqual(maxSlideDist, 0)) {
-        console.warn("NFP: Stuck.");
-        break;
-      }
-      bestTranslate.start.marked = true;
-      bestTranslate.end.marked = true;
-      prevVector = new Point(bestTranslate.x, bestTranslate.y);
-      const translateLength = Math.sqrt(
-        bestTranslate.x ** 2 + bestTranslate.y ** 2,
-      );
-      let scaledTranslateX = bestTranslate.x,
-        scaledTranslateY = bestTranslate.y;
-      if (translateLength > TOL) {
-        const scale = maxSlideDist / translateLength;
-        scaledTranslateX *= scale;
-        scaledTranslateY *= scale;
-      } else {
-        break;
-      }
-      const lastNFPPoint = nfpCurrent[nfpCurrent.length - 1];
-      const nextNFP_x = lastNFPPoint.x + scaledTranslateX,
-        nextNFP_y = lastNFPPoint.y + scaledTranslateY;
-      if (
-        _internalAlmostEqual(nextNFP_x, NFP_start_x) &&
-        _internalAlmostEqual(nextNFP_y, NFP_start_y)
-      )
-        break;
-      let prematureLoop = false;
-      for (let k = 0; k < nfpCurrent.length - 1; ++k)
-        if (
-          _internalAlmostEqual(nextNFP_x, nfpCurrent[k].x) &&
-          _internalAlmostEqual(nextNFP_y, nfpCurrent[k].y)
-        ) {
-          prematureLoop = true;
-          break;
-        }
-      if (prematureLoop) {
-        console.warn("NFP: Premature loop.");
-        break;
-      }
-      nfpCurrent.push(new Point(nextNFP_x, nextNFP_y));
-      currentPolyBWithPath.offsetx! += scaledTranslateX;
-      currentPolyBWithPath.offsety! += scaledTranslateY;
-    }
-    if (
-      nfpCurrent.length > 1 &&
-      _internalAlmostEqualPoints(
-        nfpCurrent[0],
-        nfpCurrent[nfpCurrent.length - 1],
-      )
-    )
-      nfpCurrent.pop();
-    if (nfpCurrent.length > 2) NFPlist.push(nfpCurrent);
-    if (!searchEdges) break;
-    startPoint = searchStartPoint(A_pts_orig, B_pts_orig_copy, inside, NFPlist);
-  }
-  return NFPlist.length > 0 ? NFPlist : null;
-}
-
-
-export function polygonHull(
-  polyA_path: Polygon,
-  polyB_path: Polygon,
-): Polygon | null {
-  console.warn(
-    "polygonHull not fully implemented. A robust general solution is non-trivial.",
-  );
-  if (!polyA_path || polyA_path.length < 3 || !polyB_path || polyB_path.length < 3) {
-    return null;
-  }
-
-  let i, j;
-
-  let Aoffsetx = polyA_path.offsetx || 0;
-  let Aoffsety = polyA_path.offsety || 0;
-  let Boffsetx = polyB_path.offsetx || 0;
-  let Boffsety = polyB_path.offsety || 0;
-
-  // start at an extreme point that is guaranteed to be on the final polygon
-  let miny = polyA_path[0].y;
-  let startPolygon = polyA_path;
-  let startIndex = 0;
-
-  for (i = 0; i < polyA_path.length; i++) {
-    if (polyA_path[i].y + Aoffsety < miny) {
-      miny = polyA_path[i].y + Aoffsety;
-      startPolygon = polyA_path;
-      startIndex = i;
-    }
-  }
-
-  for (i = 0; i < polyB_path.length; i++) {
-    if (polyB_path[i].y + Boffsety < miny) {
-      miny = polyB_path[i].y + Boffsety;
-      startPolygon = polyB_path;
-      startIndex = i;
-    }
-  }
-
-  // for simplicity we'll define polygon A as the starting polygon
-  if (startPolygon == polyB_path) {
-    polyB_path = polyA_path;
-    polyA_path = startPolygon;
-    Aoffsetx = polyA_path.offsetx || 0;
-    Aoffsety = polyA_path.offsety || 0;
-    Boffsetx = polyB_path.offsetx || 0;
-    Boffsety = polyB_path.offsety || 0;
-  }
-
-  polyA_path = polyA_path.slice(0);
-  polyB_path = polyB_path.slice(0);
-
-  const C: Polygon= [];
-  let current = startIndex;
-  let intercept1 = null;
-  let intercept2 = null;
-
-  // scan forward from the starting point
-  for (i = 0; i < polyA_path.length + 1; i++) {
-    current = current == polyA_path.length ? 0 : current;
-    const next = current == polyA_path.length - 1 ? 0 : current + 1;
-    let touching = false;
-    for (j = 0; j < polyB_path.length; j++) {
-      const nextj = j == polyB_path.length - 1 ? 0 : j + 1;
-      if (
-        _internalAlmostEqual(polyA_path[current].x + Aoffsetx, polyB_path[j].x + Boffsetx) &&
-        _internalAlmostEqual(polyA_path[current].y + Aoffsety, polyB_path[j].y + Boffsety)
-      ) {
-        C.push(new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety));
-        intercept1 = j;
-        touching = true;
-        break;
-      } else if (
-        _onSegment(
-          new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety),
-          new Point(polyA_path[next].x + Aoffsetx, polyA_path[next].y + Aoffsety),
-          new Point(polyB_path[j].x + Boffsetx, polyB_path[j].y + Boffsety),
-        )
-      ) {
-        C.push(new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety));
-        C.push(new Point(polyB_path[j].x + Boffsetx, polyB_path[j].y + Boffsety));
-        intercept1 = j;
-        touching = true;
-        break;
-      } else if (
-        _onSegment(
-          new Point(polyB_path[j].x + Boffsetx, polyB_path[j].y + Boffsety),
-          new Point(polyB_path[nextj].x + Boffsetx, polyB_path[nextj].y + Boffsety),
-          new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety),
-        )
-      ) {
-        C.push(new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety));
-        C.push(new Point(polyB_path[nextj].x + Boffsetx, polyB_path[nextj].y + Boffsety));
-        intercept1 = nextj;
-        touching = true;
-        break;
-      }
-    }
-
-    if (touching) {
-      break;
-    }
-
-    C.push(new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety));
-
-    current++;
-  }
-
-  // scan backward from the starting point
-  current = startIndex - 1;
-  for (i = 0; i < polyA_path.length + 1; i++) {
-    current = current < 0 ? polyA_path.length - 1 : current;
-    const next = current == 0 ? polyA_path.length - 1 : current - 1;
-    let touching = false;
-    for (j = 0; j < polyB_path.length; j++) {
-      const nextj = j == polyB_path.length - 1 ? 0 : j + 1;
-      if (
-        _internalAlmostEqual(polyA_path[current].x + Aoffsetx, polyB_path[j].x + Boffsetx) &&
-        _internalAlmostEqual(polyA_path[current].y, polyB_path[j].y + Boffsety)
-      ) {
-        C.unshift(new Point(
-          polyA_path[current].x + Aoffsetx,
-          polyA_path[current].y + Aoffsety,
-        ));
-        intercept2 = j;
-        touching = true;
-        break;
-      } else if (
-        _onSegment(
-          new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety),
-          new Point(polyA_path[next].x + Aoffsetx, polyA_path[next].y + Aoffsety),
-          new Point(polyB_path[j].x + Boffsetx, polyB_path[j].y + Boffsety),
-        )
-      ) {
-        C.unshift(new Point(
-          polyA_path[current].x + Aoffsetx,
-          polyA_path[current].y + Aoffsety,
-        ));
-        C.unshift(new Point(polyB_path[j].x + Boffsetx, polyB_path[j].y + Boffsety));
-        intercept2 = j;
-        touching = true;
-        break;
-      } else if (
-        _onSegment(
-          new Point(polyB_path[j].x + Boffsetx, polyB_path[j].y + Boffsety),
-          new Point(polyB_path[nextj].x + Boffsetx, polyB_path[nextj].y + Boffsety),
-          new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety),
-        )
-      ) {
-        C.unshift(new Point(
-          polyA_path[current].x + Aoffsetx,
-          polyA_path[current].y + Aoffsety,
-        ));
-        intercept2 = j;
-        touching = true;
-        break;
-      }
-    }
-
-    if (touching) {
-      break;
-    }
-
-    C.unshift(new Point(polyA_path[current].x + Aoffsetx, polyA_path[current].y + Aoffsety));
-
-    current--;
-  }
-
-  if (intercept1 === null || intercept2 === null) {
-    // polygons not touching?
-    return null;
-  }
-
-  // the relevant points on B now lie between intercept1 and intercept2
-  current = intercept1 + 1;
-  for (i = 0; i < polyB_path.length; i++) {
-    current = current == polyB_path.length ? 0 : current;
-    C.push(new Point(polyB_path[current].x + Boffsetx, polyB_path[current].y + Boffsety));
-
-    if (current == intercept2) {
-      break;
-    }
-
-    current++;
-  }
-
-  // dedupe
-  for (i = 0; i < C.length; i++) {
-    const next = i == C.length - 1 ? 0 : i + 1;
-    if (_internalAlmostEqual(C[i].x, C[next].x) && _internalAlmostEqual(C[i].y, C[next].y)) {
-      C.splice(i, 1);
-      i--;
-    }
-  }
-
-  return C;
-}
-
-export function rotatePolygon(
-  polygon: Polygon,
-  angleDeg: number,
-): Polygon {
-  const rotated: Point[] = [];
-  const angleRad = _degreesToRadians(angleDeg);
-  const cosA = Math.cos(angleRad),
-    sinA = Math.sin(angleRad);
-  for (const p_orig of polygon) {
-    const p = new Point(p_orig.x, p_orig.y);
-    const rotatedPoint = new Point(
-      p.x * cosA - p.y * sinA,
-      p.x * sinA + p.y * cosA,
-    );
-    if (typeof p_orig.marked !== "undefined") {
-      rotatedPoint.marked = p_orig.marked;
-    }
-    rotated.push(rotatedPoint);
-  }
-  const resultAsPath: Polygon = rotated;
-  const bounds = getPolygonBounds(rotated);
-  if (bounds) {
-    resultAsPath.bounds = bounds;
-  }
-  return resultAsPath;
-}
-
-export function isRectangle(poly: Polygon, tolerance: number = TOL): boolean {
-  if (
-    !poly ||
-    (poly.length !== 4 &&
-      !(
-        poly.length === 5 &&
-        _internalAlmostEqualPoints(poly[0], poly[4], tolerance)
-      ))
-  )
+export function isRectangle(polygon: Polygon, tol: number = TOL): boolean {
+  if (!polygon || polygon.length < 4) {
     return false;
-  const bb = getPolygonBounds(poly);
-  if (!bb) return false;
-  const corners = [
-    new Point(bb.x, bb.y),
-    new Point(bb.x + bb.width, bb.y),
-    new Point(bb.x + bb.width, bb.y + bb.height),
-    new Point(bb.x, bb.y + bb.height),
-  ];
-  for (const p of poly.slice(0, 4)) {
-    // Check first 4 unique points
-    if (
-      !corners.some((corner) =>
-        _internalAlmostEqualPoints(p, corner, tolerance),
-      )
-    )
-      return false;
   }
-  for (const corner of corners) {
-    if (
-      !poly
-        .slice(0, 4)
-        .some((p) => _internalAlmostEqualPoints(p, corner, tolerance))
-    )
-      return false;
+
+  let poly = polygon;
+  // If the polygon is closed (first and last points are the same), remove the last point for calculations
+  if (poly.length === 5 && almostEqualPoints(poly[0], poly[4], tol)) {
+    poly = poly.slice(0, 4);
   }
+
+  if (poly.length !== 4) {
+    return false;
+  }
+
+  // Check side lengths (opposite sides should be equal)
+  const d01 = Math.hypot(poly[1].x - poly[0].x, poly[1].y - poly[0].y);
+  const d12 = Math.hypot(poly[2].x - poly[1].x, poly[2].y - poly[1].y);
+  const d23 = Math.hypot(poly[3].x - poly[2].x, poly[3].y - poly[2].y);
+  const d30 = Math.hypot(poly[0].x - poly[3].x, poly[0].y - poly[3].y);
+
+  if (!almostEqual(d01, d23, tol) || !almostEqual(d12, d30, tol)) {
+    return false;
+  }
+
+  // Check diagonals (should be equal)
+  const diag1 = Math.hypot(poly[2].x - poly[0].x, poly[2].y - poly[0].y);
+  const diag2 = Math.hypot(poly[3].x - poly[1].x, poly[3].y - poly[1].y);
+
+  if (!almostEqual(diag1, diag2, tol)) {
+    return false;
+  }
+
+  // Check dot products of adjacent sides (should be zero for 90-degree angles)
+  // Vector v01 = poly[1] - poly[0]
+  // Vector v12 = poly[2] - poly[1]
+  // Vector v23 = poly[3] - poly[2]
+  // Vector v30 = poly[0] - poly[3]
+
+  const v01 = { x: poly[1].x - poly[0].x, y: poly[1].y - poly[0].y };
+  const v12 = { x: poly[2].x - poly[1].x, y: poly[2].y - poly[1].y };
+  const v23 = { x: poly[3].x - poly[2].x, y: poly[3].y - poly[2].y };
+  const v30 = { x: poly[0].x - poly[3].x, y: poly[0].y - poly[3].y };
+
+  if (
+    !almostEqual(v01.x * v12.x + v01.y * v12.y, 0, tol * d01 * d12) || // scaled tolerance
+    !almostEqual(v12.x * v23.x + v12.y * v23.y, 0, tol * d12 * d23) ||
+    !almostEqual(v23.x * v30.x + v23.y * v30.y, 0, tol * d23 * d30) ||
+    !almostEqual(v30.x * v01.x + v30.y * v01.y, 0, tol * d30 * d01)
+  ) {
+    return false;
+  }
+
   return true;
 }
+
 // --- END OF PUBLIC API ---
