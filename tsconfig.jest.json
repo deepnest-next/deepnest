@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // enable isolatedModules just for ts-jest
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": false
+  },
+  "include": ["./tests/**/*.test.ts","./build/**/*.js"]
+}
