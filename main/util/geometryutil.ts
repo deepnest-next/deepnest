@@ -6,10 +6,7 @@ import { Point } from "./point.js";
 export interface Polygon extends Array<Point> {
   offsetx?: number;
   offsety?: number;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
+  bounds?: Bounds;
 }
 
 export interface Bounds {
@@ -1761,10 +1758,7 @@ export function rotatePolygon(
   const resultAsPath: Polygon = rotated;
   const bounds = getPolygonBounds(rotated);
   if (bounds) {
-    resultAsPath.x = bounds.x;
-    resultAsPath.y = bounds.y;
-    resultAsPath.width = bounds.width;
-    resultAsPath.height = bounds.height;
+    resultAsPath.bounds = bounds;
   }
   return resultAsPath;
 }
