@@ -21,9 +21,11 @@
     "clean-all": "rmdir /s /q build dist node_modules bin >nul 2>&1|echo . >nul",
     "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='\\.husky' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore' --ignore='playwright-report' --ignore='test.log'",
     "build-dist": "electron-builder build --win",
-    "build-dist-signed": "electron-builder build --win --publish never",
+    "build-dist:signed": "electron-builder build --win --publish never",
+    "build-dist:mac": "electron-builder build --mac",
+    "build-dist:mac-signed": "electron-builder build --mac --publish never",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
-    "dist-all-signed": "npm run clean-all && npm install && npm run build && npm run build-dist-signed",
+    "dist-all-signed": "npm run clean-all && npm install && npm run build && npm run build-dist:signed && npm run build-dist:mac-signed",
     "prepare": "husky || true",
     "precommit": "lint-staged",
     "postinstall": "electron-builder install-app-deps",
@@ -49,29 +51,30 @@
     "Laser"
   ],
   "devDependencies": {
-    "@electron/packager": "18.3.6",
-    "electron-builder": "26.0.15",
-    "@electron/rebuild": "4.0.1",
-    "@eslint/js": "^9.26.0",
-    "@playwright/test": "1.52.0",
-    "@types/node": "22.15.17",
-    "cross-replace": "0.2.0",
-    "electron": "34.5.5",
-    "eslint": "^9.26.0",
+    "@electron/notarize": "^3.0.1",
+    "@electron/packager": "^18.3.6",
+    "@electron/rebuild": "^4.0.1",
+    "@eslint/js": "^9.30.0",
+    "@playwright/test": "^1.53.2",
+    "@types/node": "^22.15.34",
+    "cross-replace": "^0.2.0",
+    "electron": "^34.5.8",
+    "electron-builder": "^26.0.17",
+    "eslint": "^9.30.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.2",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.32.0"
+    "typescript-eslint": "^8.35.1"
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "202503.13.155300",
     "@deepnest/svg-preprocessor": "0.2.0",
     "@electron/remote": "2.1.2",
-    "axios": "1.9.0",
-    "form-data": "4.0.2",
+    "axios": "1.10.0",
+    "form-data": "4.0.3",
     "graceful-fs": "4.2.11",
-    "marked": "15.0.11"
+    "marked": "15.0.12"
   },
   "files": [
     "main.js",
@@ -110,9 +113,13 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
     "directories": {
       "app": ".",
-      "output": "deepnest-v${version}-win32-${arch}"
+      "output": "deepnest-v${version}"
     },
     "win": {
       "target": [
@@ -141,7 +148,47 @@
     },
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "icon.icns"
+      "type": "distribution",
+      "icon": "icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "electronLanguages": [
+        "en",
+        "en-US",
+        "en_US"
+      ],
+      "entitlements": "_build/entitlements.mac.plist",
+      "entitlementsInherit": "_build/entitlements.mac.plist",
+      "notarize": true,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "pkg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "sign": true
     }
   },
   "contributors": [

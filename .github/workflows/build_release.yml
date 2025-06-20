@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-and-release-linux:
+    if: false == true
     env:
       BUILD_FOR_OS: linux
     strategy:
@@ -82,9 +83,8 @@ jobs:
           asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
           asset_content_type: application/zip
 
-
-
   build-and-release-macos:
+    environment: "deepnest-test"
     env:
       BUILD_FOR_OS: darwin
     strategy:
@@ -140,28 +140,311 @@ jobs:
           npm run build
 
       - name: Package build
+        shell: bash
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
+          set -E
+          set -o functrace
+          function handle_error {
+              local retval=$?
+              local line=${last_lineno:-$1}
+              echo "Failed at $line: $BASH_COMMAND"
+              echo "Trace: " "$@"
+              exit $retval
+          }
+          if (( ${BASH_VERSION%%.*} <= 3 )) || [[ ${BASH_VERSION%.*} = 4.0 ]]; then
+                  trap '[[ $FUNCNAME = handle_error ]] || { last_lineno=$real_lineno; real_lineno=$LINENO; }' DEBUG
+          fi
+          trap 'handle_error $LINENO ${BASH_LINENO[@]}' ERR
+          # Keychain Setup
+          export KEYCHAIN_PATH=$RUNNER_TEMP/notarization.keychain-db
+          export APPLE_API_KEY="${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          # CSC Variablen setzen (mit automatischer Erkennung)
+          export CSC_IDENTITY_AUTO_DISCOVERY="true"
+          export CSC_KEYCHAIN="${KEYCHAIN_PATH}"
+          KEYCHAIN_PASS=$(uuidgen)
+
+          security create-keychain -p "${KEYCHAIN_PASS}" ${KEYCHAIN_PATH}
+          security default-keychain -s ${KEYCHAIN_PATH}
+          security unlock-keychain -p "${KEYCHAIN_PASS}" ${KEYCHAIN_PATH}
+          security set-keychain-settings -lt 3600 -u ${KEYCHAIN_PATH}
+
+          # Import Application Certificate
+          # CSC_LINK="${{ secrets.APPLE_MAC_CERT }}"
+          # CSC_KEY_PASSWORD="${{ secrets.APPLE_CERT_PASSWORD }}"
+          echo -n "${{ secrets.APPLE_MAC_CERT }}" | base64 --decode -o "${{ runner.temp }}/app_cert.p12"
+          security import "${{ runner.temp }}/app_cert.p12" \
+            -P "${{ secrets.APPLE_CERT_PASSWORD }}" \
+            -A \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security \
+            -k ${KEYCHAIN_PATH}
+
+          # Import Installer Certificate (falls vorhanden)
+          if [ -n "${{ secrets.APPLE_INSTALLER_CERT }}" ]; then
+            echo -n "${{ secrets.APPLE_INSTALLER_CERT }}" | base64 --decode -o "${{ runner.temp }}/installer_cert.p12"
+            security import "${{ runner.temp }}/installer_cert.p12" \
+              -P "${{ secrets.APPLE_CERT_PASSWORD }}" \
+              -A \
+              -T /usr/bin/productbuild \
+              -T /usr/bin/productsign \
+              -T /usr/bin/pkgbuild \
+              -T /usr/sbin/installer \
+              -k ${KEYCHAIN_PATH}
+            rm "${{ runner.temp }}/installer_cert.p12"
+          fi
+
+          # Key partition list setzen (KORRIGIERT)
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s -k "${KEYCHAIN_PASS}" ${KEYCHAIN_PATH}
+
+          rm "${{ runner.temp }}/app_cert.p12"
+
+          # Debug: Verfügbare Identitäten anzeigen
+          echo "Available code signing identities:"
+          security find-identity -v -p codesigning ${KEYCHAIN_PATH}
+
           # Retrieve the release tag from the previous step
           TAG=${{ steps.get_release.outputs.tag }}
+
           # Set the build directory name using the release tag and architecture
           BUILD_DIR="deepnest-${TAG}-${BUILD_FOR_OS}-${ARCH}"
+          echo "DN_BUILD_DIR=deepnest-${TAG}-${BUILD_FOR_OS}-${ARCH}" >> $GITHUB_ENV
           echo "Creating build in: $BUILD_DIR"
+
+          # Version aus package.json extrahieren
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Extracted version: ${VERSION}"
+
+          # Build-Verzeichnisname erstellen
+          export BUILD_DIR="deepnest-v${VERSION}"
+          echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
+          echo "Creating build in: $BUILD_DIR"
+
+          export APPLE_KEYCHAIN="${KEYCHAIN_PATH}"
+          export APPLE_KEYCHAIN_PROFILE="deepnest-next"
+
+          # provisioning profile
+          # echo "Provisioning profile: ${{ secrets.APPLE_PROVISIONING_PROFILE }}"
+          # echo -n "${{ secrets.APPLE_PROVISIONING_PROFILE }}" | base64 --decode -o "_build/embedded.provisionprofile"
+
+          # import credentials from secrets
+          echo "Apple API Key: ${{ secrets.APPLE_API_KEY }}"
+          echo "Apple API Key ID: ${{ secrets.APPLE_API_KEY_ID }}"
+          echo "Apple API Issuer: ${{ secrets.APPLE_API_ISSUER }}"
+          echo "Environment: ${{ github.env }}"
+          echo "APPLE_API_KEY exists: ${{ secrets.APPLE_API_KEY != '' }}"
+          echo "APPLE_TEAM_ID exists: ${{ secrets.APPLE_TEAM_ID != '' }}"
+          echo "APPLE_API_ISSUER exists: ${{ secrets.APPLE_API_ISSUER != '' }}"
+          echo "APPLE_API_KEY_ID exists: ${{ secrets.APPLE_API_KEY_ID != '' }}"
+          echo "APPLE_APP_CERT exists: ${{ secrets.APPLE_APP_CERT != '' }}"
+          echo "APPLE_PROVISIONING_PROFILE exists: ${{ secrets.APPLE_PROVISIONING_PROFILE != '' }}"
+          echo "APPLE_CERT_PASSWORD exists: ${{ secrets.APPLE_CERT_PASSWORD != '' }}"
+          echo "APPLE_INSTALLER_CERT exists: ${{ secrets.APPLE_INSTALLER_CERT != '' }}"
+          echo "APPLE_MAC_CERT exists: ${{ secrets.APPLE_MAC_CERT != '' }}"
+          echo -n "${{ secrets.APPLE_API_KEY }}" | base64 --decode -o "${APPLE_API_KEY}"
+          # xcrun notarytool store-credentials "deepnest-next" -k "${APPLE_API_KEY}" -d "${{ secrets.APPLE_API_KEY_ID }}" -i "${{ secrets.APPLE_API_ISSUER }}" --keychain "${KEYCHAIN_PATH}"
+
+
+          # Notarize the app
+          # xcrun notarytool submit --keychain-profile "deepnest-next" --keychain "${KEYCHAIN_PATH}" --wait "${BUILD_DIR}.zip"
+
+          # rm "${BUILD_DIR}.zip" || true
+
+          # Staple the notarization ticket to the app
+          #xcrun stapler staple "${BUILD_DIR}/deepnest-${TAG}.app"
+
           # Run Electron Packager to package the application into the specified build directory
-          npx @electron/packager . "deepnest-${TAG}" --overwrite
-          # Zip the build directory with the same name
-          zip -r "${BUILD_DIR}.zip" "$BUILD_DIR"
+          set -e APPLE_API_KEY
+          set -e APPLE_API_KEY_ID
+          set -e APPLE_API_ISSUER
+          npm run build-dist:mac-signed
+
+          find . -type f -name "deepnest-v1*"
+
+
+          # Alle relevanten Dateien finden und auflisten
+          echo "=== Searching for build artifacts ==="
+          find . -type f -name "${BUILD_DIR}*" -o -name "deepnest-v${VERSION}*" | sort
+
+          echo "=== Contents of dist directory ==="
+          if [ -d "dist" ]; then
+            ls -la dist/
+            find dist/ -type f \( -name "*.app" -o -name "*.pkg" -o -name "*.dmg" -o -name "*.zip" \) | sort
+          fi
+
+
+
+          echo "=== All potential artifacts ==="
+          find . -maxdepth 3 -type f \( -name "*.app" -o -name "*.pkg" -o -name "*.dmg" -o -name "*.zip" -o -name "*.blockmap" \) | grep -E "(deepnest|v${VERSION})" | sort
+
+          # Clean up the keychain
+          security delete-keychain ${KEYCHAIN_PATH}
+
+      - name: Upload all artifacts with GitHub CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          BUILD_DIR="deepnest-v${VERSION}"
+          TAG="${{ steps.get_release.outputs.tag }}"
+
+          echo "=== Uploading artifacts for release: $TAG ==="
+
+          # Finde alle Artifacts
+          ARTIFACTS=$(find . -maxdepth 3 -type f \( -name "*.dmg" -o -name "*.pkg" -o -name "*.zip" -o -name "*.blockmap" \) | grep -E "(deepnest|v${VERSION})" | head -10)
+
+          if [ -z "$ARTIFACTS" ]; then
+            echo "No artifacts found!"
+            exit 1
+          fi
+
+          echo "Found artifacts:"
+          echo "$ARTIFACTS"
+
+          # Upload mit GitHub CLI
+          for ARTIFACT in $ARTIFACTS; do
+            if [ -f "$ARTIFACT" ]; then
+              FILENAME=$(basename "$ARTIFACT")
+              EXTENSION="${FILENAME##*.}"
+              ASSET_NAME="${BUILD_DIR}-${BUILD_FOR_OS}-${ARCH}.${EXTENSION}"
+
+              echo "Uploading: $ARTIFACT as $ASSET_NAME"
+
+              # GitHub CLI upload
+              gh release upload "$TAG" "$ARTIFACT" --clobber --repo "${{ github.repository }}" || {
+                echo "Failed to upload $ARTIFACT"
+                continue
+              }
+
+              echo "✅ Successfully uploaded: $ASSET_NAME"
+            fi
+          done
+
+          # APP Bundle upload
+          APP_DIR=$(find . -name "*.app" -type d | head -n 1)
+          if [ -n "$APP_DIR" ]; then
+            APP_ZIP="${BUILD_DIR}-${BUILD_FOR_OS}-${ARCH}-app.zip"
+            echo "Creating and uploading APP bundle: $APP_ZIP"
+            zip -r "$APP_ZIP" "$APP_DIR"
+
+            gh release upload "$TAG" "$APP_ZIP" --clobber --repo "${{ github.repository }}" || {
+              echo "Failed to upload APP bundle"
+            }
+          fi
+
+      # - name: Upload all artifacts dynamically
+      #   run: |
+      #     VERSION=$(node -p "require('./package.json').version")
+      #     BUILD_DIR="deepnest-v${VERSION}"
+
+      #     # Finde alle Artifacts
+      #     ARTIFACTS=$(find . -maxdepth 3 -type f \( -name "*.dmg" -o -name "*.pkg" -o -name "*.zip" -o -name "*.blockmap" \) | grep -E "(deepnest|v${VERSION})")
+
+      #     if [ -z "$ARTIFACTS" ]; then
+      #       echo "No artifacts found!"
+      #       echo "Contents of current directory:"
+      #       ls -la
+      #       echo "Contents of dist directory:"
+      #       ls -la dist/ || echo "No dist directory"
+      #       exit 1
+      #     fi
+
+      #     echo "Found artifacts:"
+      #     echo "$ARTIFACTS"
+
+      #     # Upload jedes Artifact
+      #     for ARTIFACT in $ARTIFACTS; do
+      #       if [ -f "$ARTIFACT" ]; then
+      #         FILENAME=$(basename "$ARTIFACT")
+      #         EXTENSION="${FILENAME##*.}"
+
+      #         # Content-Type basierend auf Extension setzen
+      #         case $EXTENSION in
+      #           dmg) CONTENT_TYPE="application/x-apple-diskimage" ;;
+      #           pkg) CONTENT_TYPE="application/octet-stream" ;;
+      #           zip) CONTENT_TYPE="application/zip" ;;
+      #           *) CONTENT_TYPE="application/octet-stream" ;;
+      #         esac
+
+      #         # Standardisierter Dateiname
+      #         ASSET_NAME="${BUILD_DIR}-${BUILD_FOR_OS}-${ARCH}.${EXTENSION}"
+
+      #         echo "Uploading: $ARTIFACT as $ASSET_NAME"
+
+      #         curl -X POST \
+      #           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+      #           -H "Content-Type: $CONTENT_TYPE" \
+      #           --data-binary @"$ARTIFACT" \
+      #           "${{ steps.get_release.outputs.upload_url }}?name=$ASSET_NAME"
+      #       fi
+      #     done
+
+      #     # Erstelle APP ZIP falls .app Verzeichnis vorhanden
+      #     APP_DIR=$(find . -name "*.app" -type d | head -n 1)
+      #     if [ -n "$APP_DIR" ]; then
+      #       APP_ZIP="${BUILD_DIR}-${BUILD_FOR_OS}-${ARCH}-app.zip"
+      #       zip -r "$APP_ZIP" "$APP_DIR"
+
+      #       echo "Uploading APP bundle: $APP_ZIP"
+      #       curl -X POST \
+      #         -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+      #         -H "Content-Type: application/zip" \
+      #         --data-binary @"$APP_ZIP" \
+      #         "${{ steps.get_release.outputs.upload_url }}?name=$APP_ZIP"
+      #     fi
+
+
+      - name: Notarize the app
+        if: always()
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          export APPLE_API_KEY_PATH="${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          rm "${APPLE_API_KEY_PATH}" || true
+
+      - uses: dexus-forks/xcode-notarization-action@v1
+        if: matrix.os == 'macos-latest' && false
+        with:
+          app-path: "${{ env.DN_BUILD_DIR }}/deepnest-*.app" # Path to the .app file to notarize
+          apple-id: ${{ secrets.APPLE_ID }}
+          password: ${{ secrets.APPLE_APP_PASSWORD }}
+          team-id: ${{ secrets.APPLE_TEAM_PREFIX }}
+          # Further Parameters:
+          staple: "true" # if you wish to skip running stapler
+          keychain-profile: "deepnest-profile" # custom name for --keychain-profile
+          xcode-path: "/Applications/Xcode_15.4.app" # defaults to /Applications/Xcode_15.4.app
+
+      - uses: dexus-forks/xcode-notarization-action@v1
+        if: matrix.os == 'macos-13' && false
+        with:
+          app-path: "${{ env.DN_BUILD_DIR }}/deepnest-*.app" # Path to the .app file to notarize
+          apple-id: ${{ secrets.APPLE_ID }}
+          password: ${{ secrets.APPLE_APP_PASSWORD }}
+          team-id: ${{ secrets.APPLE_TEAM_PREFIX }}
+          # Further Parameters:
+          staple: "true" # if you wish to skip running stapler
+          keychain-profile: "deepnest-profile" # custom name for --keychain-profile
+          xcode-path: "/Applications/Xcode_15.2.app" # defaults to /Applications/Xcode_15.4.app
 
       - name: Artefakt an letztes Release anhängen
+        if: false
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
+          asset_path: deepnest-*
           asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
           asset_content_type: application/zip
 
   build-and-release-windows:
+    if: false == true
     env:
       BUILD_FOR_OS: win32
     strategy:
