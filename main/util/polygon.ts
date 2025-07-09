@@ -302,6 +302,28 @@ export class Polygon {
     }
   }
 
+  // Get the normal vector for an edge at the given index
+  getEdgeNormal(index: number): Vector | null {
+    if (index < 0 || index >= this._points.length) return null;
+    
+    const p1 = this._points[index];
+    const p2 = this._points[(index + 1) % this._points.length];
+    
+    const edge = p1.to(p2);
+    // Return perpendicular vector (rotated 90 degrees counterclockwise)
+    return new Vector(-edge.dy, edge.dx).normalized();
+  }
+
+  // Get the edge vector at the given index
+  getEdgeVector(index: number): Vector | null {
+    if (index < 0 || index >= this._points.length) return null;
+    
+    const p1 = this._points[index];
+    const p2 = this._points[(index + 1) % this._points.length];
+    
+    return p1.to(p2);
+  }
+
   toArray(): Array<{x: number, y: number}> {
     return this._points.map(p => ({ x: p.x, y: p.y }));
   }
