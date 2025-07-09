@@ -352,3 +352,14 @@ export class Polygon {
     return `Polygon[${this._points.length} points, area=${this.area().toFixed(2)}]`;
   }
 }
+
+// Export to global scope for compatibility with existing JavaScript files
+declare global {
+  interface Window {
+    Polygon: typeof Polygon;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.Polygon = Polygon;
+}
