@@ -19,7 +19,9 @@ window.onload = function () {
   window.db = new NfpCache();
 
   ipcRenderer.on('background-start', (event, data) => {
-    console.log('background-start', JSON.stringify(data, null, 2));
+    console.log('Background-start event received, processing data...');
+    console.log('Data contains:', data.individual.placement.length, 'parts');
+    
     var index = data.index;
     var individual = data.individual;
 
@@ -82,7 +84,10 @@ window.onload = function () {
       }
     }
 
-    // console.log('pairs: ', pairs.length);
+    console.log('Created', pairs.length, 'NFP pairs for processing');
+    if (pairs.length > 1000) {
+      console.warn('Very large number of NFP pairs - this will take a long time!');
+    }
 
     var process = function (pair) {
 
@@ -179,8 +184,11 @@ window.onload = function () {
       var c = window.db.getStats();
       // console.log('nfp cached:', c);
       // console.log()
+      console.log('About to call placeParts with', parts.length, 'parts and', data.sheets.length, 'sheets');
       ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
+      
       var placement = placeParts(data.sheets, parts, data.config, index);
+      console.log('placeParts completed, placement result:', placement ? 'success' : 'null');
 
       placement.index = data.index;
       ipcRenderer.send('background-response', placement);
@@ -190,6 +198,7 @@ window.onload = function () {
 
 
     if (pairs.length > 0) {
+      console.log('Starting parallel NFP processing for', pairs.length, 'pairs');
       var p = new Parallel(pairs, {
         evalPath: '../build/util/eval.js',
         synchronous: false
