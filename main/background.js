@@ -215,7 +215,17 @@ window.onload = function () {
       p.require('../../main/util/clipper.js');
       p.require('../../main/util/geometryutil.js');
 
+      console.log('Starting p.map processing...');
+      
+      // Add timeout for parallel processing
+      var parallelTimeout = setTimeout(function() {
+        console.error('Parallel processing timeout after 60 seconds, continuing with sync');
+        sync();
+      }, 60000);
+      
       p.map(process).then(function (processed) {
+        clearTimeout(parallelTimeout);
+        console.log('Parallel processing completed, got', processed.length, 'results');
         function getPart(source) {
           for (let k = 0; k < parts.length; k++) {
             if (parts[k].source == source) {
@@ -270,6 +280,11 @@ window.onload = function () {
         }
         // console.timeEnd('Total');
         // console.log('before sync');
+        sync();
+      }).catch(function(error) {
+        clearTimeout(parallelTimeout);
+        console.error('Parallel processing failed:', error);
+        // Try to continue with sync anyway
         sync();
       });
     }
