@@ -320,11 +320,12 @@ window.onload = function () {
           }
         } catch (e) {
           console.error('Error processing NFP results:', e);
-          // console.timeEnd('Total');
-          // console.log('before sync');
-          console.log('About to call sync after parallel processing');
-          sync();
+
         }
+        // console.timeEnd('Total');
+        // console.log('before sync');
+        console.log('About to call sync after parallel processing');
+        sync();
       });
     } else {
       sync();
