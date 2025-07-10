@@ -676,7 +676,8 @@ function getInnerNfp(A, B, config) {
   }
 
   // Check for exact-fit or near-exact-fit case
-  if (GeometryUtil.isRectangle(A) && GeometryUtil.isRectangle(B)) {
+  // Only apply this optimization if A has no children (i.e., it's an empty sheet)
+  if (GeometryUtil.isRectangle(A) && GeometryUtil.isRectangle(B) && (!A.children || A.children.length === 0)) {
     var ABounds = GeometryUtil.getPolygonBounds(A);
     var BBounds = GeometryUtil.getPolygonBounds(B);
     
@@ -685,6 +686,7 @@ function getInnerNfp(A, B, config) {
     
     // If part is very close to sheet size (within 0.001mm tolerance)
     if (widthDiff < 0.001 && heightDiff < 0.001) {
+      console.log('Exact-fit detected for empty sheet:', A.source, 'and part:', B.source);
       // For exact-fit, return a single point NFP 
       // The NFP point should be where the part's reference point needs to be
       // to place the part at the sheet's top-left corner
@@ -773,6 +775,8 @@ function placeParts(sheets, parts, config, nestindex) {
   if (!sheets) {
     return null;
   }
+  
+  console.log('PlaceParts started with', parts.length, 'parts and', sheets.length, 'sheets');
 
   var i, j, k, m, n, part;
 
@@ -831,6 +835,13 @@ function placeParts(sheets, parts, config, nestindex) {
 
     // open a new sheet
     var sheet = sheets.shift();
+    
+    // Check if we have a valid sheet
+    if (!sheet) {
+      console.log('No more sheets available, but', parts.length, 'parts remaining');
+      break; // Exit the loop if no more sheets are available
+    }
+    
     var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
     totalsheetarea += sheetarea;
 
