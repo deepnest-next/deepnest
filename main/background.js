@@ -11,6 +11,27 @@ window.onload = function () {
   window.path = require('path')
   window.url = require('url')
   window.fs = require('graceful-fs');
+  
+  // Create debug log file
+  const debugLogPath = window.path.join(process.cwd(), 'debug_placement.log');
+  window.debugLog = function(message) {
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] ${message}\n`;
+    console.log(message); // Still log to console
+    try {
+      window.fs.appendFileSync(debugLogPath, logEntry);
+    } catch (e) {
+      console.error('Failed to write to debug log:', e);
+    }
+  };
+  
+  // Clear previous log at start
+  try {
+    window.fs.writeFileSync(debugLogPath, `=== DEBUG LOG STARTED ${new Date().toISOString()} ===\n`);
+    window.debugLog('Debug logging initialized');
+  } catch (e) {
+    console.error('Failed to initialize debug log:', e);
+  }
   /*
   add package 'filequeue 0.5.0' if you enable this
     window.FileQueue = require('filequeue');
@@ -19,8 +40,8 @@ window.onload = function () {
   window.db = new NfpCache();
 
   ipcRenderer.on('background-start', (event, data) => {
-    console.log('Background-start event received, processing data...');
-    console.log('Data contains:', data.individual.placement.length, 'parts');
+    window.debugLog('Background-start event received, processing data...');
+    window.debugLog('Data contains: ' + data.individual.placement.length + ' parts');
 
     var index = data.index;
     var individual = data.individual;
@@ -84,14 +105,14 @@ window.onload = function () {
       }
     }
 
-    console.log('Created', pairs.length, 'NFP pairs for processing');
+    window.debugLog('Created ' + pairs.length + ' NFP pairs for processing');
     if (pairs.length > 1000) {
-      console.warn('Very large number of NFP pairs - this will take a long time!');
+      window.debugLog('Very large number of NFP pairs - this will take a long time!');
     }
 
     var process = function (pair) {
 
-      console.warn('   PAIR', pair);
+      window.debugLog('   PAIR: A=' + pair.Asource + ' B=' + pair.Bsource + ' Arot=' + pair.Arotation + ' Brot=' + pair.Brotation);
 
       var A = rotatePolygon(pair.A, pair.Arotation);
       var B = rotatePolygon(pair.B, pair.Brotation);
@@ -138,8 +159,7 @@ window.onload = function () {
         clipperNfp[i].y += B[0].y;
       }
 
-      console.warn('   PAIR2', pair);
-      console.warn('   NFP RESULT for', pair.Asource, 'rotation', pair.Arotation, ':', clipperNfp);
+      window.debugLog('   NFP RESULT for A=' + pair.Asource + ' rotation=' + pair.Arotation + ': ' + JSON.stringify(clipperNfp));
       return {
         Asource: pair.Asource,
         Bsource: pair.Bsource, 
@@ -195,11 +215,11 @@ window.onload = function () {
       var c = window.db.getStats();
       // console.log('nfp cached:', c);
       // console.log()
-      console.log('About to call placeParts with', parts.length, 'parts and', data.sheets.length, 'sheets');
+      window.debugLog('About to call placeParts with ' + parts.length + ' parts and ' + data.sheets.length + ' sheets');
       ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
 
       var placement = placeParts(data.sheets, parts, data.config, index);
-      console.log('placeParts completed, placement result:', placement ? 'success' : 'null');
+      window.debugLog('placeParts completed, placement result: ' + (placement ? 'success' : 'null'));
 
       placement.index = data.index;
       ipcRenderer.send('background-response', placement);
@@ -828,28 +848,28 @@ function placeParts(sheets, parts, config, nestindex) {
     return null;
   }
 
-  console.log('PlaceParts started with', parts.length, 'parts and', sheets.length, 'sheets');
+  window.debugLog('PlaceParts started with ' + parts.length + ' parts and ' + sheets.length + ' sheets');
 
   // Log part and sheet dimensions for debugging
   if (parts.length > 0) {
     var partBounds = GeometryUtil.getPolygonBounds(parts[0]);
-    console.log('First part dimensions:', partBounds.width, 'x', partBounds.height);
+    window.debugLog('First part dimensions: ' + partBounds.width + ' x ' + partBounds.height);
   }
   if (sheets.length > 0) {
     var sheetBounds = GeometryUtil.getPolygonBounds(sheets[0]);
-    console.log('First sheet dimensions:', sheetBounds.width, 'x', sheetBounds.height);
+    window.debugLog('First sheet dimensions: ' + sheetBounds.width + ' x ' + sheetBounds.height);
   }
 
   // Check if we have too many parts for efficient processing
   if (parts.length > 50) {
-    console.warn('Processing', parts.length, 'parts - this may take a long time');
+    window.debugLog('Processing ' + parts.length + ' parts - this may take a long time');
 
     // Check if all parts are identical (same source)
     var firstSource = parts[0].source;
     var allIdentical = parts.every(function (part) { return part.source === firstSource; });
 
     if (allIdentical) {
-      console.log('All parts are identical - consider using batch processing optimization');
+      window.debugLog('All parts are identical - consider using batch processing optimization');
     }
   }
 
@@ -918,16 +938,18 @@ function placeParts(sheets, parts, config, nestindex) {
     }
 
     var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
+    var sheetBounds = GeometryUtil.getPolygonBounds(sheet);
     totalsheetarea += sheetarea;
 
     fitness += sheetarea; // add 1 for each new sheet opened (lower fitness is better)
 
     var clipCache = [];
-    console.log('Processing new sheet, current parts remaining:', parts.length);
+    window.debugLog('=== PROCESSING SHEET ' + p + ' bounds: ' + JSON.stringify(sheetBounds) + ' area: ' + sheetarea);
+    window.debugLog('Processing new sheet, current parts remaining: ' + parts.length);
     for (let i = 0; i < parts.length; i++) {
       // console.time('placement');
       part = parts[i];
-      console.log('Attempting to place part', i, 'with source:', part.source);
+      window.debugLog('Attempting to place part ' + i + ' with source: ' + part.source);
 
       // Add timeout for NFP calculation to prevent infinite loops
       var nfpStartTime = Date.now();
@@ -940,13 +962,13 @@ function placeParts(sheets, parts, config, nestindex) {
       for (let j = 0; j < config.rotations; j++) {
         // Check timeout
         if (Date.now() - nfpStartTime > NFP_TIMEOUT) {
-          console.warn('NFP calculation timeout for part', part.source, 'rotation', j);
+          window.debugLog('NFP calculation timeout for part ' + part.source + ' rotation ' + j);
           break;
         }
 
-        console.log('Getting NFP for part', part.source, 'rotation', j);
+        window.debugLog('Getting NFP for part ' + part.source + ' rotation ' + j + ' current part rotation: ' + part.rotation);
         sheetNfp = getInnerNfp(sheet, part, config);
-        console.log('NFP result:', sheetNfp ? 'found' : 'null');
+        window.debugLog('NFP result for part ' + part.source + ' rotation ' + part.rotation + ': ' + JSON.stringify(sheetNfp));
 
         if (sheetNfp) {
           break;
@@ -977,10 +999,13 @@ function placeParts(sheets, parts, config, nestindex) {
         // first placement, put it on the top left corner
         for (let j = 0; j < sheetNfp.length; j++) {
           for (let k = 0; k < sheetNfp[j].length; k++) {
-            if (position === null || sheetNfp[j][k].x - part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) && sheetNfp[j][k].y - part[0].y < position.y)) {
+            var candidateX = sheetNfp[j][k].x - part[0].x;
+            var candidateY = sheetNfp[j][k].y - part[0].y;
+            window.debugLog('FIRST PLACEMENT DEBUG: NFP point ' + JSON.stringify(sheetNfp[j][k]) + ' part[0] ' + JSON.stringify(part[0]) + ' candidate position ' + candidateX + ',' + candidateY);
+            if (position === null || candidateX < position.x || (GeometryUtil.almostEqual(candidateX, position.x) && candidateY < position.y)) {
               position = {
-                x: sheetNfp[j][k].x - part[0].x,
-                y: sheetNfp[j][k].y - part[0].y,
+                x: candidateX,
+                y: candidateY,
                 id: part.id,
                 rotation: part.rotation,
                 source: part.source,
@@ -992,6 +1017,8 @@ function placeParts(sheets, parts, config, nestindex) {
         if (position === null) {
           // console.log(sheetNfp);
         }
+        
+        window.debugLog('SELECTED POSITION for part ' + part.id + ' rotation ' + part.rotation + ': ' + JSON.stringify(position));
         placements.push(position);
         placed.push(part);
 
