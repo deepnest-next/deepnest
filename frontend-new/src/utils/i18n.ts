@@ -26,18 +26,34 @@ export const i18nConfig = {
   }
 };
 
-// Create i18n context
+// Default context value
+const defaultContext = {
+  t: (key: string) => key,
+  changeLanguage: async (lng: string) => {},
+  language: () => 'en',
+  ready: () => false
+};
+
+// Create i18n context with default value
 const I18nContext = createContext<{
   t: (key: string, options?: any) => string;
   changeLanguage: (lng: string) => Promise<void>;
   language: () => string;
   ready: () => boolean;
-}>();
+}>(defaultContext);
 
 export const useTranslation = (namespace = 'common') => {
   const context = useContext(I18nContext);
+  
+  // If context is null or undefined, return default functions
   if (!context) {
-    throw new Error('useTranslation must be used within an I18nProvider');
+    return [
+      (key: string) => key,
+      { 
+        changeLanguage: async (lng: string) => {},
+        language: () => 'en'
+      }
+    ] as const;
   }
   
   const t = (key: string, options?: any) => {
@@ -59,7 +75,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   onMount(async () => {
     try {
       await i18next.use(LanguageDetector).init(i18nConfig);
-      setLanguage(i18next.language);
+      setLanguage(i18next.language || 'en');
       setReady(true);
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
@@ -71,7 +87,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     if (!ready()) {
       return key; // Return key if i18n not ready yet
     }
-    return i18next.t(key, options);
+    return i18next.t(key, options) || key;
   };
   
   const changeLanguage = async (lng: string) => {

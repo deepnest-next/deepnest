@@ -3,14 +3,15 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
 
 const Header: Component = () => {
-  const [t] = useTranslation('navigation');
+  const [t, { changeLanguage }] = useTranslation('navigation');
 
   const toggleDarkMode = () => {
     globalActions.setDarkMode(!globalState.ui.darkMode);
   };
 
-  const changeLanguage = (language: string) => {
+  const handleLanguageChange = async (language: string) => {
     globalActions.setLanguage(language);
+    await changeLanguage(language);
   };
 
   return (
@@ -23,7 +24,7 @@ const Header: Component = () => {
         <div class="language-selector">
           <select 
             value={globalState.ui.language}
-            onChange={(e) => changeLanguage(e.currentTarget.value)}
+            onChange={(e) => handleLanguageChange(e.currentTarget.value)}
           >
             <option value="en">English</option>
             <option value="de">Deutsch</option>
