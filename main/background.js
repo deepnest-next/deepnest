@@ -904,19 +904,15 @@ function placeParts(sheets, parts, config, nestindex) {
   // Pre-analyze holes in all sheets
   const sheetHoleAnalysis = analyzeSheetHoles(sheets);
 
-  // Analyze all parts to identify those with holes and potential fits
-  const { mainParts, holeCandidates } = analyzeParts(parts, sheetHoleAnalysis.averageHoleArea, config);
-
-  // window.debugLog(`Analyzed parts: ${mainParts.length} main parts, ${holeCandidates.length} hole candidates`);
-
+  // TEMPORARILY DISABLE hole analysis to test
+  window.debugLog('Skipping hole analysis - using all parts as main parts');
+  window.debugLog('Parts before hole analysis: ' + parts.length);
+  
   var allplacements = [];
   var fitness = 0;
 
-  // Now continue with the original placeParts logic, but use our sorted parts
-
-  // Combine main parts and hole candidates back into a single array
-  // mainParts first since we want to place them first
-  parts = [...mainParts, ...holeCandidates];
+  // Skip hole analysis - use all parts as-is
+  window.debugLog('After skipping hole analysis: ' + parts.length + ' total parts for placement');
 
   // Continue with the original placeParts logic
   // var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
