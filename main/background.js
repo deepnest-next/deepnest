@@ -777,6 +777,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
   var totalnum = parts.length;
   var totalsheetarea = 0;
+  var totalPlacedPartArea = 0; // Track total area of placed parts
 
   // total length of merged lines
   var totalMerged = 0;
@@ -893,6 +894,9 @@ function placeParts(sheets, parts, config, nestindex) {
         }
         placements.push(position);
         placed.push(part);
+        
+        // Track placed part area for utilisation calculation
+        totalPlacedPartArea += Math.abs(GeometryUtil.polygonArea(part));
 
         continue;
       }
@@ -1685,6 +1689,10 @@ function placeParts(sheets, parts, config, nestindex) {
         }
         placed.push(part);
         placements.push(position);
+        
+        // Track placed part area for utilisation calculation
+        totalPlacedPartArea += Math.abs(GeometryUtil.polygonArea(part));
+        
         if (position.mergedLength) {
           totalMerged += position.mergedLength;
         }
@@ -1804,19 +1812,9 @@ function placeParts(sheets, parts, config, nestindex) {
 
   console.log('WATCH', allplacements);
 
-  // Calculate total area of all placed parts for utilisation calculation
-  var totalPlacedArea = 0;
-  for (let i = 0; i < allplacements.length; i++) {
-    const placements = allplacements[i].sheetplacements;
-    for (let j = 0; j < placements.length; j++) {
-      if (placements[j].part) {
-        totalPlacedArea += Math.abs(GeometryUtil.polygonArea(placements[j].part));
-      }
-    }
-  }
-
-  const utilisation = totalsheetarea > 0 && !isNaN(totalPlacedArea) ? 
-    (totalPlacedArea / totalsheetarea) * 100 : 0;
+  // Use the tracked total placed part area for utilisation calculation
+  const utilisation = totalsheetarea > 0 && !isNaN(totalPlacedPartArea) ? 
+    (totalPlacedPartArea / totalsheetarea) * 100 : 0;
   console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
   // Ensure fitness is never NaN - this would break the genetic algorithm
