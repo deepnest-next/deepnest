@@ -21,7 +21,7 @@ window.onload = function () {
   ipcRenderer.on('background-start', (event, data) => {
     console.log('Background-start event received, processing data...');
     console.log('Data contains:', data.individual.placement.length, 'parts');
-    
+
     var index = data.index;
     var individual = data.individual;
 
@@ -91,6 +91,8 @@ window.onload = function () {
 
     var process = function (pair) {
 
+      console.warn('   PAIR', pair);
+
       var A = rotatePolygon(pair.A, pair.Arotation);
       var B = rotatePolygon(pair.B, pair.Brotation);
 
@@ -100,6 +102,7 @@ window.onload = function () {
         if (rectangleNfp && rectangleNfp.length > 0) {
           pair.A = null;
           pair.B = null;
+          pair.nfp = rectangleNfp;
           return { A: pair.A, B: pair.B, nfp: rectangleNfp };
         }
       }
@@ -135,6 +138,7 @@ window.onload = function () {
       pair.A = null;
       pair.B = null;
       pair.nfp = clipperNfp;
+      console.warn('   PAIR2', pair);
       return pair;
 
       function toClipperCoordinates(polygon) {
@@ -186,7 +190,7 @@ window.onload = function () {
       // console.log()
       console.log('About to call placeParts with', parts.length, 'parts and', data.sheets.length, 'sheets');
       ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
-      
+
       var placement = placeParts(data.sheets, parts, data.config, index);
       console.log('placeParts completed, placement result:', placement ? 'success' : 'null');
 
@@ -216,88 +220,113 @@ window.onload = function () {
       p.require('../../main/util/geometryutil.js');
 
       console.log('Starting p.map processing...');
-      
+
       // Add timeout for parallel processing
-      var parallelTimeout = setTimeout(function() {
+      var parallelTimeout = setTimeout(function () {
         console.error('Parallel processing timeout after 60 seconds, continuing with sync');
         sync();
       }, 60000);
-      
+
       p.map(process).then(function (processed) {
         clearTimeout(parallelTimeout);
         console.log('Parallel processing completed, got', processed.length, 'results');
-        function getPart(source) {
-          for (let k = 0; k < parts.length; k++) {
-            if (parts[k].source == source) {
-              return parts[k];
-            }
-          }
-          return null;
-        }
-        // store processed data in cache
-        for (let i = 0; i < processed.length; i++) {
-          console.log('Processing NFP result', i, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
-          
-          // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
-          // this is because the c++ addon which can process interior nfps cannot run in the worker thread
-          var A = getPart(processed[i].Asource);
-          var B = getPart(processed[i].Bsource);
-          
-          // Add null checks for A and B
-          if (!A || !B) {
-            console.warn('Skipping NFP result', i, 'due to null parts. A:', A, 'B:', B, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
-            continue;
-          }
-
-          var Achildren = [];
-
-          var j;
-          if (A.children) {
-            for (let j = 0; j < A.children.length; j++) {
-              Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
-            }
-          }
-
-          if (Achildren.length > 0) {
-            var Brotated = rotatePolygon(B, processed[i].Brotation);
-            var bbounds = GeometryUtil.getPolygonBounds(Brotated);
-            var cnfp = [];
-
-            for (let j = 0; j < Achildren.length; j++) {
-              var cbounds = GeometryUtil.getPolygonBounds(Achildren[j]);
-              if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
-                var n = getInnerNfp(Achildren[j], Brotated, data.config);
-                if (n && n.length > 0) {
-                  cnfp = cnfp.concat(n);
-                }
+        console.warn('Processed NFPs:', processed);
+        try {
+          function getPart(source) {
+            for (let k = 0; k < parts.length; k++) {
+              if (parts[k].source == source) {
+                return parts[k];
               }
             }
-
-            processed[i].nfp.children = cnfp;
+            return null;
           }
 
-          // Only cache if we have valid sources
-          if (processed[i].Asource !== undefined && processed[i].Bsource !== undefined) {
-            var doc = {
-              A: processed[i].Asource,
-              B: processed[i].Bsource,
-              Arotation: processed[i].Arotation,
-              Brotation: processed[i].Brotation,
-              nfp: processed[i].nfp
-            };
-            window.db.insert(doc);
-          } else {
-            console.warn('Skipping cache insert due to undefined sources:', processed[i].Asource, processed[i].Bsource);
-          }
+          // store processed data in cache
+          for (let i = 0; i < processed.length; i++) {
+            console.log('Processing NFP result', i, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
 
+            // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
+            // this is because the c++ addon which can process interior nfps cannot run in the worker thread
+            var A = getPart(processed[i].Asource);
+            var B = getPart(processed[i].Bsource);
+
+            // Add null checks for A and B
+            if (!A || !B) {
+              console.warn('Skipping NFP result', i, 'due to null parts. A:', A, 'B:', B, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
+              continue;
+            }
+
+            var Achildren = [];
+
+            var j;
+            if (A.children) {
+              for (let j = 0; j < A.children.length; j++) {
+                Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
+              }
+              console.warn('A:', A, 'B:', B);
+
+              var Achildren = [];
+
+              var j;
+              if (A.children !== undefined && A.children !== null && A.children.length > 0) {
+                for (let j = 0; j < A.children.length; j++) {
+                  Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
+                }
+              }
+
+              if (Achildren.length > 0) {
+                var Brotated = rotatePolygon(B, processed[i].Brotation);
+                var bbounds = GeometryUtil.getPolygonBounds(Brotated);
+                var cnfp = [];
+
+                for (let j = 0; j < Achildren.length; j++) {
+                  var cbounds = GeometryUtil.getPolygonBounds(Achildren[j]);
+                  if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
+                    var n = getInnerNfp(Achildren[j], Brotated, data.config);
+                    if (n && n.length > 0) {
+                      cnfp = cnfp.concat(n);
+                    }
+                  }
+                }
+
+                processed[i].nfp.children = cnfp;
+              }
+
+              var doc = {
+                A: processed[i].Asource,
+                B: processed[i].Bsource,
+                Arotation: processed[i].Arotation,
+                Brotation: processed[i].Brotation,
+                nfp: processed[i].nfp
+              };
+              window.db.insert(doc);
+
+            }
+
+            // Only cache if we have valid sources
+            if (processed[i].Asource !== undefined && processed[i].Bsource !== undefined) {
+              var doc = {
+                A: processed[i].Asource,
+                B: processed[i].Bsource,
+                Arotation: processed[i].Arotation,
+                Brotation: processed[i].Brotation,
+                nfp: processed[i].nfp
+              };
+              window.db.insert(doc);
+            } else {
+              console.warn('Skipping cache insert due to undefined sources:', processed[i].Asource, processed[i].Bsource);
+            }
+
+          }
+        } catch (e) {
+          console.error('Error processing NFP results:', e);
+          // console.timeEnd('Total');
+          // console.log('before sync');
+          console.log('About to call sync after parallel processing');
+          sync();
         }
-        // console.timeEnd('Total');
-        // console.log('before sync');
-        console.log('About to call sync after parallel processing');
-        sync();
       });
-    }
-    else {
+    } else {
       sync();
     }
   });
@@ -526,23 +555,23 @@ function toNestCoordinates(polygon, scale) {
 };
 
 function getHull(polygon) {
-	// Convert the polygon points to proper Point objects for HullPolygon
-	var points = [];
-	for (let i = 0; i < polygon.length; i++) {
-		points.push({
-			x: polygon[i].x,
-			y: polygon[i].y
-		});
-	}
+  // Convert the polygon points to proper Point objects for HullPolygon
+  var points = [];
+  for (let i = 0; i < polygon.length; i++) {
+    points.push({
+      x: polygon[i].x,
+      y: polygon[i].y
+    });
+  }
 
-	var hullpoints = HullPolygon.hull(points);
+  var hullpoints = HullPolygon.hull(points);
 
-	// If hull calculation failed, return original polygon
-	if (!hullpoints) {
-		return polygon;
-	}
+  // If hull calculation failed, return original polygon
+  if (!hullpoints) {
+    return polygon;
+  }
 
-	return hullpoints;
+  return hullpoints;
 }
 
 function rotatePolygon(polygon, degrees) {
@@ -822,15 +851,15 @@ function placeParts(sheets, parts, config, nestindex) {
     var sheetBounds = GeometryUtil.getPolygonBounds(sheets[0]);
     console.log('First sheet dimensions:', sheetBounds.width, 'x', sheetBounds.height);
   }
-  
+
   // Check if we have too many parts for efficient processing
   if (parts.length > 50) {
     console.warn('Processing', parts.length, 'parts - this may take a long time');
-    
+
     // Check if all parts are identical (same source)
     var firstSource = parts[0].source;
-    var allIdentical = parts.every(function(part) { return part.source === firstSource; });
-    
+    var allIdentical = parts.every(function (part) { return part.source === firstSource; });
+
     if (allIdentical) {
       console.log('All parts are identical - consider using batch processing optimization');
     }
@@ -926,7 +955,7 @@ function placeParts(sheets, parts, config, nestindex) {
           console.warn('NFP calculation timeout for part', part.source, 'rotation', j);
           break;
         }
-        
+
         console.log('Getting NFP for part', part.source, 'rotation', j);
         sheetNfp = getInnerNfp(sheet, part, config);
         console.log('NFP result:', sheetNfp ? 'found' : 'null');
