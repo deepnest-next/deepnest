@@ -684,8 +684,9 @@ function getInnerNfp(A, B, config) {
     var widthDiff = Math.abs(ABounds.width - BBounds.width);
     var heightDiff = Math.abs(ABounds.height - BBounds.height);
     
-    // If part is very close to sheet size (within 0.001mm tolerance)
-    if (widthDiff < 0.001 && heightDiff < 0.001) {
+    // If part is very close to sheet size (within tolerance, accounting for scale)
+    var tolerance = Math.max(0.001, Math.max(ABounds.width, ABounds.height) * 0.0001); // Dynamic tolerance
+    if (widthDiff < tolerance && heightDiff < tolerance) {
       console.log('Exact-fit detected for empty sheet:', A.source, 'and part:', B.source);
       // For exact-fit, return a single point NFP 
       // The NFP point should be where the part's reference point needs to be
@@ -777,6 +778,16 @@ function placeParts(sheets, parts, config, nestindex) {
   }
   
   console.log('PlaceParts started with', parts.length, 'parts and', sheets.length, 'sheets');
+  
+  // Log part and sheet dimensions for debugging
+  if (parts.length > 0) {
+    var partBounds = GeometryUtil.getPolygonBounds(parts[0]);
+    console.log('First part dimensions:', partBounds.width, 'x', partBounds.height);
+  }
+  if (sheets.length > 0) {
+    var sheetBounds = GeometryUtil.getPolygonBounds(sheets[0]);
+    console.log('First sheet dimensions:', sheetBounds.width, 'x', sheetBounds.height);
+  }
 
   var i, j, k, m, n, part;
 
@@ -848,17 +859,20 @@ function placeParts(sheets, parts, config, nestindex) {
     fitness += sheetarea; // add 1 for each new sheet opened (lower fitness is better)
 
     var clipCache = [];
-    //console.log('new sheet');
+    console.log('Processing new sheet, current parts remaining:', parts.length);
     for (let i = 0; i < parts.length; i++) {
       // console.time('placement');
       part = parts[i];
+      console.log('Attempting to place part', i, 'with source:', part.source);
 
       // inner NFP
       var sheetNfp = null;
       // try all possible rotations until it fits
       // (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
       for (let j = 0; j < config.rotations; j++) {
+        console.log('Getting NFP for part', part.source, 'rotation', j);
         sheetNfp = getInnerNfp(sheet, part, config);
+        console.log('NFP result:', sheetNfp ? 'found' : 'null');
 
         if (sheetNfp) {
           break;
