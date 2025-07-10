@@ -88,6 +88,16 @@ window.onload = function () {
       var A = rotatePolygon(pair.A, pair.Arotation);
       var B = rotatePolygon(pair.B, pair.Brotation);
 
+      // Check if we can use the optimized rectangle NFP for exact-fit cases
+      if (GeometryUtil.isRectangle(A) && !pair.inside) {
+        var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
+        if (rectangleNfp && rectangleNfp.length > 0) {
+          pair.A = null;
+          pair.B = null;
+          return { A: pair.A, B: pair.B, nfp: rectangleNfp };
+        }
+      }
+
       var clipper = new ClipperLib.Clipper();
 
       var Ac = toClipperCoordinates(A);
@@ -543,6 +553,17 @@ function getOuterNfp(A, B, inside) {
 
   if (doc) {
     return doc;
+  }
+
+  // Check if we can use the optimized rectangle NFP for exact-fit cases
+  if (!inside && GeometryUtil.isRectangle(A) && !A.children) {
+    var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
+    if (rectangleNfp && rectangleNfp.length > 0) {
+      nfp = rectangleNfp;
+      // Save to cache
+      window.db.insert({ A: A.source, B: B.source, Arotation: A.rotation, Brotation: B.rotation, nfp: nfp });
+      return nfp;
+    }
   }
 
   // not found in cache
