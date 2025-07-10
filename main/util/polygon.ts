@@ -1,11 +1,10 @@
 import { Point } from "./point.js";
 import { Vector } from "./vector.js";
-
-const TOL = Math.pow(10, -9);
+import { GEOMETRIC_TOLERANCE, DEG_TO_RAD, TWO_PI, DEFAULT_CIRCLE_SEGMENTS } from "./constants.js";
 
 function _almostEqual(a: number, b: number, tolerance?: number): boolean {
   if (!tolerance) {
-    tolerance = TOL;
+    tolerance = GEOMETRIC_TOLERANCE;
   }
   return Math.abs(a - b) < tolerance;
 }
@@ -137,7 +136,7 @@ export class Polygon {
     }
     
     area *= 0.5;
-    if (Math.abs(area) < TOL) {
+    if (Math.abs(area) < GEOMETRIC_TOLERANCE) {
       // Fallback to simple average for degenerate polygons
       let sumX = 0, sumY = 0;
       for (const point of this._points) {
@@ -160,7 +159,7 @@ export class Polygon {
     return length;
   }
 
-  contains(point: Point, tolerance: number = TOL): boolean | null {
+  contains(point: Point, tolerance: number = GEOMETRIC_TOLERANCE): boolean | null {
     if (this._points.length < 3) return null;
 
     let inside = false;
@@ -214,7 +213,7 @@ export class Polygon {
   }
 
   rotateInPlace(angle: number, origin?: Point): void {
-    const angleRad = (angle * Math.PI) / 180;
+    const angleRad = angle * DEG_TO_RAD;
     const cosAngle = Math.cos(angleRad);
     const sinAngle = Math.sin(angleRad);
     
@@ -255,7 +254,7 @@ export class Polygon {
     }
   }
 
-  isRectangle(tolerance: number = TOL): boolean {
+  isRectangle(tolerance: number = GEOMETRIC_TOLERANCE): boolean {
     if (this._points.length !== 4) return false;
     
     // Check if all angles are approximately 90 degrees
@@ -356,9 +355,9 @@ export class Polygon {
     ]);
   }
 
-  static createCircle(centerX: number, centerY: number, radius: number, segments: number = 32): Polygon {
+  static createCircle(centerX: number, centerY: number, radius: number, segments: number = DEFAULT_CIRCLE_SEGMENTS): Polygon {
     const points: Point[] = [];
-    const angleStep = (2 * Math.PI) / segments;
+    const angleStep = TWO_PI / segments;
     
     for (let i = 0; i < segments; i++) {
       const angle = i * angleStep;
