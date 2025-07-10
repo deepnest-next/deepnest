@@ -10,10 +10,16 @@
   // Import the new Polygon class - will be available if polygon.js is loaded
   const Polygon = root.Polygon;
 
+  // Import constants from centralized constants file
+  const constants = root.DEEPNEST_CONSTANTS || {};
+  const GEOMETRIC_TOLERANCE = constants.GEOMETRIC_TOLERANCE || Math.pow(10, -9);
+  const DEG_TO_RAD = constants.DEG_TO_RAD || (Math.PI / 180);
+  const RAD_TO_DEG = constants.RAD_TO_DEG || (180 / Math.PI);
+
   // private shared variables/methods
 
-  // floating point comparison tolerance
-  var TOL = Math.pow(10, -9); // Floating point error is likely to be above 1 epsilon
+  // floating point comparison tolerance (use centralized constant)
+  var TOL = GEOMETRIC_TOLERANCE;
 
   function _almostEqual(a, b, tolerance) {
     if (!tolerance) {
@@ -30,11 +36,11 @@
   }
 
   function _degreesToRadians(angle) {
-    return angle * (Math.PI / 180);
+    return angle * DEG_TO_RAD;
   }
 
   function _radiansToDegrees(angle) {
-    return angle * (180 / Math.PI);
+    return angle * RAD_TO_DEG;
   }
 
   // normalize vector into a unit vector
@@ -2136,7 +2142,7 @@
       }
       
       var rotated = [];
-      angle = (angle * Math.PI) / 180;
+      angle = angle * DEG_TO_RAD;
       for (var i = 0; i < polygon.length; i++) {
         var x = polygon[i].x;
         var y = polygon[i].y;

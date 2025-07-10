@@ -3,6 +3,7 @@
 import { NfpCache } from '../build/nfpDb.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
 import { Polygon } from '../build/util/polygon.js';
+import { DEFAULT_CLIPPER_SCALE } from '../build/util/constants.js';
 
 window.onload = function () {
   const { ipcRenderer } = require('electron');
@@ -92,9 +93,9 @@ window.onload = function () {
       var clipper = new ClipperLib.Clipper();
 
       var Ac = toClipperCoordinates(A);
-      ClipperLib.JS.ScaleUpPath(Ac, 10000000);
+      ClipperLib.JS.ScaleUpPath(Ac, DEFAULT_CLIPPER_SCALE);
       var Bc = toClipperCoordinates(B);
-      ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+      ClipperLib.JS.ScaleUpPath(Bc, DEFAULT_CLIPPER_SCALE);
       for (let i = 0; i < Bc.length; i++) {
         Bc[i].X *= -1;
         Bc[i].Y *= -1;
@@ -104,7 +105,7 @@ window.onload = function () {
 
       var largestArea = null;
       for (let i = 0; i < solution.length; i++) {
-        var n = toNestCoordinates(solution[i], 10000000);
+        var n = toNestCoordinates(solution[i], DEFAULT_CLIPPER_SCALE);
         var sarea = -GeometryUtil.polygonArea(n);
         if (largestArea === null || largestArea < sarea) {
           clipperNfp = n;
@@ -593,9 +594,9 @@ function getOuterNfp(A, B, inside) {
     // console.time('clipper');
 
     var Ac = toClipperCoordinates(A);
-    ClipperLib.JS.ScaleUpPath(Ac, 10000000);
+    ClipperLib.JS.ScaleUpPath(Ac, DEFAULT_CLIPPER_SCALE);
     var Bc = toClipperCoordinates(B);
-    ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+    ClipperLib.JS.ScaleUpPath(Bc, DEFAULT_CLIPPER_SCALE);
     for (let i = 0; i < Bc.length; i++) {
       Bc[i].X *= -1;
       Bc[i].Y *= -1;
@@ -607,7 +608,7 @@ function getOuterNfp(A, B, inside) {
 
     var largestArea = null;
     for (let i = 0; i < solution.length; i++) {
-      var n = toNestCoordinates(solution[i], 10000000);
+      var n = toNestCoordinates(solution[i], DEFAULT_CLIPPER_SCALE);
       var sarea = -GeometryUtil.polygonArea(n);
       if (largestArea === null || largestArea < sarea) {
         clipperNfp = n;
