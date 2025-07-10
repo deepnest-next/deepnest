@@ -19,6 +19,7 @@ window.onload = function () {
   window.db = new NfpCache();
 
   ipcRenderer.on('background-start', (event, data) => {
+    console.log('background-start', JSON.stringify(data, null, 2));
     var index = data.index;
     var individual = data.individual;
 
@@ -680,22 +681,22 @@ function getInnerNfp(A, B, config) {
   if (GeometryUtil.isRectangle(A) && GeometryUtil.isRectangle(B) && (!A.children || A.children.length === 0)) {
     var ABounds = GeometryUtil.getPolygonBounds(A);
     var BBounds = GeometryUtil.getPolygonBounds(B);
-    
+
     var widthDiff = Math.abs(ABounds.width - BBounds.width);
     var heightDiff = Math.abs(ABounds.height - BBounds.height);
-    
+
     // If part is very close to sheet size (within tolerance, accounting for scale)
     var tolerance = Math.max(0.001, Math.max(ABounds.width, ABounds.height) * 0.0001); // Dynamic tolerance
     if (widthDiff < tolerance && heightDiff < tolerance) {
       console.log('Exact-fit detected for empty sheet:', A.source, 'and part:', B.source);
-      // For exact-fit, return a single point NFP 
+      // For exact-fit, return a single point NFP
       // The NFP point should be where the part's reference point needs to be
       // to place the part at the sheet's top-left corner
       var result = [[{
         x: A[0].x + (ABounds.width - BBounds.width) / 2,
         y: A[0].y + (ABounds.height - BBounds.height) / 2
       }]];
-      
+
       // Cache the result
       if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
         var doc = {
@@ -707,7 +708,7 @@ function getInnerNfp(A, B, config) {
         };
         window.db.insert(doc, true);
       }
-      
+
       return result;
     }
   }
@@ -776,9 +777,9 @@ function placeParts(sheets, parts, config, nestindex) {
   if (!sheets) {
     return null;
   }
-  
+
   console.log('PlaceParts started with', parts.length, 'parts and', sheets.length, 'sheets');
-  
+
   // Log part and sheet dimensions for debugging
   if (parts.length > 0) {
     var partBounds = GeometryUtil.getPolygonBounds(parts[0]);
@@ -846,13 +847,13 @@ function placeParts(sheets, parts, config, nestindex) {
 
     // open a new sheet
     var sheet = sheets.shift();
-    
+
     // Check if we have a valid sheet
     if (!sheet) {
       console.log('No more sheets available, but', parts.length, 'parts remaining');
       break; // Exit the loop if no more sheets are available
     }
-    
+
     var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
     totalsheetarea += sheetarea;
 
@@ -920,7 +921,7 @@ function placeParts(sheets, parts, config, nestindex) {
         }
         placements.push(position);
         placed.push(part);
-        
+
         // Track placed part area for utilisation calculation
         totalPlacedPartArea += Math.abs(GeometryUtil.polygonArea(part));
 
@@ -1715,10 +1716,10 @@ function placeParts(sheets, parts, config, nestindex) {
         }
         placed.push(part);
         placements.push(position);
-        
+
         // Track placed part area for utilisation calculation
         totalPlacedPartArea += Math.abs(GeometryUtil.polygonArea(part));
-        
+
         if (position.mergedLength) {
           totalMerged += position.mergedLength;
         }
@@ -1771,8 +1772,8 @@ function placeParts(sheets, parts, config, nestindex) {
     // console.log(`Fitness before unplaced penalty: ${fitness}`);
     const partArea = Math.abs(GeometryUtil.polygonArea(parts[i]));
     // Protect against division by zero
-    const penalty = totalsheetarea > 0 ? 
-      100000000 * ((partArea * 100) / totalsheetarea) : 
+    const penalty = totalsheetarea > 0 ?
+      100000000 * ((partArea * 100) / totalsheetarea) :
       100000000 * partArea; // Use partArea as base penalty when totalsheetarea is 0
     // console.log(`Penalty for unplaced part ${parts[i].source}: ${penalty}`);
     fitness += penalty;
@@ -1839,7 +1840,7 @@ function placeParts(sheets, parts, config, nestindex) {
   console.log('WATCH', allplacements);
 
   // Use the tracked total placed part area for utilisation calculation
-  const utilisation = totalsheetarea > 0 && !isNaN(totalPlacedPartArea) ? 
+  const utilisation = totalsheetarea > 0 && !isNaN(totalPlacedPartArea) ?
     (totalPlacedPartArea / totalsheetarea) * 100 : 0;
   console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
