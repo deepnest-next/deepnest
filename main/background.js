@@ -96,10 +96,8 @@ window.onload = function () {
       var A = rotatePolygon(pair.A, pair.Arotation);
       var B = rotatePolygon(pair.B, pair.Brotation);
 
-      // Check if we can use the optimized rectangle NFP for exact-fit cases
-      // Only use rectangle optimization if there's no rotation at all
-      var hasNoRotation = (pair.Arotation === 0 && pair.Brotation === 0);
-      if (GeometryUtil.isRectangle(pair.A) && !pair.inside && hasNoRotation) {
+      // TEMPORARILY DISABLE rectangle optimization to test
+      if (false && GeometryUtil.isRectangle(pair.A) && !pair.inside) {
         var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
         if (rectangleNfp && rectangleNfp.length > 0) {
           return { 
@@ -141,6 +139,7 @@ window.onload = function () {
       }
 
       console.warn('   PAIR2', pair);
+      console.warn('   NFP RESULT for', pair.Asource, 'rotation', pair.Arotation, ':', clipperNfp);
       return {
         Asource: pair.Asource,
         Bsource: pair.Bsource, 
@@ -607,10 +606,8 @@ function getOuterNfp(A, B, inside) {
     return doc;
   }
 
-  // Check if we can use the optimized rectangle NFP for exact-fit cases
-  // Only use rectangle optimization if there's no rotation at all
-  var hasNoRotation = (A.rotation === 0);
-  if (!inside && GeometryUtil.isRectangle(A) && !A.children && hasNoRotation) {
+  // TEMPORARILY DISABLE rectangle optimization to test
+  if (false && !inside && GeometryUtil.isRectangle(A) && !A.children) {
     var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
     if (rectangleNfp && rectangleNfp.length > 0) {
       nfp = rectangleNfp;
@@ -873,8 +870,6 @@ function placeParts(sheets, parts, config, nestindex) {
     r.source = parts[i].source;
     r.id = parts[i].id;
     r.filename = parts[i].filename;
-    // Store original coordinates before rotation for correct placement calculation
-    r.originalCoordinates = parts[i];
 
     rotated.push(r);
   }
@@ -982,10 +977,10 @@ function placeParts(sheets, parts, config, nestindex) {
         // first placement, put it on the top left corner
         for (let j = 0; j < sheetNfp.length; j++) {
           for (let k = 0; k < sheetNfp[j].length; k++) {
-            if (position === null || sheetNfp[j][k].x - part.originalCoordinates[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part.originalCoordinates[0].x, position.x) && sheetNfp[j][k].y - part.originalCoordinates[0].y < position.y)) {
+            if (position === null || sheetNfp[j][k].x - part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) && sheetNfp[j][k].y - part[0].y < position.y)) {
               position = {
-                x: sheetNfp[j][k].x - part.originalCoordinates[0].x,
-                y: sheetNfp[j][k].y - part.originalCoordinates[0].y,
+                x: sheetNfp[j][k].x - part[0].x,
+                y: sheetNfp[j][k].y - part[0].y,
                 id: part.id,
                 rotation: part.rotation,
                 source: part.source,
@@ -1063,8 +1058,8 @@ function placeParts(sheets, parts, config, nestindex) {
                     for (let m = 0; m < holeNfp.length; m++) {
                       for (let n = 0; n < holeNfp[m].length; n++) {
                         rotationPlacements.push({
-                          x: holeNfp[m][n].x - part.originalCoordinates[0].x + placements[j].x,
-                          y: holeNfp[m][n].y - part.originalCoordinates[0].y + placements[j].y,
+                          x: holeNfp[m][n].x - part[0].x + placements[j].x,
+                          y: holeNfp[m][n].y - part[0].y + placements[j].y,
                           rotation: part.rotation,
                           orientationMatched: (holeIsWide === partIsWide),
                           fillRatio: bestFitFill
@@ -1104,8 +1099,8 @@ function placeParts(sheets, parts, config, nestindex) {
                         for (let m = 0; m < rotatedNfp.length; m++) {
                           for (let n = 0; n < rotatedNfp[m].length; n++) {
                             rotationPlacements.push({
-                              x: rotatedNfp[m][n].x - part.originalCoordinates[0].x + placements[j].x,
-                              y: rotatedNfp[m][n].y - part.originalCoordinates[0].y + placements[j].y,
+                              x: rotatedNfp[m][n].x - rotatedPart[0].x + placements[j].x,
+                              y: rotatedNfp[m][n].y - rotatedPart[0].y + placements[j].y,
                               rotation: newRotation,
                               orientationMatched: (holeIsWide === rotatedIsWide),
                               fillRatio: bestFitFill
@@ -1282,8 +1277,8 @@ function placeParts(sheets, parts, config, nestindex) {
         nf = finalNfp[j];
         for (let k = 0; k < nf.length; k++) {
           shiftvector = {
-            x: nf[k].x - part.originalCoordinates[0].x,
-            y: nf[k].y - part.originalCoordinates[0].y,
+            x: nf[k].x - part[0].x,
+            y: nf[k].y - part[0].y,
             id: part.id,
             source: part.source,
             rotation: part.rotation,
