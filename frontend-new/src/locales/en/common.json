@@ -74,5 +74,14 @@
     "select_preset_default": "-- Select a preset --",
     "save_preset_title": "Save Preset",
     "enter_preset_name": "Enter preset name"
+  },
+  "status": {
+    "nesting_in_progress": "Nesting in progress...",
+    "error_occurred": "Error occurred",
+    "processing": "Processing...",
+    "ready": "Ready",
+    "threads_active": "{{count}} threads active",
+    "parts_loaded": "{{count}} parts loaded",
+    "nests_available": "{{count}} nests available"
   }
 }

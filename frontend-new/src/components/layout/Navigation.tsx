@@ -1,38 +1,44 @@
 import { Component, For } from 'solid-js';
 import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
+import type { UIState } from '@/types/store.types';
+
+interface NavigationTab {
+  id: UIState['activeTab'];
+  labelKey: string;
+  icon: string;
+}
 
 const Navigation: Component = () => {
   const [t] = useTranslation('navigation');
 
-  const navigationItems = [
-    { key: 'parts', label: t('parts'), icon: '📦' },
-    { key: 'nests', label: t('nests'), icon: '🎯' },
-    { key: 'sheets', label: t('sheets'), icon: '📄' },
-    { key: 'config', label: t('settings'), icon: '⚙️' }
+  const tabs: NavigationTab[] = [
+    { id: 'parts', labelKey: 'parts', icon: '📦' },
+    { id: 'nests', labelKey: 'nests', icon: '🔧' },
+    { id: 'sheets', labelKey: 'sheets', icon: '📄' },
+    { id: 'settings', labelKey: 'settings', icon: '⚙️' }
   ];
 
-  const setActiveTab = (tab: typeof globalState.ui.activeTab) => {
-    globalActions.setActiveTab(tab);
+  const handleTabClick = (tabId: UIState['activeTab']) => {
+    globalActions.setActiveTab(tabId);
   };
 
   return (
     <nav class="navigation">
-      <ul class="nav-list">
-        <For each={navigationItems}>
-          {(item) => (
-            <li class="nav-item">
-              <button
-                class={`nav-button ${globalState.ui.activeTab === item.key ? 'active' : ''}`}
-                onClick={() => setActiveTab(item.key as any)}
-              >
-                <span class="nav-icon">{item.icon}</span>
-                <span class="nav-label">{item.label}</span>
-              </button>
-            </li>
+      <div class="nav-tabs">
+        <For each={tabs}>
+          {(tab) => (
+            <button
+              class={`nav-tab ${globalState.ui.activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => handleTabClick(tab.id)}
+              title={t(tab.labelKey)}
+            >
+              <span class="nav-tab-icon">{tab.icon}</span>
+              <span class="nav-tab-label">{t(tab.labelKey)}</span>
+            </button>
           )}
         </For>
-      </ul>
+      </div>
     </nav>
   );
 };
