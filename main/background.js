@@ -11,20 +11,20 @@ window.onload = function () {
   window.path = require('path')
   window.url = require('url')
   window.fs = require('graceful-fs');
-  
+
   // Create debug log file
-  const debugLogPath = window.path.join(process.cwd(), 'debug_placement.log');
-  window.debugLog = function(message) {
+  const debugLogPath = window.path.join(process.cwd(), `debug_placement_${Date.now()}.log`);
+  window.debugLog = function(...message) {
     const timestamp = new Date().toISOString();
-    const logEntry = `[${timestamp}] ${message}\n`;
-    console.log(message); // Still log to console
+    const logEntry = `[${timestamp}] ${message.join(' ')}\n`;
+    console.log(...message); // Still log to console
     try {
       window.fs.appendFileSync(debugLogPath, logEntry);
     } catch (e) {
       console.error('Failed to write to debug log:', e);
     }
   };
-  
+
   // Clear previous log at start
   try {
     window.fs.writeFileSync(debugLogPath, `=== DEBUG LOG STARTED ${new Date().toISOString()} ===\n`);
@@ -121,12 +121,12 @@ window.onload = function () {
       if (false && GeometryUtil.isRectangle(pair.A) && !pair.inside) {
         var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
         if (rectangleNfp && rectangleNfp.length > 0) {
-          return { 
+          return {
             Asource: pair.Asource,
-            Bsource: pair.Bsource, 
+            Bsource: pair.Bsource,
             Arotation: pair.Arotation,
             Brotation: pair.Brotation,
-            nfp: rectangleNfp 
+            nfp: rectangleNfp
           };
         }
       }
@@ -162,10 +162,10 @@ window.onload = function () {
       window.debugLog('   NFP RESULT for A=' + pair.Asource + ' rotation=' + pair.Arotation + ': ' + JSON.stringify(clipperNfp));
       return {
         Asource: pair.Asource,
-        Bsource: pair.Bsource, 
+        Bsource: pair.Bsource,
         Arotation: pair.Arotation,
         Brotation: pair.Brotation,
-        nfp: clipperNfp 
+        nfp: clipperNfp
       };
 
       function toClipperCoordinates(polygon) {
@@ -210,11 +210,11 @@ window.onload = function () {
 
     // run the placement synchronously
     function sync() {
-      //console.log('starting synchronous calculations', Object.keys(window.nfpCache).length);
-      // console.log('in sync');
+      //window.debugLog('starting synchronous calculations', Object.keys(window.nfpCache).length);
+      // window.debugLog('in sync');
       var c = window.db.getStats();
-      // console.log('nfp cached:', c);
-      // console.log()
+      // window.debugLog('nfp cached:', c);
+      // window.debugLog()
       window.debugLog('About to call placeParts with ' + parts.length + ' parts and ' + data.sheets.length + ' sheets');
       ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
 
@@ -229,7 +229,7 @@ window.onload = function () {
 
 
     if (pairs.length > 0) {
-      console.log('Starting parallel NFP processing for', pairs.length, 'pairs');
+      window.debugLog('Starting parallel NFP processing for', pairs.length, 'pairs');
       var p = new Parallel(pairs, {
         evalPath: '../build/util/eval.js',
         synchronous: false
@@ -246,7 +246,7 @@ window.onload = function () {
       p.require('../../main/util/clipper.js');
       p.require('../../main/util/geometryutil.js');
 
-      console.log('Starting p.map processing...');
+      window.debugLog('Starting p.map processing...');
 
       // Add timeout for parallel processing
       var parallelTimeout = setTimeout(function () {
@@ -256,8 +256,8 @@ window.onload = function () {
 
       p.map(process).then(function (processed) {
         clearTimeout(parallelTimeout);
-        console.log('Parallel processing completed, got', processed.length, 'results');
-        console.warn('Processed NFPs:', processed);
+        window.debugLog('Parallel processing completed, got', processed.length, 'results');
+        window.debugLog('Processed NFPs:', processed);
         try {
           function getPart(source) {
             for (let k = 0; k < parts.length; k++) {
@@ -270,7 +270,7 @@ window.onload = function () {
 
           // store processed data in cache
           for (let i = 0; i < processed.length; i++) {
-            console.log('Processing NFP result', i, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
+            window.debugLog('Processing NFP result', i, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
 
             // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
             // this is because the c++ addon which can process interior nfps cannot run in the worker thread
@@ -279,7 +279,7 @@ window.onload = function () {
 
             // Add null checks for A and B
             if (!A || !B) {
-              console.warn('Skipping NFP result', i, 'due to null parts. A:', A, 'B:', B, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
+              window.debugLog('Skipping NFP result', i, 'due to null parts. A:', A, 'B:', B, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
               continue;
             }
 
@@ -321,7 +321,7 @@ window.onload = function () {
               };
               window.db.insert(doc);
             } else {
-              console.warn('Skipping cache insert due to undefined sources:', processed[i].Asource, processed[i].Bsource);
+              window.debugLog('Skipping cache insert due to undefined sources:', processed[i].Asource, processed[i].Bsource);
             }
 
           }
@@ -330,8 +330,8 @@ window.onload = function () {
 
         }
         // console.timeEnd('Total');
-        // console.log('before sync');
-        console.log('About to call sync after parallel processing');
+        // window.debugLog('before sync');
+        window.debugLog('About to call sync after parallel processing');
         sync();
       });
     } else {
@@ -639,20 +639,20 @@ function getOuterNfp(A, B, inside) {
 
   // not found in cache
   if (inside || (A.children && A.children.length > 0)) {
-    //console.log('computing minkowski: ',A.length, B.length);
+    //window.debugLog('computing minkowski: ',A.length, B.length);
     if (!A.children) {
       A.children = [];
     }
     if (!B.children) {
       B.children = [];
     }
-    //console.log('computing minkowski: ', JSON.stringify(Object.assign({}, {A:Object.assign({},A)},{B:Object.assign({},B)})));
+    //window.debugLog('computing minkowski: ', JSON.stringify(Object.assign({}, {A:Object.assign({},A)},{B:Object.assign({},B)})));
     //console.time('addon');
     nfp = addon.calculateNFP({ A: A, B: B });
     //console.timeEnd('addon');
   }
   else {
-    // console.log('minkowski', A.length, B.length, A.source, B.source);
+    // window.debugLog('minkowski', A.length, B.length, A.source, B.source);
     // console.time('clipper');
 
     var Ac = toClipperCoordinates(A);
@@ -664,7 +664,7 @@ function getOuterNfp(A, B, inside) {
       Bc[i].Y *= -1;
     }
     var solution = ClipperLib.Clipper.MinkowskiSum(Ac, Bc, true);
-    //console.log(solution.length, solution);
+    //window.debugLog(solution.length, solution);
     //var clipperNfp = toNestCoordinates(solution[0], 10000000);
     var clipperNfp;
 
@@ -684,12 +684,12 @@ function getOuterNfp(A, B, inside) {
     }
 
     nfp = [clipperNfp];
-    //console.log('clipper nfp', JSON.stringify(nfp));
+    //window.debugLog('clipper nfp', JSON.stringify(nfp));
     // console.timeEnd('clipper');
   }
 
   if (!nfp || nfp.length == 0) {
-    //console.log('holy shit', nfp, A, B, JSON.stringify(A), JSON.stringify(B));
+    //window.debugLog('holy shit', nfp, A, B, JSON.stringify(A), JSON.stringify(B));
     return null
   }
 
@@ -741,7 +741,7 @@ function getInnerNfp(A, B, config) {
     var doc = window.db.find({ A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation }, true);
 
     if (doc) {
-      //console.log('fetch inner', A.source, B.source, doc);
+      //window.debugLog('fetch inner', A.source, B.source, doc);
       return doc;
     }
   }
@@ -758,7 +758,7 @@ function getInnerNfp(A, B, config) {
     // If part is very close to sheet size (within tolerance, accounting for scale)
     var tolerance = Math.max(0.001, Math.max(ABounds.width, ABounds.height) * 0.0001); // Dynamic tolerance
     if (widthDiff < tolerance && heightDiff < tolerance) {
-      console.log('Exact-fit detected for empty sheet:', A.source, 'and part:', B.source);
+      window.debugLog('Exact-fit detected for empty sheet:', A.source, 'and part:', B.source);
       // For exact-fit, return a single point NFP
       // The NFP point should be where the part's reference point needs to be
       // to place the part at the sheet's top-left corner
@@ -829,7 +829,7 @@ function getInnerNfp(A, B, config) {
 
   if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
     // insert into db
-    // console.log('inserting inner: ', A.source, B.source, B.rotation, f);
+    // window.debugLog('inserting inner: ', A.source, B.source, B.rotation, f);
     var doc = {
       A: A.source,
       B: B.source,
@@ -907,7 +907,7 @@ function placeParts(sheets, parts, config, nestindex) {
   // Analyze all parts to identify those with holes and potential fits
   const { mainParts, holeCandidates } = analyzeParts(parts, sheetHoleAnalysis.averageHoleArea, config);
 
-  // console.log(`Analyzed parts: ${mainParts.length} main parts, ${holeCandidates.length} hole candidates`);
+  // window.debugLog(`Analyzed parts: ${mainParts.length} main parts, ${holeCandidates.length} hole candidates`);
 
   var allplacements = [];
   var fitness = 0;
@@ -922,9 +922,9 @@ function placeParts(sheets, parts, config, nestindex) {
   // var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
   var key, nfp;
   var part;
-
+var p = 0;
   while (parts.length > 0) {
-
+    var part = parts.shift();
     var placed = [];
     var placements = [];
 
@@ -933,7 +933,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
     // Check if we have a valid sheet
     if (!sheet) {
-      console.log('No more sheets available, but', parts.length, 'parts remaining');
+      window.debugLog('No more sheets available, but', parts.length, 'parts remaining');
       break; // Exit the loop if no more sheets are available
     }
 
@@ -1015,9 +1015,9 @@ function placeParts(sheets, parts, config, nestindex) {
           }
         }
         if (position === null) {
-          // console.log(sheetNfp);
+          // window.debugLog(sheetNfp);
         }
-        
+
         window.debugLog('SELECTED POSITION for part ' + part.id + ' rotation ' + part.rotation + ': ' + JSON.stringify(position));
         placements.push(position);
         placed.push(part);
@@ -1162,7 +1162,7 @@ function placeParts(sheets, parts, config, nestindex) {
                     }
                   }
                 } catch (e) {
-                  // console.log('Error processing hole:', e);
+                  // window.debugLog('Error processing hole:', e);
                   // Continue with next hole
                 }
               }
@@ -1170,7 +1170,7 @@ function placeParts(sheets, parts, config, nestindex) {
           }
         }
       } catch (e) {
-        // console.log('Error in hole detection:', e);
+        // window.debugLog('Error in hole detection:', e);
         // Continue with normal placement, ignoring holes
       }
 
@@ -1189,11 +1189,11 @@ function placeParts(sheets, parts, config, nestindex) {
               validHolePositions.push(holePositions[j]);
             }
           } catch (e) {
-            // console.log('Error validating hole position:', e);
+            // window.debugLog('Error validating hole position:', e);
           }
         }
         holePositions = validHolePositions;
-        // console.log(`Found ${holePositions.length} valid hole positions for part ${part.source}`);
+        // window.debugLog(`Found ${holePositions.length} valid hole positions for part ${part.source}`);
       }
 
       var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config);
@@ -1237,7 +1237,7 @@ function placeParts(sheets, parts, config, nestindex) {
       }
 
       if (error || !clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-        // console.log('clipper error', error);
+        // window.debugLog('clipper error', error);
         continue;
       }
 
@@ -1245,7 +1245,7 @@ function placeParts(sheets, parts, config, nestindex) {
         nfp: combinedNfp,
         index: placed.length - 1
       };
-      // console.log('save cache', placed.length - 1);
+      // window.debugLog('save cache', placed.length - 1);
 
       // difference with sheet polygon
       var finalNfp = new ClipperLib.Paths();
@@ -1357,7 +1357,7 @@ function placeParts(sheets, parts, config, nestindex) {
             }
 
             if (!combinedHull) {
-              // console.warn("Failed to calculate convex hull");
+              // window.debugLog("Failed to calculate convex hull");
               continue;
             }
 
@@ -1497,7 +1497,7 @@ function placeParts(sheets, parts, config, nestindex) {
             return 0;
           });
 
-          // console.log(`Sorted hole positions. Prioritizing distribution across ${holeUtilization.size} used holes out of ${new Set(holePositions.map(h => `${h.parentIndex}_${h.holeIndex}`)).size} total holes`);
+          // window.debugLog(`Sorted hole positions. Prioritizing distribution across ${holeUtilization.size} used holes out of ${new Set(holePositions.map(h => `${h.parentIndex}_${h.holeIndex}`)).size} total holes`);
 
           for (let j = 0; j < holePositions.length; j++) {
             let holeShift = holePositions[j];
@@ -1536,7 +1536,7 @@ function placeParts(sheets, parts, config, nestindex) {
               // Apply a small bonus for unused holes (just enough to break ties)
               if (partsInThisHole === 0) {
                 area *= 0.99; // 1% bonus for prioritizing empty holes
-                // console.log(`Small priority bonus for unused hole ${holeKey}`);
+                // window.debugLog(`Small priority bonus for unused hole ${holeKey}`);
               }
             }
             else if (config.placementType == 'convexhull') {
@@ -1619,7 +1619,7 @@ function placeParts(sheets, parts, config, nestindex) {
                   var partArea = Math.abs(ClipperLib.Clipper.Area(clipperPart));
                   if (Math.abs(intersectionArea - partArea) > (partArea * 0.01)) { // 1% tolerance
                     isValidHolePlacement = false;
-                    // console.log(`Part not fully contained in hole: ${part.source}`);
+                    // window.debugLog(`Part not fully contained in hole: ${part.source}`);
                   }
                 } else {
                   isValidHolePlacement = false;
@@ -1648,7 +1648,7 @@ function placeParts(sheets, parts, config, nestindex) {
                       if (dx < proximityThreshold || dy < proximityThreshold) {
                         // This placement uses contour of another part - give it a bonus
                         contourScore += 5.0; // This value can be tuned
-                        // console.log(`Found contour alignment in hole between ${part.source} and ${placed[m].source}`);
+                        // window.debugLog(`Found contour alignment in hole between ${part.source} and ${placed[m].source}`);
                       }
                     }
                   }
@@ -1669,15 +1669,15 @@ function placeParts(sheets, parts, config, nestindex) {
                     // if (fillRatio > 0.6) {
                     // 	// Very large parts (60%+ of hole) get maximum benefit
                     // 	area *= 0.4; // 60% reduction
-                    // 	// console.log(`Large part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying maximum packing bonus`);
+                    // 	// window.debugLog(`Large part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying maximum packing bonus`);
                     // } else if (fillRatio > 0.3) {
                     // 	// Medium parts (30-60% of hole) get significant benefit
                     // 	area *= 0.5; // 50% reduction
-                    // 	// console.log(`Medium part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying major packing bonus`);
+                    // 	// window.debugLog(`Medium part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying major packing bonus`);
                     // } else if (fillRatio > 0.1) {
                     // 	// Smaller parts (10-30% of hole) get moderate benefit
                     // 	area *= 0.6; // 40% reduction
-                    // 	// console.log(`Small part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying standard packing bonus`);
+                    // 	// window.debugLog(`Small part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying standard packing bonus`);
                     // }
                     // Now apply standard sheet-like placement optimization for parts already in the hole
                     const partsInSameHole = [];
@@ -1743,7 +1743,7 @@ function placeParts(sheets, parts, config, nestindex) {
                         // Better alignments get lower multipliers (better scores)
                         const qualityMultiplier = Math.max(0.7, 0.9 - (bestAlignment / 100) - (alignmentCount * 0.05));
                         area *= qualityMultiplier;
-                        // console.log(`Applied sheet-like alignment strategy in hole with quality ${(1-qualityMultiplier)*100}%`);
+                        // window.debugLog(`Applied sheet-like alignment strategy in hole with quality ${(1-qualityMultiplier)*100}%`);
                       }
                     }
                   }
@@ -1765,17 +1765,17 @@ function placeParts(sheets, parts, config, nestindex) {
                       ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
                       if (clipSolution.length > 0) {
                         isValidHolePlacement = false;
-                        // console.log(`Part overlaps with other part: ${part.source} with ${placed[m].source}`);
+                        // window.debugLog(`Part overlaps with other part: ${part.source} with ${placed[m].source}`);
                         break;
                       }
                     }
                   }
                 }
                 if (isValidHolePlacement) {
-                  // console.log(`Valid hole placement found for part ${part.source} in hole of ${parentPart.source}`);
+                  // window.debugLog(`Valid hole placement found for part ${part.source} in hole of ${parentPart.source}`);
                 }
               } catch (e) {
-                // console.log('Error in hole containment check:', e);
+                // window.debugLog('Error in hole containment check:', e);
                 isValidHolePlacement = false;
               }
 
@@ -1798,18 +1798,18 @@ function placeParts(sheets, parts, config, nestindex) {
           }
         }
       } catch (e) {
-        // console.log('Error processing hole positions:', e);
+        // window.debugLog('Error processing hole positions:', e);
       }
 
       // Continue with best non-hole position if available
       if (position) {
         // Debug placement with less verbose logging
         if (position.inHole) {
-          // console.log(`Placed part ${position.source} in hole of part ${placed[position.parentIndex].source}`);
+          // window.debugLog(`Placed part ${position.source} in hole of part ${placed[position.parentIndex].source}`);
           // Adjust the part placement specifically for hole placement
           // This prevents the part from being considered as overlapping with its parent
           var parentPart = placed[position.parentIndex];
-          // console.log(`Hole placement - Parent: ${parentPart.source}, Child: ${part.source}`);
+          // window.debugLog(`Hole placement - Parent: ${parentPart.source}, Child: ${part.source}`);
 
           // Mark the relationship to prevent overlap checks between them in future placements
           position.parentId = parentPart.id;
@@ -1825,7 +1825,7 @@ function placeParts(sheets, parts, config, nestindex) {
         }
       } else {
         // Just log part source without additional details
-        // console.log(`No placement for part ${part.source}`);
+        // window.debugLog(`No placement for part ${part.source}`);
       }
 
       // send placement progress signal
@@ -1833,7 +1833,7 @@ function placeParts(sheets, parts, config, nestindex) {
       for (let j = 0; j < allplacements.length; j++) {
         placednum += allplacements[j].sheetplacements.length;
       }
-      //console.log(placednum, totalnum);
+      //window.debugLog(placednum, totalnum);
       ipcRenderer.send('background-progress', { index: nestindex, progress: 0.5 + 0.5 * (placednum / totalnum) });
       // console.timeEnd('placement');
     }
@@ -1863,21 +1863,23 @@ function placeParts(sheets, parts, config, nestindex) {
     if (sheets.length == 0) {
       break;
     }
+
+    p++;
   }
 
   // there were parts that couldn't be placed
   // scale this value high - we really want to get all the parts in, even at the cost of opening new sheets
-  console.log('UNPLACED PARTS', parts.length, 'of', totalnum);
+  window.debugLog('UNPLACED PARTS', parts.length, 'of', totalnum);
   for (let i = 0; i < parts.length; i++) {
-    // console.log(`Fitness before unplaced penalty: ${fitness}`);
+    // window.debugLog(`Fitness before unplaced penalty: ${fitness}`);
     const partArea = Math.abs(GeometryUtil.polygonArea(parts[i]));
     // Protect against division by zero
     const penalty = totalsheetarea > 0 ?
       100000000 * ((partArea * 100) / totalsheetarea) :
       100000000 * partArea; // Use partArea as base penalty when totalsheetarea is 0
-    // console.log(`Penalty for unplaced part ${parts[i].source}: ${penalty}`);
+    // window.debugLog(`Penalty for unplaced part ${parts[i].source}: ${penalty}`);
     fitness += penalty;
-    // console.log(`Fitness after unplaced penalty: ${fitness}`);
+    // window.debugLog(`Fitness after unplaced penalty: ${fitness}`);
   }
 
   // Enhance fitness calculation to encourage more efficient hole usage
@@ -1899,8 +1901,8 @@ function placeParts(sheets, parts, config, nestindex) {
             area: Math.abs(GeometryUtil.polygonArea(placed[partIndex])) * 2
           });
           // Base reward for any part placed in a hole
-          // console.log(`Part ${placed[partIndex].source} placed in hole of part ${placed[placements[j].parentIndex].source}`);
-          // console.log(`Part area: ${Math.abs(GeometryUtil.polygonArea(placed[partIndex]))}, Hole area: ${Math.abs(GeometryUtil.polygonArea(placed[placements[j].parentIndex]))}`);
+          // window.debugLog(`Part ${placed[partIndex].source} placed in hole of part ${placed[placements[j].parentIndex].source}`);
+          // window.debugLog(`Part area: ${Math.abs(GeometryUtil.polygonArea(placed[partIndex]))}, Hole area: ${Math.abs(GeometryUtil.polygonArea(placed[placements[j].parentIndex]))}`);
           fitness -= (Math.abs(GeometryUtil.polygonArea(placed[partIndex])) / totalsheetarea / 100);
         }
       }
@@ -1937,23 +1939,23 @@ function placeParts(sheets, parts, config, nestindex) {
   // send finish progress signal
   ipcRenderer.send('background-progress', { index: nestindex, progress: -1 });
 
-  console.log('WATCH', allplacements);
+  window.debugLog('WATCH', allplacements);
 
   // Use the tracked total placed part area for utilisation calculation
   const utilisation = totalsheetarea > 0 && !isNaN(totalPlacedPartArea) ?
     (totalPlacedPartArea / totalsheetarea) * 100 : 0;
-  console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
+  window.debugLog(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
   // Ensure fitness is never NaN - this would break the genetic algorithm
   if (isNaN(fitness)) {
-    console.warn('Fitness calculation resulted in NaN, using fallback value');
+    window.debugLog('Fitness calculation resulted in NaN, using fallback value');
     fitness = 1000000; // High penalty value as fallback
   }
 
   // Ensure utilisation is never NaN
   let finalUtilisation = utilisation;
   if (isNaN(utilisation)) {
-    console.warn('Utilisation calculation resulted in NaN, using 0');
+    window.debugLog('Utilisation calculation resulted in NaN, using 0');
     finalUtilisation = 0;
   }
 
@@ -2039,7 +2041,7 @@ function analyzeParts(parts, averageHoleArea, config) {
     };
   }
 
-  // console.log(`Found ${partsWithHoles.length} parts with holes`);
+  // window.debugLog(`Found ${partsWithHoles.length} parts with holes`);
 
   // Second pass: check which parts fit into other parts' holes
   for (let i = 0; i < parts.length; i++) {
@@ -2129,5 +2131,5 @@ function analyzeParts(parts, averageHoleArea, config) {
 
 // clipperjs uses alerts for warnings
 function alert(message) {
-  console.log('alert: ', message);
+  window.debugLog('alert: ', message);
 }
