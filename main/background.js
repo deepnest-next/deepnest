@@ -685,11 +685,12 @@ function getInnerNfp(A, B, config) {
     
     // If part is very close to sheet size (within 0.001mm tolerance)
     if (widthDiff < 0.001 && heightDiff < 0.001) {
-      // For exact-fit, return a single point NFP at the sheet's top-left corner
-      // This matches what noFitPolygonRectangle would return for exact-fit cases
+      // For exact-fit, return a single point NFP 
+      // The NFP point should be where the part's reference point needs to be
+      // to place the part at the sheet's top-left corner
       var result = [[{
-        x: ABounds.x,
-        y: ABounds.y
+        x: A[0].x + (ABounds.width - BBounds.width) / 2,
+        y: A[0].y + (ABounds.height - BBounds.height) / 2
       }]];
       
       // Cache the result
