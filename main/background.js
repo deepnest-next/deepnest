@@ -788,6 +788,19 @@ function placeParts(sheets, parts, config, nestindex) {
     var sheetBounds = GeometryUtil.getPolygonBounds(sheets[0]);
     console.log('First sheet dimensions:', sheetBounds.width, 'x', sheetBounds.height);
   }
+  
+  // Check if we have too many parts for efficient processing
+  if (parts.length > 50) {
+    console.warn('Processing', parts.length, 'parts - this may take a long time');
+    
+    // Check if all parts are identical (same source)
+    var firstSource = parts[0].source;
+    var allIdentical = parts.every(function(part) { return part.source === firstSource; });
+    
+    if (allIdentical) {
+      console.log('All parts are identical - consider using batch processing optimization');
+    }
+  }
 
   var i, j, k, m, n, part;
 
@@ -865,11 +878,21 @@ function placeParts(sheets, parts, config, nestindex) {
       part = parts[i];
       console.log('Attempting to place part', i, 'with source:', part.source);
 
+      // Add timeout for NFP calculation to prevent infinite loops
+      var nfpStartTime = Date.now();
+      var NFP_TIMEOUT = 30000; // 30 seconds timeout per part
+
       // inner NFP
       var sheetNfp = null;
       // try all possible rotations until it fits
       // (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
       for (let j = 0; j < config.rotations; j++) {
+        // Check timeout
+        if (Date.now() - nfpStartTime > NFP_TIMEOUT) {
+          console.warn('NFP calculation timeout for part', part.source, 'rotation', j);
+          break;
+        }
+        
         console.log('Getting NFP for part', part.source, 'rotation', j);
         sheetNfp = getInnerNfp(sheet, part, config);
         console.log('NFP result:', sheetNfp ? 'found' : 'null');
