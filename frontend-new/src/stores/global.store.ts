@@ -1,5 +1,4 @@
 import { createStore } from 'solid-js/store';
-import { createEffect } from 'solid-js';
 import type { GlobalState, UIState, AppState, ProcessState } from '@/types/store.types';
 import type { AppConfig } from '@/types/app.types';
 
@@ -69,10 +68,12 @@ const defaultProcessState: ProcessState = {
 // Load initial state from localStorage
 const loadUIStateFromStorage = (): UIState => {
   try {
-    const stored = localStorage.getItem('deepnest-ui-state');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return { ...defaultUIState, ...parsed };
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('deepnest-ui-state');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { ...defaultUIState, ...parsed };
+      }
     }
   } catch (error) {
     console.warn('Failed to load UI state from localStorage:', error);
@@ -91,15 +92,6 @@ const initialState: GlobalState = {
 // Create the global store
 export const [globalState, setGlobalState] = createStore<GlobalState>(initialState);
 
-// Persist UI state to localStorage
-createEffect(() => {
-  try {
-    localStorage.setItem('deepnest-ui-state', JSON.stringify(globalState.ui));
-  } catch (error) {
-    console.warn('Failed to save UI state to localStorage:', error);
-  }
-});
-
 // Store actions
 export const globalActions = {
   // UI actions
@@ -113,14 +105,38 @@ export const globalActions = {
     if (typeof document !== 'undefined') {
       document.body.classList.toggle('dark-mode', enabled);
     }
+    // Persist to localStorage
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('deepnest-ui-state', JSON.stringify(globalState.ui));
+      } catch (error) {
+        console.warn('Failed to save UI state to localStorage:', error);
+      }
+    }
   },
 
   setLanguage: (language: string) => {
     setGlobalState('ui', 'language', language);
+    // Persist to localStorage
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('deepnest-ui-state', JSON.stringify(globalState.ui));
+      } catch (error) {
+        console.warn('Failed to save UI state to localStorage:', error);
+      }
+    }
   },
 
   setPanelWidth: (panel: keyof UIState['panels'], width: number) => {
     setGlobalState('ui', 'panels', panel, width);
+    // Persist to localStorage
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('deepnest-ui-state', JSON.stringify(globalState.ui));
+      } catch (error) {
+        console.warn('Failed to save UI state to localStorage:', error);
+      }
+    }
   },
 
   openModal: (modal: keyof UIState['modals']) => {

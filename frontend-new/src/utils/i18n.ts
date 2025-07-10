@@ -1,4 +1,4 @@
-import { createSignal, createContext, useContext } from 'solid-js';
+import { createSignal, createContext, useContext, onMount } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import i18next from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -31,6 +31,7 @@ const I18nContext = createContext<{
   t: (key: string, options?: any) => string;
   changeLanguage: (lng: string) => Promise<void>;
   language: () => string;
+  ready: () => boolean;
 }>();
 
 export const useTranslation = (namespace = 'common') => {
@@ -40,6 +41,9 @@ export const useTranslation = (namespace = 'common') => {
   }
   
   const t = (key: string, options?: any) => {
+    if (!context.ready()) {
+      return key; // Return key if i18n not ready yet
+    }
     const fullKey = `${namespace}.${key}`;
     return context.t(fullKey, options);
   };
@@ -49,23 +53,41 @@ export const useTranslation = (namespace = 'common') => {
 
 export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   const [language, setLanguage] = createSignal('en');
+  const [ready, setReady] = createSignal(false);
   
-  // Initialize i18next
-  i18next.use(LanguageDetector).init(i18nConfig);
+  // Initialize i18next on mount
+  onMount(async () => {
+    try {
+      await i18next.use(LanguageDetector).init(i18nConfig);
+      setLanguage(i18next.language);
+      setReady(true);
+    } catch (error) {
+      console.error('Failed to initialize i18n:', error);
+      setReady(true); // Set ready even on error to prevent blocking
+    }
+  });
   
   const t = (key: string, options?: any) => {
+    if (!ready()) {
+      return key; // Return key if i18n not ready yet
+    }
     return i18next.t(key, options);
   };
   
   const changeLanguage = async (lng: string) => {
-    await i18next.changeLanguage(lng);
-    setLanguage(lng);
+    try {
+      await i18next.changeLanguage(lng);
+      setLanguage(lng);
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
   };
   
   const value = {
     t,
     changeLanguage,
-    language
+    language,
+    ready
   };
   
   return I18nContext.Provider({ value, children: props.children });
