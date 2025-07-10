@@ -280,11 +280,7 @@ window.onload = function () {
         }
         // console.timeEnd('Total');
         // console.log('before sync');
-        sync();
-      }).catch(function(error) {
-        clearTimeout(parallelTimeout);
-        console.error('Parallel processing failed:', error);
-        // Try to continue with sync anyway
+        console.log('About to call sync after parallel processing');
         sync();
       });
     }
