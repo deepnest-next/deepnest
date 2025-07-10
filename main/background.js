@@ -675,6 +675,38 @@ function getInnerNfp(A, B, config) {
     }
   }
 
+  // Check for exact-fit or near-exact-fit case
+  if (GeometryUtil.isRectangle(A) && GeometryUtil.isRectangle(B)) {
+    var ABounds = GeometryUtil.getPolygonBounds(A);
+    var BBounds = GeometryUtil.getPolygonBounds(B);
+    
+    var widthDiff = Math.abs(ABounds.width - BBounds.width);
+    var heightDiff = Math.abs(ABounds.height - BBounds.height);
+    
+    // If part is very close to sheet size (within 0.001mm tolerance)
+    if (widthDiff < 0.001 && heightDiff < 0.001) {
+      // For exact-fit, return a single point NFP at the origin
+      var result = [[{
+        x: A[0].x + (ABounds.width - BBounds.width) / 2,
+        y: A[0].y + (ABounds.height - BBounds.height) / 2
+      }]];
+      
+      // Cache the result
+      if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
+        var doc = {
+          A: A.source,
+          B: B.source,
+          Arotation: 0,
+          Brotation: B.rotation,
+          nfp: result
+        };
+        window.db.insert(doc, true);
+      }
+      
+      return result;
+    }
+  }
+
   var frame = getFrame(A);
 
   var nfp = getOuterNfp(frame, B, true);
