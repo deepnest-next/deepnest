@@ -1573,10 +1573,11 @@
       }
 
       // Calculate NFP corners
-      var nfpMinX = minAx - minBx + B[0].x;
-      var nfpMaxX = maxAx - maxBx + B[0].x;
-      var nfpMinY = minAy - minBy + B[0].y;
-      var nfpMaxY = maxAy - maxBy + B[0].y;
+      // For axis-aligned rectangles, the NFP is simply the difference in bounding boxes
+      var nfpMinX = minAx - maxBx;
+      var nfpMaxX = maxAx - minBx;
+      var nfpMinY = minAy - maxBy;
+      var nfpMaxY = maxAy - minBy;
 
       // Handle exact fit case where NFP would be degenerate
       if (_almostEqual(nfpMinX, nfpMaxX) && _almostEqual(nfpMinY, nfpMaxY)) {
