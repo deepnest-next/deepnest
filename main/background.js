@@ -236,10 +236,18 @@ window.onload = function () {
         }
         // store processed data in cache
         for (let i = 0; i < processed.length; i++) {
+          console.log('Processing NFP result', i, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
+          
           // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
           // this is because the c++ addon which can process interior nfps cannot run in the worker thread
           var A = getPart(processed[i].Asource);
           var B = getPart(processed[i].Bsource);
+          
+          // Add null checks for A and B
+          if (!A || !B) {
+            console.warn('Skipping NFP result', i, 'due to null parts. A:', A, 'B:', B, 'Asource:', processed[i].Asource, 'Bsource:', processed[i].Bsource);
+            continue;
+          }
 
           var Achildren = [];
 
@@ -268,14 +276,19 @@ window.onload = function () {
             processed[i].nfp.children = cnfp;
           }
 
-          var doc = {
-            A: processed[i].Asource,
-            B: processed[i].Bsource,
-            Arotation: processed[i].Arotation,
-            Brotation: processed[i].Brotation,
-            nfp: processed[i].nfp
-          };
-          window.db.insert(doc);
+          // Only cache if we have valid sources
+          if (processed[i].Asource !== undefined && processed[i].Bsource !== undefined) {
+            var doc = {
+              A: processed[i].Asource,
+              B: processed[i].Bsource,
+              Arotation: processed[i].Arotation,
+              Brotation: processed[i].Brotation,
+              nfp: processed[i].nfp
+            };
+            window.db.insert(doc);
+          } else {
+            console.warn('Skipping cache insert due to undefined sources:', processed[i].Asource, processed[i].Bsource);
+          }
 
         }
         // console.timeEnd('Total');
