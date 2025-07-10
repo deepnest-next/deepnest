@@ -1,0 +1,20 @@
+{
+  "enter_preset_name": "Please enter a preset name",
+  "preset_saved": "Preset saved successfully!",
+  "error_saving_preset": "Error saving preset",
+  "select_preset_to_load": "Please select a preset to load",
+  "preset_loaded": "Preset loaded successfully!",
+  "preset_not_found": "Selected preset not found",
+  "error_loading_preset": "Error loading preset",
+  "select_preset_to_delete": "Please select a preset to delete", 
+  "confirm_delete_preset": "Are you sure you want to delete the preset \"{{presetName}}\"?",
+  "preset_deleted": "Preset deleted successfully!",
+  "error_deleting_preset": "Error deleting preset",
+  "import_parts_first": "Please import some parts first",
+  "mark_part_as_sheet": "Please mark at least one part as the sheet",
+  "no_file_selected": "No file selected",
+  "file_read_error": "An error occurred reading the file",
+  "svg_processing_error": "Error processing SVG",
+  "conversion_server_error": "could not contact file conversion server",
+  "conversion_error": "There was an Error while converting"
+}
