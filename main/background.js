@@ -1804,7 +1804,19 @@ function placeParts(sheets, parts, config, nestindex) {
 
   console.log('WATCH', allplacements);
 
-  const utilisation = totalsheetarea > 0 ? (area / totalsheetarea) * 100 : 0;
+  // Calculate total area of all placed parts for utilisation calculation
+  var totalPlacedArea = 0;
+  for (let i = 0; i < allplacements.length; i++) {
+    const placements = allplacements[i].sheetplacements;
+    for (let j = 0; j < placements.length; j++) {
+      if (placements[j].part) {
+        totalPlacedArea += Math.abs(GeometryUtil.polygonArea(placements[j].part));
+      }
+    }
+  }
+
+  const utilisation = totalsheetarea > 0 && !isNaN(totalPlacedArea) ? 
+    (totalPlacedArea / totalsheetarea) * 100 : 0;
   console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
   // Ensure fitness is never NaN - this would break the genetic algorithm
@@ -1813,7 +1825,14 @@ function placeParts(sheets, parts, config, nestindex) {
     fitness = 1000000; // High penalty value as fallback
   }
 
-  return { placements: allplacements, fitness: fitness, area: sheetarea, totalarea: totalsheetarea, mergedLength: totalMerged, utilisation: utilisation };
+  // Ensure utilisation is never NaN
+  let finalUtilisation = utilisation;
+  if (isNaN(utilisation)) {
+    console.warn('Utilisation calculation resulted in NaN, using 0');
+    finalUtilisation = 0;
+  }
+
+  return { placements: allplacements, fitness: fitness, area: sheetarea, totalarea: totalsheetarea, mergedLength: totalMerged, utilisation: finalUtilisation };
 }
 
 // New helper function to analyze sheet holes
