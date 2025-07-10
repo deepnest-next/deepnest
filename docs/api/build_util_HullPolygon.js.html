@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: build/util/HullPolygon.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: build/util/HullPolygon.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// based on https://d3js.org/d3-polygon/ Version 1.0.2.
+import { Point } from "./point.js";
+/**
+ * A class providing polygon operations like area calculation, centroid, hull, etc.
+ */
+export class HullPolygon {
+    /**
+     * Returns the signed area of the specified polygon.
+     */
+    static area(polygon) {
+        let i = -1;
+        const n = polygon.length;
+        let a;
+        let b = polygon[n - 1];
+        let area = 0;
+        while (++i &lt; n) {
+            a = b;
+            b = polygon[i];
+            area += a.y * b.x - a.x * b.y;
+        }
+        return area / 2;
+    }
+    /**
+     * Returns the centroid of the specified polygon.
+     */
+    static centroid(polygon) {
+        let i = -1;
+        const n = polygon.length;
+        let x = 0;
+        let y = 0;
+        let a;
+        let b = polygon[n - 1];
+        let c;
+        let k = 0;
+        while (++i &lt; n) {
+            a = b;
+            b = polygon[i];
+            k += c = a.x * b.y - b.x * a.y;
+            x += (a.x + b.x) * c;
+            y += (a.y + b.y) * c;
+        }
+        k *= 3;
+        return new Point(x / k, y / k);
+    }
+    /**
+     * Returns the convex hull of the specified points.
+     * The returned hull is represented as an array of points
+     * arranged in counterclockwise order.
+     */
+    static hull(points) {
+        const n = points.length;
+        if (n &lt; 3)
+            return null;
+        let i;
+        const sortedPoints = new Array(n);
+        const flippedPoints = new Array(n);
+        for (i = 0; i &lt; n; ++i) {
+            sortedPoints[i] = {
+                x: points[i].x,
+                y: points[i].y,
+                index: i,
+            };
+        }
+        sortedPoints.sort(HullPolygon.lexicographicOrder);
+        for (i = 0; i &lt; n; ++i) {
+            flippedPoints[i] = {
+                x: sortedPoints[i].x,
+                y: -sortedPoints[i].y,
+                index: i,
+            };
+        }
+        const upperIndexes = HullPolygon.computeUpperHullIndexes(sortedPoints);
+        const lowerIndexes = HullPolygon.computeUpperHullIndexes(flippedPoints);
+        // Construct the hull polygon, removing possible duplicate endpoints.
+        const skipLeft = lowerIndexes[0] === upperIndexes[0];
+        const skipRight = lowerIndexes[lowerIndexes.length - 1] ===
+            upperIndexes[upperIndexes.length - 1];
+        const hull = [];
+        // Add upper hull in right-to-left order.
+        // Then add lower hull in left-to-right order.
+        for (i = upperIndexes.length - 1; i >= 0; --i)
+            hull.push(points[sortedPoints[upperIndexes[i]].index]);
+        for (i = skipLeft ? 1 : 0; i &lt; lowerIndexes.length - (skipRight ? 1 : 0); ++i)
+            hull.push(points[sortedPoints[lowerIndexes[i]].index]);
+        return hull;
+    }
+    /**
+     * Returns true if and only if the specified point is inside the specified polygon.
+     */
+    static contains(polygon, point) {
+        const n = polygon.length;
+        let p = polygon[n - 1];
+        const x = point.x;
+        const y = point.y;
+        let x0 = p.x;
+        let y0 = p.y;
+        let x1;
+        let y1;
+        let inside = false;
+        for (let i = 0; i &lt; n; ++i) {
+            p = polygon[i];
+            x1 = p.x;
+            y1 = p.y;
+            if (y1 > y !== y0 > y &amp;&amp; x &lt; ((x0 - x1) * (y - y1)) / (y0 - y1) + x1)
+                inside = !inside;
+            x0 = x1;
+            y0 = y1;
+        }
+        return inside;
+    }
+    /**
+     * Returns the length of the perimeter of the specified polygon.
+     */
+    static length(polygon) {
+        let i = -1;
+        const n = polygon.length;
+        let b = polygon[n - 1];
+        let xa;
+        let ya;
+        let xb = b.x;
+        let yb = b.y;
+        let perimeter = 0;
+        while (++i &lt; n) {
+            xa = xb;
+            ya = yb;
+            b = polygon[i];
+            xb = b.x;
+            yb = b.y;
+            xa -= xb;
+            ya -= yb;
+            perimeter += Math.hypot(xa, ya);
+        }
+        return perimeter;
+    }
+    /**
+     * Returns the 2D cross product of AB and AC vectors, i.e., the z-component of
+     * the 3D cross product in a quadrant I Cartesian coordinate system (+x is
+     * right, +y is up). Returns a positive value if ABC is counter-clockwise,
+     * negative if clockwise, and zero if the points are collinear.
+     */
+    static cross(a, b, c) {
+        return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    }
+    /**
+     * Lexicographically compares two points.
+     */
+    static lexicographicOrder(a, b) {
+        return a.x - b.x || a.y - b.y;
+    }
+    /**
+     * Computes the upper convex hull per the monotone chain algorithm.
+     * Assumes points.length >= 3, is sorted by x, unique in y.
+     * Returns an array of indices into points in left-to-right order.
+     */
+    static computeUpperHullIndexes(points) {
+        const n = points.length;
+        const indexes = [0, 1];
+        let size = 2;
+        for (let i = 2; i &lt; n; ++i) {
+            while (size > 1 &amp;&amp;
+                HullPolygon.cross(new Point(points[indexes[size - 2]].x, points[indexes[size - 2]].y), new Point(points[indexes[size - 1]].x, points[indexes[size - 1]].y), new Point(points[i].x, points[i].y)) &lt;= 0)
+                --size;
+            indexes[size++] = i;
+        }
+        return indexes.slice(0, size); // remove popped points
+    }
+}
+//# sourceMappingURL=HullPolygon.js.map</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

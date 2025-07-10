@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: build/util/point.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: build/util/point.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Vector } from "./vector.js";
+/**
+ * Represents a 2D point with x and y coordinates.
+ * Used throughout the nesting engine for geometric calculations.
+ *
+ * @example
+ * ```typescript
+ * const point = new Point(10, 20);
+ * const distance = point.distanceTo(new Point(0, 0));
+ * console.log(distance); // 22.36
+ * ```
+ */
+export class Point {
+    /** X coordinate of the point */
+    x;
+    /** Y coordinate of the point */
+    y;
+    /** Optional marker for NFP (No-Fit Polygon) generation algorithms */
+    marked;
+    /**
+     * Creates a new Point instance.
+     *
+     * @param x - The x coordinate
+     * @param y - The y coordinate
+     * @throws {Error} If either coordinate is NaN
+     *
+     * @example
+     * ```typescript
+     * const origin = new Point(0, 0);
+     * const point = new Point(10.5, -20.3);
+     * ```
+     */
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        if (Number.isNaN(x) || Number.isNaN(y)) {
+            throw new Error();
+        }
+    }
+    /**
+     * Calculates the squared distance to another point.
+     * More efficient than distanceTo when you only need to compare distances.
+     *
+     * @param other - The other point to calculate distance to
+     * @returns The squared distance between this point and the other point
+     *
+     * @example
+     * ```typescript
+     * const p1 = new Point(0, 0);
+     * const p2 = new Point(3, 4);
+     * const sqDist = p1.squaredDistanceTo(p2); // 25
+     * ```
+     */
+    squaredDistanceTo(other) {
+        return (this.x - other.x) ** 2 + (this.y - other.y) ** 2;
+    }
+    /**
+     * Calculates the Euclidean distance to another point.
+     *
+     * @param other - The other point to calculate distance to
+     * @returns The distance between this point and the other point
+     *
+     * @example
+     * ```typescript
+     * const p1 = new Point(0, 0);
+     * const p2 = new Point(3, 4);
+     * const distance = p1.distanceTo(p2); // 5
+     * ```
+     */
+    distanceTo(other) {
+        return Math.sqrt(this.squaredDistanceTo(other));
+    }
+    /**
+     * Checks if this point is within a specified distance of another point.
+     * More efficient than calculating the actual distance.
+     *
+     * @param other - The other point to check distance to
+     * @param distance - The maximum distance threshold
+     * @returns True if the points are within the specified distance
+     *
+     * @example
+     * ```typescript
+     * const p1 = new Point(0, 0);
+     * const p2 = new Point(3, 4);
+     * const isClose = p1.withinDistance(p2, 6); // true
+     * const isFar = p1.withinDistance(p2, 4); // false
+     * ```
+     */
+    withinDistance(other, distance) {
+        return this.squaredDistanceTo(other) &lt; distance * distance;
+    }
+    /**
+     * Creates a new point by adding the specified offsets to this point's coordinates.
+     *
+     * @param dx - The x offset to add
+     * @param dy - The y offset to add
+     * @returns A new Point with the offset coordinates
+     *
+     * @example
+     * ```typescript
+     * const point = new Point(10, 20);
+     * const offset = point.plus(5, -3); // Point(15, 17)
+     * ```
+     */
+    plus(dx, dy) {
+        return new Point(this.x + dx, this.y + dy);
+    }
+    /**
+     * Creates a vector from this point to another point.
+     *
+     * @param other - The destination point
+     * @returns A Vector representing the direction and distance from this point to the other
+     *
+     * @example
+     * ```typescript
+     * const start = new Point(0, 0);
+     * const end = new Point(3, 4);
+     * const vector = start.to(end); // Vector(3, 4)
+     * ```
+     */
+    to(other) {
+        return new Vector(this.x - other.x, this.y - other.y);
+    }
+    /**
+     * Calculates the midpoint between this point and another point.
+     *
+     * @param other - The other point
+     * @returns A new Point representing the midpoint
+     *
+     * @example
+     * ```typescript
+     * const p1 = new Point(0, 0);
+     * const p2 = new Point(10, 20);
+     * const mid = p1.midpoint(p2); // Point(5, 10)
+     * ```
+     */
+    midpoint(other) {
+        return new Point((this.x + other.x) / 2, (this.y + other.y) / 2);
+    }
+    /**
+     * Checks if this point is exactly equal to another point.
+     *
+     * @param obj - The other point to compare with
+     * @returns True if both x and y coordinates are exactly equal
+     *
+     * @example
+     * ```typescript
+     * const p1 = new Point(1, 2);
+     * const p2 = new Point(1, 2);
+     * const p3 = new Point(1, 3);
+     * console.log(p1.equals(p2)); // true
+     * console.log(p1.equals(p3)); // false
+     * ```
+     */
+    equals(obj) {
+        return this.x === obj.x &amp;&amp; this.y === obj.y;
+    }
+    /**
+     * Returns a string representation of this point.
+     *
+     * @returns A formatted string showing the x and y coordinates
+     *
+     * @example
+     * ```typescript
+     * const point = new Point(10.567, -20.123);
+     * console.log(point.toString()); // "&lt;10.6, -20.1>"
+     * ```
+     */
+    toString() {
+        return "&lt;" + this.x.toFixed(1) + ", " + this.y.toFixed(1) + ">";
+    }
+}
+//# sourceMappingURL=point.js.map</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

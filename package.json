@@ -27,7 +27,12 @@
     "prepare": "husky || true",
     "precommit": "lint-staged",
     "postinstall": "electron-builder install-app-deps",
-    "pw:codegen": "node helper_scripts/playwright_codegen.js"
+    "pw:codegen": "node helper_scripts/playwright_codegen.js",
+    "docs:generate": "tsc && jsdoc -c jsdoc.conf.json",
+    "docs:serve": "cd docs/api && python -m http.server 8080",
+    "docs:markdown": "jsdoc2md --configure ./jsdoc2md.json \"main/**/*.js\" \"build/**/*.js\" > docs/API.md",
+    "lint:jsdoc": "eslint --rule \"require-jsdoc: error\" main/",
+    "docs:validate": "npm run lint:jsdoc && npm run docs:generate"
   },
   "husky": {
     "hooks": {
@@ -49,16 +54,24 @@
     "Laser"
   ],
   "devDependencies": {
+    "@babel/cli": "^7.28.0",
+    "@babel/core": "^7.28.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-object-rest-spread": "^7.20.7",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-typescript": "^7.27.1",
     "@electron/packager": "18.3.6",
-    "electron-builder": "26.0.15",
     "@electron/rebuild": "4.0.1",
     "@eslint/js": "^9.26.0",
     "@playwright/test": "1.52.0",
     "@types/node": "22.15.17",
     "cross-replace": "0.2.0",
     "electron": "34.5.5",
+    "electron-builder": "26.0.15",
     "eslint": "^9.26.0",
     "husky": "^9.1.7",
+    "jsdoc-babel": "^0.5.0",
+    "jsdoc-to-markdown": "^9.1.1",
     "lint-staged": "^15.5.2",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
@@ -71,6 +84,7 @@
     "axios": "1.9.0",
     "form-data": "4.0.2",
     "graceful-fs": "4.2.11",
+    "jsdoc": "^4.0.4",
     "marked": "15.0.11"
   },
   "files": [
