@@ -97,13 +97,18 @@ window.onload = function () {
       var B = rotatePolygon(pair.B, pair.Brotation);
 
       // Check if we can use the optimized rectangle NFP for exact-fit cases
-      if (GeometryUtil.isRectangle(A) && !pair.inside) {
+      // Only use rectangle optimization if A is axis-aligned (rotation is 0, 90, 180, or 270 degrees)
+      var isAxisAligned = (pair.Arotation % 90 === 0);
+      if (GeometryUtil.isRectangle(pair.A) && !pair.inside && isAxisAligned) {
         var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
         if (rectangleNfp && rectangleNfp.length > 0) {
-          pair.A = null;
-          pair.B = null;
-          pair.nfp = rectangleNfp;
-          return { A: pair.A, B: pair.B, nfp: rectangleNfp };
+          return { 
+            Asource: pair.Asource,
+            Bsource: pair.Bsource, 
+            Arotation: pair.Arotation,
+            Brotation: pair.Brotation,
+            nfp: rectangleNfp 
+          };
         }
       }
 
@@ -135,11 +140,14 @@ window.onload = function () {
         clipperNfp[i].y += B[0].y;
       }
 
-      pair.A = null;
-      pair.B = null;
-      pair.nfp = clipperNfp;
       console.warn('   PAIR2', pair);
-      return pair;
+      return {
+        Asource: pair.Asource,
+        Bsource: pair.Bsource, 
+        Arotation: pair.Arotation,
+        Brotation: pair.Brotation,
+        nfp: clipperNfp 
+      };
 
       function toClipperCoordinates(polygon) {
         var clone = [];
@@ -259,48 +267,28 @@ window.onload = function () {
             var Achildren = [];
 
             var j;
-            if (A.children) {
+            if (A.children && A.children.length > 0) {
               for (let j = 0; j < A.children.length; j++) {
                 Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
               }
-              console.warn('A:', A, 'B:', B);
+            }
 
-              var Achildren = [];
+            var cnfp = [];
+            if (Achildren.length > 0) {
+              var Brotated = rotatePolygon(B, processed[i].Brotation);
+              var bbounds = GeometryUtil.getPolygonBounds(Brotated);
 
-              var j;
-              if (A.children !== undefined && A.children !== null && A.children.length > 0) {
-                for (let j = 0; j < A.children.length; j++) {
-                  Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
-                }
-              }
-
-              if (Achildren.length > 0) {
-                var Brotated = rotatePolygon(B, processed[i].Brotation);
-                var bbounds = GeometryUtil.getPolygonBounds(Brotated);
-                var cnfp = [];
-
-                for (let j = 0; j < Achildren.length; j++) {
-                  var cbounds = GeometryUtil.getPolygonBounds(Achildren[j]);
-                  if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
-                    var n = getInnerNfp(Achildren[j], Brotated, data.config);
-                    if (n && n.length > 0) {
-                      cnfp = cnfp.concat(n);
-                    }
+              for (let j = 0; j < Achildren.length; j++) {
+                var cbounds = GeometryUtil.getPolygonBounds(Achildren[j]);
+                if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
+                  var n = getInnerNfp(Achildren[j], Brotated, data.config);
+                  if (n && n.length > 0) {
+                    cnfp = cnfp.concat(n);
                   }
                 }
-
-                processed[i].nfp.children = cnfp;
               }
 
-              var doc = {
-                A: processed[i].Asource,
-                B: processed[i].Bsource,
-                Arotation: processed[i].Arotation,
-                Brotation: processed[i].Brotation,
-                nfp: processed[i].nfp
-              };
-              window.db.insert(doc);
-
+              processed[i].nfp.children = cnfp;
             }
 
             // Only cache if we have valid sources
@@ -620,7 +608,9 @@ function getOuterNfp(A, B, inside) {
   }
 
   // Check if we can use the optimized rectangle NFP for exact-fit cases
-  if (!inside && GeometryUtil.isRectangle(A) && !A.children) {
+  // Only use rectangle optimization if A is axis-aligned (rotation is 0, 90, 180, or 270 degrees)
+  var isAxisAligned = (A.rotation % 90 === 0);
+  if (!inside && GeometryUtil.isRectangle(A) && !A.children && isAxisAligned) {
     var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
     if (rectangleNfp && rectangleNfp.length > 0) {
       nfp = rectangleNfp;
