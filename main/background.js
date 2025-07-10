@@ -97,9 +97,9 @@ window.onload = function () {
       var B = rotatePolygon(pair.B, pair.Brotation);
 
       // Check if we can use the optimized rectangle NFP for exact-fit cases
-      // Only use rectangle optimization if A is axis-aligned (rotation is 0, 90, 180, or 270 degrees)
-      var isAxisAligned = (pair.Arotation % 90 === 0);
-      if (GeometryUtil.isRectangle(pair.A) && !pair.inside && isAxisAligned) {
+      // Only use rectangle optimization if there's no rotation at all
+      var hasNoRotation = (pair.Arotation === 0 && pair.Brotation === 0);
+      if (GeometryUtil.isRectangle(pair.A) && !pair.inside && hasNoRotation) {
         var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
         if (rectangleNfp && rectangleNfp.length > 0) {
           return { 
@@ -608,9 +608,9 @@ function getOuterNfp(A, B, inside) {
   }
 
   // Check if we can use the optimized rectangle NFP for exact-fit cases
-  // Only use rectangle optimization if A is axis-aligned (rotation is 0, 90, 180, or 270 degrees)
-  var isAxisAligned = (A.rotation % 90 === 0);
-  if (!inside && GeometryUtil.isRectangle(A) && !A.children && isAxisAligned) {
+  // Only use rectangle optimization if there's no rotation at all
+  var hasNoRotation = (A.rotation === 0);
+  if (!inside && GeometryUtil.isRectangle(A) && !A.children && hasNoRotation) {
     var rectangleNfp = GeometryUtil.noFitPolygonRectangle(A, B);
     if (rectangleNfp && rectangleNfp.length > 0) {
       nfp = rectangleNfp;
