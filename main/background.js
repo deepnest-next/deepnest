@@ -1703,9 +1703,13 @@ function placeParts(sheets, parts, config, nestindex) {
       // console.timeEnd('placement');
     }
 
-    //if(minwidth){
-    fitness += (minwidth / sheetarea) + minarea;
-    //}
+    // Add fitness components, protecting against NaN from division by zero
+    if (minwidth !== null && minarea !== null && sheetarea > 0) {
+      fitness += (minwidth / sheetarea) + minarea;
+    } else if (minwidth !== null && minarea !== null) {
+      // If sheetarea is 0 or very small, just add the minarea component
+      fitness += minarea;
+    }
 
     for (let i = 0; i < placed.length; i++) {
       var index = parts.indexOf(placed[i]);
@@ -1731,7 +1735,11 @@ function placeParts(sheets, parts, config, nestindex) {
   console.log('UNPLACED PARTS', parts.length, 'of', totalnum);
   for (let i = 0; i < parts.length; i++) {
     // console.log(`Fitness before unplaced penalty: ${fitness}`);
-    const penalty = 100000000 * ((Math.abs(GeometryUtil.polygonArea(parts[i])) * 100) / totalsheetarea);
+    const partArea = Math.abs(GeometryUtil.polygonArea(parts[i]));
+    // Protect against division by zero
+    const penalty = totalsheetarea > 0 ? 
+      100000000 * ((partArea * 100) / totalsheetarea) : 
+      100000000 * partArea; // Use partArea as base penalty when totalsheetarea is 0
     // console.log(`Penalty for unplaced part ${parts[i].source}: ${penalty}`);
     fitness += penalty;
     // console.log(`Fitness after unplaced penalty: ${fitness}`);
@@ -1798,6 +1806,12 @@ function placeParts(sheets, parts, config, nestindex) {
 
   const utilisation = totalsheetarea > 0 ? (area / totalsheetarea) * 100 : 0;
   console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
+
+  // Ensure fitness is never NaN - this would break the genetic algorithm
+  if (isNaN(fitness)) {
+    console.warn('Fitness calculation resulted in NaN, using fallback value');
+    fitness = 1000000; // High penalty value as fallback
+  }
 
   return { placements: allplacements, fitness: fitness, area: sheetarea, totalarea: totalsheetarea, mergedLength: totalMerged, utilisation: utilisation };
 }
