@@ -113,13 +113,30 @@ function createMainWindow() {
   })
 
   // and load the index.html of the app.
-  mainWindow.loadURL(
-    url.format({
-      pathname: path.join(__dirname, "./main/index.html"),
-      protocol: "file:",
-      slashes: true,
-    })
-  );
+  // Check if new UI should be loaded
+  const useNewUI = process.env["deepnest_new_ui"] === "1" || 
+                   process.argv.includes("--new-ui") ||
+                   process.argv.includes("--ui=new");
+  
+  if (useNewUI) {
+    console.log("Loading new SolidJS UI...");
+    mainWindow.loadURL(
+      url.format({
+        pathname: path.join(__dirname, "./main/ui-new/index.html"),
+        protocol: "file:",
+        slashes: true,
+      })
+    );
+  } else {
+    console.log("Loading legacy UI...");
+    mainWindow.loadURL(
+      url.format({
+        pathname: path.join(__dirname, "./main/index.html"),
+        protocol: "file:",
+        slashes: true,
+      })
+    );
+  }
 
   mainWindow.setMenu(null);
 

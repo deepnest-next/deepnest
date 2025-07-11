@@ -14,6 +14,13 @@
   ],
   "scripts": {
     "start": "electron .",
+    "start:new": "cross-env deepnest_new_ui=1 electron .",
+    "start:legacy": "electron .",
+    "start:debug": "cross-env deepnest_debug=1 electron .",
+    "start:new-debug": "cross-env deepnest_new_ui=1 deepnest_debug=1 electron .",
+    "compare:init": "node scripts/feature-comparison.js init",
+    "compare:show": "node scripts/feature-comparison.js show",
+    "compare:help": "node scripts/feature-comparison.js help",
     "printenv": "cross-replace node -e \"console.log(process.env)\"",
     "test": "playwright test",
     "build": "tsc && electron-rebuild",
