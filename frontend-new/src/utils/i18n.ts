@@ -12,6 +12,14 @@ import enSheets from '../locales/en/sheets.json';
 import enSettings from '../locales/en/settings.json';
 import enFiles from '../locales/en/files.json';
 
+import deCommon from '../locales/de/common.json';
+import deMessages from '../locales/de/messages.json';
+import deParts from '../locales/de/parts.json';
+import deNesting from '../locales/de/nesting.json';
+import deSheets from '../locales/de/sheets.json';
+import deSettings from '../locales/de/settings.json';
+import deFiles from '../locales/de/files.json';
+
 export const i18nConfig = {
   fallbackLng: 'en',
   debug: false,
@@ -32,6 +40,15 @@ export const i18nConfig = {
       sheets: enSheets,
       settings: enSettings,
       files: enFiles
+    },
+    de: {
+      common: deCommon,
+      messages: deMessages,
+      parts: deParts,
+      nesting: deNesting,
+      sheets: deSheets,
+      settings: deSettings,
+      files: deFiles
     }
   }
 };

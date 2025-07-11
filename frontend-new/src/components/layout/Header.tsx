@@ -36,8 +36,6 @@ const Header: Component = () => {
           >
             <option value="en">🇺🇸 EN</option>
             <option value="de">🇩🇪 DE</option>
-            <option value="fr">🇫🇷 FR</option>
-            <option value="es">🇪🇸 ES</option>
           </select>
           <div class="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
             <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

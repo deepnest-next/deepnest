@@ -7,9 +7,7 @@ const UIPreferences: Component = () => {
 
   const languageOptions = [
     { code: 'en', name: 'English' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'fr', name: 'Français' },
-    { code: 'es', name: 'Español' }
+    { code: 'de', name: 'Deutsch' }
   ];
 
   const unitOptions = [
