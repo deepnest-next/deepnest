@@ -16,9 +16,6 @@ const App: Component = () => {
   });
 
   onMount(async () => {
-    // Apply initial dark mode immediately
-    globalActions.setDarkMode(globalState.ui.darkMode);
-
     // Initialize IPC listeners
     setupIPCListeners();
 
