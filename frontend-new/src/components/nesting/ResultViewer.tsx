@@ -72,14 +72,14 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
     <div class="h-full flex flex-col">
       <div class="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div class="flex items-center gap-4">
-          <button class="btn-secondary btn-small" onClick={handleZoomOut} title={t('zoom_out')}>
+          <button class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200" onClick={handleZoomOut} title={t('zoom_out')}>
             🔍−
           </button>
           <span class="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-16 text-center">{Math.round(zoomLevel() * 100)}%</span>
-          <button class="btn-secondary btn-small" onClick={handleZoomIn} title={t('zoom_in')}>
+          <button class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200" onClick={handleZoomIn} title={t('zoom_in')}>
             🔍+
           </button>
-          <button class="btn-secondary btn-small" onClick={handleResetView} title={t('reset_view')}>
+          <button class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200" onClick={handleResetView} title={t('reset_view')}>
             🎯
           </button>
         </div>
@@ -88,7 +88,7 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
       <div class="flex-1 flex">
         <div class="flex-1 bg-white dark:bg-gray-900">
           <svg
-            class="result-svg"
+            class="w-full h-96 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
             width="100%"
             height="400"
             viewBox="0 0 800 400"

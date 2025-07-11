@@ -135,30 +135,30 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
 
   return (
     <>
-      <div class="modal-body">
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
       <div class="space-y-6">
-        <div class="form-group">
-          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('basic_information')}</h4>
+        <div class="space-y-4">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('basic_information')}</h4>
           
-          <div class="form-group">
-            <label class="form-label" for="sheet-name">{t('sheet_name')}:</label>
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="sheet-name">{t('sheet_name')}:</label>
             <input
               id="sheet-name"
               type="text"
               value={name()}
               onInput={(e) => setName(e.currentTarget.value)}
               placeholder={t('enter_sheet_name')}
-              class="input-base"
+              class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="material">{t('material')}:</label>
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="material">{t('material')}:</label>
             <select
               id="material"
               value={material()}
               onChange={(e) => setMaterial(e.currentTarget.value)}
-              class="input-select"
+              class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <For each={materialOptions}>
                 {(mat) => <option value={mat}>{mat}</option>}
@@ -167,15 +167,15 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
           </div>
         </div>
 
-        <div class="form-group">
-          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('dimensions')}</h4>
+        <div class="space-y-4">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('dimensions')}</h4>
           
           <div class="grid grid-cols-3 gap-2 mb-4">
             <For each={commonSizes}>
               {(preset) => (
                 <button
                   type="button"
-                  class="btn-secondary btn-small text-xs"
+                  class="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200"
                   onClick={() => handlePresetSize(preset)}
                   title={`${preset.width} × ${preset.height} mm`}
                 >
@@ -187,7 +187,7 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
 
           <div class="flex items-end gap-2">
             <div class="flex-1">
-              <label class="form-label" for="width">{t('width')} (mm):</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="width">{t('width')} (mm):</label>
               <input
                 id="width"
                 type="number"
@@ -195,16 +195,18 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setWidth(parseFloat(e.currentTarget.value) || 0)}
                 min="1"
                 step="0.1"
-                class={`input-number ${errors().width ? 'border-red-500' : ''}`}
+                class={`block w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors().width ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               <Show when={errors().width}>
-                <span class="text-red-500 text-xs mt-1 block">{errors().width}</span>
+                <span class="text-red-500 dark:text-red-400 text-xs mt-1 block">{errors().width}</span>
               </Show>
             </div>
 
             <button
               type="button"
-              class="btn-secondary mb-1"
+              class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200 mb-1"
               onClick={swapDimensions}
               title={t('swap_dimensions')}
             >
@@ -212,7 +214,7 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
             </button>
 
             <div class="flex-1">
-              <label class="form-label" for="height">{t('height')} (mm):</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="height">{t('height')} (mm):</label>
               <input
                 id="height"
                 type="number"
@@ -220,10 +222,12 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setHeight(parseFloat(e.currentTarget.value) || 0)}
                 min="1"
                 step="0.1"
-                class={`input-number ${errors().height ? 'border-red-500' : ''}`}
+                class={`block w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors().height ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               <Show when={errors().height}>
-                <span class="text-red-500 text-xs mt-1 block">{errors().height}</span>
+                <span class="text-red-500 dark:text-red-400 text-xs mt-1 block">{errors().height}</span>
               </Show>
             </div>
           </div>
@@ -233,12 +237,12 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
           </div>
         </div>
 
-        <div class="form-group">
-          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('properties')}</h4>
+        <div class="space-y-4">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('properties')}</h4>
           
           <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="form-label" for="thickness">{t('thickness')} (mm):</label>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="thickness">{t('thickness')} (mm):</label>
               <input
                 id="thickness"
                 type="number"
@@ -246,30 +250,34 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setThickness(parseFloat(e.currentTarget.value) || 0)}
                 min="0.1"
                 step="0.1"
-                class={`input-number ${errors().thickness ? 'border-red-500' : ''}`}
+                class={`block w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors().thickness ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               <Show when={errors().thickness}>
-                <span class="text-red-500 text-xs mt-1 block">{errors().thickness}</span>
+                <span class="text-red-500 dark:text-red-400 text-xs mt-1 block">{errors().thickness}</span>
               </Show>
             </div>
 
-            <div>
-              <label class="form-label" for="quantity">{t('quantity')}:</label>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="quantity">{t('quantity')}:</label>
               <input
                 id="quantity"
                 type="number"
                 value={quantity()}
                 onInput={(e) => setQuantity(parseInt(e.currentTarget.value) || 0)}
                 min="1"
-                class={`input-number ${errors().quantity ? 'border-red-500' : ''}`}
+                class={`block w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors().quantity ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               <Show when={errors().quantity}>
-                <span class="text-red-500 text-xs mt-1 block">{errors().quantity}</span>
+                <span class="text-red-500 dark:text-red-400 text-xs mt-1 block">{errors().quantity}</span>
               </Show>
             </div>
 
-            <div>
-              <label class="form-label" for="margin">{t('margin')} (mm):</label>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="margin">{t('margin')} (mm):</label>
               <input
                 id="margin"
                 type="number"
@@ -277,17 +285,19 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setMargin(parseFloat(e.currentTarget.value) || 0)}
                 min="0"
                 step="0.1"
-                class={`input-number ${errors().margin ? 'border-red-500' : ''}`}
+                class={`block w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  errors().margin ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               <Show when={errors().margin}>
-                <span class="text-red-500 text-xs mt-1 block">{errors().margin}</span>
+                <span class="text-red-500 dark:text-red-400 text-xs mt-1 block">{errors().margin}</span>
               </Show>
             </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('preview')}</h4>
+        <div class="space-y-4">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('preview')}</h4>
           <div class="flex items-center gap-6">
             <div class="flex-shrink-0">
               <div 
@@ -327,17 +337,17 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
       </div>
 
       </div>
-      <div class="modal-footer">
+      <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
         <button 
           type="button"
-          class="btn-secondary"
+          class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200"
           onClick={props.onCancel}
         >
           {t('cancel')}
         </button>
         <button 
           type="button"
-          class="btn-primary"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200"
           onClick={handleSave}
         >
           {props.sheet ? t('update_sheet') : t('add_sheet')}

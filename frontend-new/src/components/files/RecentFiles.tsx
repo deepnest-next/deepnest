@@ -190,11 +190,14 @@ const RecentFiles: Component<RecentFilesProps> = (props) => {
   (globalActions as any).addRecentFile = addRecentFile;
 
   return (
-    <div class="recent-files">
-      <div class="recent-files-header">
-        <h3>{t('recent_files')}</h3>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('recent_files')}</h3>
         <Show when={recentFiles().length > 0}>
-          <button class="button secondary small" onClick={clearAllRecent}>
+          <button 
+            class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+            onClick={clearAllRecent}
+          >
             {t('clear_recent')}
           </button>
         </Show>
@@ -203,70 +206,73 @@ const RecentFiles: Component<RecentFilesProps> = (props) => {
       <Show 
         when={recentFiles().length > 0}
         fallback={
-          <div class="no-recent-files">
-            <div class="no-recent-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
+          <div class="text-center py-12">
+            <div class="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
               </svg>
             </div>
-            <h4>{t('no_recent_files')}</h4>
-            <p>{t('recent_files_description')}</p>
+            <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('no_recent_files')}</h4>
+            <p class="text-gray-600 dark:text-gray-400">{t('recent_files_description')}</p>
           </div>
         }
       >
-        <div class="recent-files-list">
+        <div class="space-y-2">
           <For each={recentFiles()}>
             {(file) => (
-              <div class="recent-file-item">
-                <div class="file-main" onClick={() => handleFileSelect(file)}>
-                  <div class="file-icon">
+              <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow duration-200">
+                <div class="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" onClick={() => handleFileSelect(file)}>
+                  <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400">
                     {getFileIcon(file.fileType)}
                   </div>
                   
-                  <div class="file-info">
-                    <div class="file-name">
-                      {file.filename}
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{file.filename}</span>
                       <Show when={file.isPinned}>
-                        <span class="pinned-indicator" title={t('pinned')}>📌</span>
+                        <span class="text-xs text-blue-600 dark:text-blue-400" title={t('pinned')}>📌</span>
                       </Show>
                     </div>
-                    <div class="file-details">
-                      <span class="file-size">{formatFileSize(file.size)}</span>
-                      <span class="file-date">{formatDate(file.lastOpened)}</span>
+                    <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span>{formatFileSize(file.size)}</span>
+                      <span>•</span>
+                      <span>{formatDate(file.lastOpened)}</span>
                     </div>
-                    <div class="file-path" title={file.filepath}>
+                    <div class="text-xs text-gray-400 dark:text-gray-500 truncate mt-1" title={file.filepath}>
                       {file.filepath}
                     </div>
                   </div>
                 </div>
 
-                <div class="file-actions">
-                  <button
-                    class="action-button"
-                    onClick={() => togglePin(file.id)}
-                    title={file.isPinned ? t('unpin_file') : t('pin_file')}
-                  >
-                    {file.isPinned ? '📌' : '📍'}
-                  </button>
+                <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
+                  <div class="flex items-center gap-2">
+                    <button
+                      class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors duration-200"
+                      onClick={() => togglePin(file.id)}
+                      title={file.isPinned ? t('unpin_file') : t('pin_file')}
+                    >
+                      {file.isPinned ? '📌' : '📍'}
+                    </button>
+                    
+                    <button
+                      class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors duration-200"
+                      onClick={() => setShowFileInfo(showFileInfo() === file.id ? null : file.id)}
+                      title={t('file_info')}
+                    >
+                      ℹ️
+                    </button>
+                    
+                    <button
+                      class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors duration-200"
+                      onClick={() => copyFilePath(file.filepath)}
+                      title={t('copy_path')}
+                    >
+                      📋
+                    </button>
+                  </div>
                   
                   <button
-                    class="action-button"
-                    onClick={() => setShowFileInfo(showFileInfo() === file.id ? null : file.id)}
-                    title={t('file_info')}
-                  >
-                    ℹ️
-                  </button>
-                  
-                  <button
-                    class="action-button"
-                    onClick={() => copyFilePath(file.filepath)}
-                    title={t('copy_path')}
-                  >
-                    📋
-                  </button>
-                  
-                  <button
-                    class="action-button remove"
+                    class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors duration-200"
                     onClick={() => removeFile(file.id)}
                     title={t('remove_from_recent')}
                   >
@@ -275,22 +281,24 @@ const RecentFiles: Component<RecentFilesProps> = (props) => {
                 </div>
 
                 <Show when={showFileInfo() === file.id}>
-                  <div class="file-info-panel">
-                    <div class="info-row">
-                      <span class="info-label">{t('file_path')}:</span>
-                      <span class="info-value">{file.filepath}</span>
-                    </div>
-                    <div class="info-row">
-                      <span class="info-label">{t('file_size')}:</span>
-                      <span class="info-value">{formatFileSize(file.size)}</span>
-                    </div>
-                    <div class="info-row">
-                      <span class="info-label">{t('last_modified')}:</span>
-                      <span class="info-value">{new Date(file.lastModified).toLocaleString()}</span>
-                    </div>
-                    <div class="info-row">
-                      <span class="info-label">Last Opened:</span>
-                      <span class="info-value">{new Date(file.lastOpened).toLocaleString()}</span>
+                  <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
+                    <div class="space-y-2 text-sm">
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">{t('file_path')}:</span>
+                        <span class="text-gray-900 dark:text-gray-100 font-mono text-xs break-all">{file.filepath}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">{t('file_size')}:</span>
+                        <span class="text-gray-900 dark:text-gray-100">{formatFileSize(file.size)}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">{t('last_modified')}:</span>
+                        <span class="text-gray-900 dark:text-gray-100">{new Date(file.lastModified).toLocaleString()}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Last Opened:</span>
+                        <span class="text-gray-900 dark:text-gray-100">{new Date(file.lastOpened).toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
                 </Show>
@@ -300,8 +308,8 @@ const RecentFiles: Component<RecentFilesProps> = (props) => {
         </div>
       </Show>
       
-      <div class="recent-files-footer">
-        <small>{t('max_recent_files', { count: maxFiles })}</small>
+      <div class="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+        <small class="text-xs text-gray-500 dark:text-gray-400">{t('max_recent_files', { count: maxFiles })}</small>
       </div>
     </div>
   );

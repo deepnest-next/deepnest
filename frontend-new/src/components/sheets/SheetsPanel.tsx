@@ -79,7 +79,7 @@ const SheetsPanel: Component = () => {
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('sheets_title')}</h2>
         <div class="flex gap-2">
           <button 
-            class="btn-primary"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
             onClick={handleAddSheet}
             title={t('add_sheet')}
           >
@@ -102,10 +102,10 @@ const SheetsPanel: Component = () => {
       </div>
 
       <Show when={showAddSheet()}>
-        <div class="modal-overlay">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{editingSheet() ? t('edit_sheet') : t('add_new_sheet')}</h3>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{editingSheet() ? t('edit_sheet') : t('add_new_sheet')}</h3>
               <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none" onClick={handleCancel}>×</button>
             </div>
             <SheetConfig

@@ -72,20 +72,24 @@ const AlgorithmSettings: Component = () => {
   ];
 
   return (
-    <div class="algorithm-settings">
-      <div class="section-header">
-        <h3>{t('algorithm_settings')}</h3>
-      </div>
-
-      <div class="settings-sections">
-        <div class="settings-section">
-          <h4>{t('nesting_parameters')}</h4>
+    <div class="space-y-6">
+        {/* Nesting Parameters Section */}
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-6">
+          <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('nesting_parameters')}</h4>
+          </div>
           
-          <div class="setting-group">
-            <label class="setting-label">
+          {/* Space Between Parts */}
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('space_between_parts')} (mm)
             </label>
-            <div class="input-with-slider">
+            <div class="space-y-3">
               <input
                 type="range"
                 min="0"
@@ -93,28 +97,32 @@ const AlgorithmSettings: Component = () => {
                 step="0.1"
                 value={spaceBetweenParts()}
                 onInput={(e) => handleSpacingChange(parseFloat(e.currentTarget.value))}
-                class="slider"
+                class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
               />
-              <input
-                type="number"
-                min="0"
-                max="20"
-                step="0.1"
-                value={spaceBetweenParts()}
-                onInput={(e) => handleSpacingChange(parseFloat(e.currentTarget.value) || 0)}
-                class="number-input"
-              />
+              <div class="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.1"
+                  value={spaceBetweenParts()}
+                  onInput={(e) => handleSpacingChange(parseFloat(e.currentTarget.value) || 0)}
+                  class="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                />
+                <span class="text-sm text-gray-500 dark:text-gray-400">mm</span>
+              </div>
             </div>
-            <div class="setting-description">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               {t('spacing_description')}
-            </div>
+            </p>
           </div>
 
-          <div class="setting-group">
-            <label class="setting-label">
+          {/* Curve Tolerance */}
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('curve_tolerance')} (mm)
             </label>
-            <div class="input-with-slider">
+            <div class="space-y-3">
               <input
                 type="range"
                 min="0.1"
@@ -122,31 +130,35 @@ const AlgorithmSettings: Component = () => {
                 step="0.1"
                 value={curveTolerance()}
                 onInput={(e) => handleCurveToleranceChange(parseFloat(e.currentTarget.value))}
-                class="slider"
+                class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
               />
-              <input
-                type="number"
-                min="0.1"
-                max="2"
-                step="0.1"
-                value={curveTolerance()}
-                onInput={(e) => handleCurveToleranceChange(parseFloat(e.currentTarget.value) || 0.3)}
-                class="number-input"
-              />
+              <div class="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="0.1"
+                  max="2"
+                  step="0.1"
+                  value={curveTolerance()}
+                  onInput={(e) => handleCurveToleranceChange(parseFloat(e.currentTarget.value) || 0.3)}
+                  class="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                />
+                <span class="text-sm text-gray-500 dark:text-gray-400">mm</span>
+              </div>
             </div>
-            <div class="setting-description">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               {t('curve_tolerance_description')}
-            </div>
+            </p>
           </div>
 
-          <div class="setting-group">
-            <label class="setting-label">
+          {/* Part Rotations */}
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('part_rotations')}
             </label>
             <select
               value={partRotations()}
               onChange={(e) => handleRotationsChange(parseInt(e.currentTarget.value))}
-              class="setting-select"
+              class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
             >
               <For each={rotationOptions}>
                 {(option) => (
@@ -154,20 +166,29 @@ const AlgorithmSettings: Component = () => {
                 )}
               </For>
             </select>
-            <div class="setting-description">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               {t('rotations_description')}
-            </div>
+            </p>
           </div>
         </div>
 
-        <div class="settings-section">
-          <h4>{t('genetic_algorithm')}</h4>
+        {/* Genetic Algorithm Section */}
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-6">
+          <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('genetic_algorithm')}</h4>
+          </div>
           
-          <div class="setting-group">
-            <label class="setting-label">
+          {/* Population Size */}
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('population_size')}
             </label>
-            <div class="input-with-slider">
+            <div class="space-y-3">
               <input
                 type="range"
                 min="5"
@@ -175,28 +196,32 @@ const AlgorithmSettings: Component = () => {
                 step="1"
                 value={populationSize()}
                 onInput={(e) => handlePopulationSizeChange(parseInt(e.currentTarget.value))}
-                class="slider"
+                class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
               />
-              <input
-                type="number"
-                min="5"
-                max="50"
-                step="1"
-                value={populationSize()}
-                onInput={(e) => handlePopulationSizeChange(parseInt(e.currentTarget.value) || 10)}
-                class="number-input"
-              />
+              <div class="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="5"
+                  max="50"
+                  step="1"
+                  value={populationSize()}
+                  onInput={(e) => handlePopulationSizeChange(parseInt(e.currentTarget.value) || 10)}
+                  class="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                />
+                <span class="text-sm text-gray-500 dark:text-gray-400">individuals</span>
+              </div>
             </div>
-            <div class="setting-description">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               {t('population_size_description')}
-            </div>
+            </p>
           </div>
 
-          <div class="setting-group">
-            <label class="setting-label">
+          {/* Mutation Rate */}
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('mutation_rate')} (%)
             </label>
-            <div class="input-with-slider">
+            <div class="space-y-3">
               <input
                 type="range"
                 min="1"
@@ -204,29 +229,49 @@ const AlgorithmSettings: Component = () => {
                 step="1"
                 value={mutationRate()}
                 onInput={(e) => handleMutationRateChange(parseInt(e.currentTarget.value))}
-                class="slider"
+                class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb"
               />
-              <input
-                type="number"
-                min="1"
-                max="50"
-                step="1"
-                value={mutationRate()}
-                onInput={(e) => handleMutationRateChange(parseInt(e.currentTarget.value) || 10)}
-                class="number-input"
-              />
+              <div class="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  step="1"
+                  value={mutationRate()}
+                  onInput={(e) => handleMutationRateChange(parseInt(e.currentTarget.value) || 10)}
+                  class="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                />
+                <span class="text-sm text-gray-500 dark:text-gray-400">%</span>
+              </div>
             </div>
-            <div class="setting-description">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               {t('mutation_rate_description')}
-            </div>
+            </p>
           </div>
         </div>
 
-        <div class="settings-section">
-          <h4>{t('advanced_options')}</h4>
+        {/* Advanced Options Section */}
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-6">
+          <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('advanced_options')}</h4>
+          </div>
           
-          <div class="setting-group">
-            <label class="checkbox-setting">
+          {/* Use Holes */}
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('use_holes')}
+                </label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {t('use_holes_description')}
+                </p>
+              </div>
               <input
                 type="checkbox"
                 checked={useHoles()}
@@ -234,17 +279,22 @@ const AlgorithmSettings: Component = () => {
                   setUseHoles(e.currentTarget.checked);
                   updateConfig({ useHoles: e.currentTarget.checked });
                 }}
+                class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
               />
-              <span class="checkmark"></span>
-              <span class="setting-label">{t('use_holes')}</span>
-            </label>
-            <div class="setting-description">
-              {t('use_holes_description')}
             </div>
           </div>
 
-          <div class="setting-group">
-            <label class="checkbox-setting">
+          {/* Explore Concave */}
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('explore_concave')}
+                </label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {t('explore_concave_description')}
+                </p>
+              </div>
               <input
                 type="checkbox"
                 checked={exploreConcave()}
@@ -252,17 +302,22 @@ const AlgorithmSettings: Component = () => {
                   setExploreConcave(e.currentTarget.checked);
                   updateConfig({ exploreConcave: e.currentTarget.checked });
                 }}
+                class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
               />
-              <span class="checkmark"></span>
-              <span class="setting-label">{t('explore_concave')}</span>
-            </label>
-            <div class="setting-description">
-              {t('explore_concave_description')}
             </div>
           </div>
 
-          <div class="setting-group">
-            <label class="checkbox-setting">
+          {/* Merge Lines */}
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('merge_common_lines')}
+                </label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {t('merge_lines_description')}
+                </p>
+              </div>
               <input
                 type="checkbox"
                 checked={mergeLines()}
@@ -270,17 +325,22 @@ const AlgorithmSettings: Component = () => {
                   setMergeLines(e.currentTarget.checked);
                   updateConfig({ mergeLines: e.currentTarget.checked });
                 }}
+                class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
               />
-              <span class="checkmark"></span>
-              <span class="setting-label">{t('merge_common_lines')}</span>
-            </label>
-            <div class="setting-description">
-              {t('merge_lines_description')}
             </div>
           </div>
 
-          <div class="setting-group">
-            <label class="checkbox-setting">
+          {/* Use Rough Approximation */}
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('use_rough_approximation')}
+                </label>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {t('rough_approximation_description')}
+                </p>
+              </div>
               <input
                 type="checkbox"
                 checked={useRoughApproximation()}
@@ -288,16 +348,11 @@ const AlgorithmSettings: Component = () => {
                   setUseRoughApproximation(e.currentTarget.checked);
                   updateConfig({ useRoughApproximation: e.currentTarget.checked });
                 }}
+                class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
               />
-              <span class="checkmark"></span>
-              <span class="setting-label">{t('use_rough_approximation')}</span>
-            </label>
-            <div class="setting-description">
-              {t('rough_approximation_description')}
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

@@ -64,7 +64,7 @@ const NestingPanel: Component = () => {
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('nesting_title')}</h2>
         <div class="flex gap-2">
           <button
-            class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             onClick={handleStartNesting}
             disabled={!canStartNesting()}
             title={!canStartNesting() ? t('cannot_start_nesting') : t('start_nesting')}
@@ -72,7 +72,7 @@ const NestingPanel: Component = () => {
             ▶️ {t('start_nesting')}
           </button>
           <button
-            class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             onClick={handleStopNesting}
             disabled={!globalState.process.isNesting}
             title={t('stop_nesting')}
@@ -81,7 +81,7 @@ const NestingPanel: Component = () => {
           </button>
           <Show when={hasResults() && !globalState.process.isNesting}>
             <button
-              class="btn-secondary"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
               onClick={handleClearResults}
               title={t('clear_results')}
             >

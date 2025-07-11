@@ -183,59 +183,70 @@ const DragDropZone: Component<DragDropZoneProps> = (props) => {
   };
 
   return (
-    <div class="drag-drop-zone">
+    <div class="w-full h-full">
       <div 
-        class={`drop-area ${isDragOver() ? 'drag-over' : ''} ${isProcessing() ? 'processing' : ''}`}
+        class={`relative w-full h-64 border-2 border-dashed rounded-lg transition-all duration-200 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 flex items-center justify-center ${
+          isDragOver() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'
+        } ${isProcessing() ? 'pointer-events-none' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleBrowseClick}
       >
-        <div class="drop-content">
-          <div class="drop-icon">
+        <div class="text-center p-8">
+          <div class="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
               <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
             </svg>
           </div>
           
           <Show when={!isProcessing()}>
-            <div class="drop-text">
-              <h3>{t('drop_files_here')}</h3>
-              <p>{t('or_click_to_browse')}</p>
-              <div class="supported-formats">
+            <div class="space-y-2">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('drop_files_here')}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{t('or_click_to_browse')}</p>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 {t('supported_formats')}
               </div>
             </div>
           </Show>
 
           <Show when={isProcessing()}>
-            <div class="processing-status">
-              <h3>{t('importing_files')}</h3>
-              <div class="files-progress">
+            <div class="w-full max-w-md">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('importing_files')}</h3>
+              <div class="space-y-3">
                 <For each={filesInProgress()}>
                   {(fileWithProgress) => (
-                    <div class="file-progress">
-                      <div class="file-info">
-                        <span class="filename">{fileWithProgress.file.name}</span>
-                        <span class="file-size">({formatFileSize(fileWithProgress.file.size)})</span>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{fileWithProgress.file.name}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">({formatFileSize(fileWithProgress.file.size)})</span>
                       </div>
                       
-                      <div class="progress-container">
-                        <div class="progress-bar">
+                      <div class="flex items-center gap-3">
+                        <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                           <div 
-                            class={`progress-fill ${fileWithProgress.status}`}
+                            class={`h-full transition-all duration-300 rounded-full ${
+                              fileWithProgress.status === 'error' ? 'bg-red-500' :
+                              fileWithProgress.status === 'completed' ? 'bg-green-500' :
+                              'bg-blue-500'
+                            }`}
                             style={`width: ${fileWithProgress.progress}%`}
                           />
                         </div>
-                        <span class="status-text">
+                        <span class="text-xs font-medium text-gray-900 dark:text-gray-100 min-w-8">
                           {fileWithProgress.status === 'error' 
-                            ? fileWithProgress.error 
+                            ? '✗' 
                             : fileWithProgress.status === 'completed' 
                             ? '✓' 
                             : `${fileWithProgress.progress}%`
                           }
                         </span>
                       </div>
+                      <Show when={fileWithProgress.status === 'error' && fileWithProgress.error}>
+                        <div class="mt-2 text-xs text-red-600 dark:text-red-400">
+                          {fileWithProgress.error}
+                        </div>
+                      </Show>
                     </div>
                   )}
                 </For>

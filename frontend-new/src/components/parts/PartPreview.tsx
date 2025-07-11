@@ -59,19 +59,19 @@ const PartPreview: Component<PartPreviewProps> = (props) => {
   };
 
   return (
-    <div class="part-preview">
-      <div class="preview-container" style={{ width: `${width}px`, height: `${height}px` }}>
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="aspect-square bg-gray-50 dark:bg-gray-700 flex items-center justify-center border-b border-gray-200 dark:border-gray-600" style={{ width: `${width}px`, height: `${height}px` }}>
         <Show 
           when={!hasError() && svgContent()}
           fallback={
-            <div class="preview-error">
-              <div class="error-icon">❌</div>
-              <div class="error-text">{t('preview_error')}</div>
+            <div class="text-center">
+              <div class="text-red-500 dark:text-red-400 text-3xl mb-2">❌</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">{t('preview_error')}</div>
             </div>
           }
         >
           <div 
-            class="svg-container"
+            class="w-full h-full flex items-center justify-center"
             innerHTML={svgContent()}
             onLoad={handleSvgLoad}
             onError={handleSvgError}
@@ -79,29 +79,29 @@ const PartPreview: Component<PartPreviewProps> = (props) => {
         </Show>
       </div>
       
-      <div class="preview-info">
-        <div class="info-item">
-          <span class="info-label">{t('name')}:</span>
-          <span class="info-value">{props.part.name}</span>
+      <div class="p-4 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">{t('name')}:</span>
+          <span class="text-gray-900 dark:text-gray-100 font-medium">{props.part.name}</span>
         </div>
-        <div class="info-item">
-          <span class="info-label">{t('dimensions')}:</span>
-          <span class="info-value">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">{t('dimensions')}:</span>
+          <span class="text-gray-900 dark:text-gray-100 font-medium">
             {props.part.bounds.width.toFixed(1)} × {props.part.bounds.height.toFixed(1)}
           </span>
         </div>
-        <div class="info-item">
-          <span class="info-label">{t('quantity')}:</span>
-          <span class="info-value">{props.part.quantity}</span>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">{t('quantity')}:</span>
+          <span class="text-gray-900 dark:text-gray-100 font-medium">{props.part.quantity}</span>
         </div>
-        <div class="info-item">
-          <span class="info-label">{t('rotation')}:</span>
-          <span class="info-value">{props.part.rotation}°</span>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">{t('rotation')}:</span>
+          <span class="text-gray-900 dark:text-gray-100 font-medium">{props.part.rotation}°</span>
         </div>
         <Show when={props.part.area}>
-          <div class="info-item">
-            <span class="info-label">{t('area')}:</span>
-            <span class="info-value">{props.part.area!.toFixed(2)}</span>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">{t('area')}:</span>
+            <span class="text-gray-900 dark:text-gray-100 font-medium">{props.part.area!.toFixed(2)}</span>
           </div>
         </Show>
       </div>

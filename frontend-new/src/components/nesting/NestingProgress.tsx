@@ -35,9 +35,9 @@ const NestingProgress: Component = () => {
       </div>
 
       <div class="mb-6">
-        <div class="progress-bar mb-2">
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2 overflow-hidden">
           <div
-            class="progress-fill progress-fill-primary"
+            class="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercentage()}%` }}
           />
         </div>
