@@ -1,5 +1,7 @@
-import { Component, createSignal, createMemo, Show, For } from 'solid-js';
+import { Component, createMemo, Show, For } from 'solid-js';
 import { useTranslation } from '@/utils/i18n';
+import { useViewport } from '@/hooks/useViewport';
+import ViewportControls from '@/components/common/ViewportControls';
 import type { NestResult } from '@/types/app.types';
 
 interface ResultViewerProps {
@@ -8,10 +10,18 @@ interface ResultViewerProps {
 
 const ResultViewer: Component<ResultViewerProps> = (props) => {
   const [t] = useTranslation('nesting');
-  const [zoomLevel, setZoomLevel] = createSignal(1);
-  const [panOffset, setPanOffset] = createSignal({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = createSignal(false);
-  const [dragStart, setDragStart] = createSignal({ x: 0, y: 0 });
+  
+  // Enhanced viewport controls
+  const viewport = useViewport({
+    initialZoom: 1,
+    bounds: {
+      minZoom: 0.1,
+      maxZoom: 10,
+    },
+    enableKeyboardShortcuts: true,
+    enableWheelZoom: true,
+    enablePan: true,
+  });
 
   const totalMaterialUsed = createMemo(() => {
     return props.result.sheets?.reduce((total, sheet) => {
@@ -30,60 +40,46 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
     return ((total - used) / total) * 100;
   });
 
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev * 1.2, 5));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev / 1.2, 0.1));
-  };
-
-  const handleResetView = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
-  const handleMouseDown = (e: MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - panOffset().x, y: e.clientY - panOffset().y });
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging()) return;
+  // Content bounds for fit-to-content functionality
+  const contentBounds = createMemo(() => {
+    const sheets = props.result.sheets || [];
+    if (sheets.length === 0) return { width: 800, height: 400, x: 0, y: 0 };
     
-    const newOffset = {
-      x: e.clientX - dragStart().x,
-      y: e.clientY - dragStart().y
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    sheets.forEach(sheet => {
+      const x = sheet.x || 0;
+      const y = sheet.y || 0;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + sheet.width);
+      maxY = Math.max(maxY, y + sheet.height);
+    });
+    
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
     };
-    setPanOffset(newOffset);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const svgTransform = createMemo(() => {
-    const zoom = zoomLevel();
-    const offset = panOffset();
-    return `translate(${offset.x}, ${offset.y}) scale(${zoom})`;
   });
+
+  const handleZoomToFit = () => {
+    viewport.zoomToFit(contentBounds());
+  };
 
   return (
     <div class="h-full flex flex-col">
-      <div class="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div class="flex items-center gap-4">
-          <button class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200" onClick={handleZoomOut} title={t('zoom_out')}>
-            🔍−
-          </button>
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-16 text-center">{Math.round(zoomLevel() * 100)}%</span>
-          <button class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200" onClick={handleZoomIn} title={t('zoom_in')}>
-            🔍+
-          </button>
-          <button class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200" onClick={handleResetView} title={t('reset_view')}>
-            🎯
-          </button>
-        </div>
-      </div>
+      <ViewportControls
+        viewportState={viewport.viewportState()}
+        onZoomIn={viewport.zoomIn}
+        onZoomOut={viewport.zoomOut}
+        onZoomToFit={handleZoomToFit}
+        onResetView={viewport.resetView}
+        onCenterView={viewport.centerView}
+        showFitToContent={true}
+        showPanControls={true}
+      />
 
       <div class="flex-1 flex">
         <div class="flex-1 bg-white dark:bg-gray-900">
@@ -92,13 +88,14 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
             width="100%"
             height="400"
             viewBox="0 0 800 400"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            style={{ cursor: isDragging() ? 'grabbing' : 'grab' }}
+            onMouseDown={viewport.handleMouseDown}
+            onMouseMove={viewport.handleMouseMove}
+            onMouseUp={viewport.handleMouseUp}
+            onMouseLeave={viewport.handleMouseUp}
+            onWheel={viewport.handleWheel}
+            style={{ cursor: viewport.cursor() }}
           >
-            <g transform={svgTransform()}>
+            <g transform={viewport.transform()}>
               {/* Background grid */}
               <defs>
                 <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
