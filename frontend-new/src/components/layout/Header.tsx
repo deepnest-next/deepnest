@@ -6,7 +6,9 @@ const Header: Component = () => {
   const [t, { changeLanguage }] = useTranslation('navigation');
 
   const toggleDarkMode = () => {
-    globalActions.setDarkMode(!globalState.ui.darkMode);
+    // Toggle between light and dark mode (explicit themes)
+    const newTheme = globalState.ui.darkMode ? 'light' : 'dark';
+    globalActions.setThemePreference(newTheme);
   };
 
   const handleLanguageChange = async (language: string) => {
