@@ -301,7 +301,16 @@ const PartsList: Component<PartsListProps> = (props) => {
                       checked={props.isSelected?.(part.id) || false}
                       onClick={(e) => {
                         e.stopPropagation();
-                        props.onItemClick?.(part.id, e);
+                        // Always use multi-select behavior for checkboxes
+                        const syntheticEvent = new MouseEvent('click', {
+                          bubbles: true,
+                          cancelable: true,
+                          ctrlKey: true,  // Force multi-select mode
+                          metaKey: true,  // Force multi-select mode (for Mac)
+                          shiftKey: e.shiftKey,
+                          altKey: e.altKey,
+                        });
+                        props.onItemClick?.(part.id, syntheticEvent);
                       }}
                       onChange={() => {
                         // Prevent default checkbox change behavior

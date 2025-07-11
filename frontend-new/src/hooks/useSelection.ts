@@ -161,7 +161,7 @@ export const useSelection = <T extends { id: string }>(
       invertSelection();
     } else if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       event.preventDefault();
-      navigateSelection(event.code === 'ArrowUp' ? -1 : 1, isShift);
+      navigateSelection(event.code === 'ArrowDown' ? 1 : -1, isShift);
     }
   };
 

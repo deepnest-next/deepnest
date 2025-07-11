@@ -249,6 +249,9 @@ const PartsPanel: Component = () => {
                 {t('deselect_all')}
               </button>
             </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 italic">
+              Tip: Hold Ctrl/Cmd for multi-select, Shift for range select
+            </div>
           </div>
           
           <Show when={selection.selectedCount() > 0}>
