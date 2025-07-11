@@ -70,6 +70,7 @@ const I18nContext = createContext<{
 
 export const useTranslation = (namespace = 'translation') => {
   const context = useContext(I18nContext);
+  console.log('useTranslation called with namespace:', namespace, 'context exists:', !!context);
   
   // If context is null or undefined, return default functions
   if (!context) {
@@ -83,20 +84,28 @@ export const useTranslation = (namespace = 'translation') => {
   }
   
   const t = (key: string, options?: any) => {
-    if (!context.ready()) {
+    // Make this function reactive to the ready state
+    const isReady = context.ready();
+    const tFn = context.t;
+    
+    if (!isReady) {
       console.warn(`i18n not ready, returning key: ${key}`);
       return key; // Return key if i18n not ready yet
     }
+    
     // Use i18next namespace option for proper key resolution
     const optionsWithNS = { ns: namespace, ...options };
     console.log(`Translating key: ${key} with namespace: ${namespace}`);
-    return context.t(key, optionsWithNS);
+    const result = tFn(key, optionsWithNS);
+    console.log(`Translation result: ${key} -> ${result}`);
+    return result;
   };
   
   return [t, { changeLanguage: context.changeLanguage, language: context.language }] as const;
 };
 
 export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
+  console.log('I18nProvider: component created');
   const [language, setLanguage] = createSignal(globalState.ui.language || 'en');
   const [ready, setReady] = createSignal(false);
   

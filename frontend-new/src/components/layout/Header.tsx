@@ -23,7 +23,11 @@ const Header: Component = () => {
           <div class="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
             <span class="text-white font-bold text-sm">DN</span>
           </div>
-          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('navigation.page_title')}</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{(() => {
+            const translation = t('navigation.page_title');
+            console.log('Header rendering with translation:', translation);
+            return translation;
+          })()}</h1>
         </div>
       </div>
       
