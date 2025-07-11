@@ -173,16 +173,24 @@ export const useSelection = <T extends { id: string }>(
     let currentIndex = currentId ? allItems.findIndex(item => item.id === currentId) : -1;
     
     if (currentIndex === -1) {
-      // No current selection, select first item
-      const firstItem = allItems[0];
-      if (firstItem) {
-        selectItem(firstItem.id);
+      // No current selection, select first item when going down, last item when going up
+      const targetIndex = direction > 0 ? 0 : allItems.length - 1;
+      const targetItem = allItems[targetIndex];
+      if (targetItem) {
+        selectItem(targetItem.id);
       }
       return;
     }
 
-    const newIndex = Math.max(0, Math.min(allItems.length - 1, currentIndex + direction));
-    if (newIndex === currentIndex) return;
+    // Calculate new index with wrapping
+    let newIndex: number;
+    if (direction > 0) {
+      // Moving down: wrap to beginning if at end
+      newIndex = currentIndex >= allItems.length - 1 ? 0 : currentIndex + 1;
+    } else {
+      // Moving up: wrap to end if at beginning
+      newIndex = currentIndex <= 0 ? allItems.length - 1 : currentIndex - 1;
+    }
 
     const newItem = allItems[newIndex];
     if (!newItem) return;
