@@ -246,6 +246,15 @@ export class SvgParser {
   }
 
   /**
+   * Gets the endpoints of an SVG element (for debugging/testing)
+   * @param element - The SVG element to analyze
+   * @returns Object with start and end points, or null if unable to determine
+   */
+  getElementEndpoints(element: SVGElement): { start: Point; end: Point } | null {
+    return this.getEndpoints(element);
+  }
+
+  /**
    * Prepares the SVG for CAD/CAM operations by applying all necessary preprocessing steps
    * @param dxfFlag - Special flag for DXF import handling
    * @returns The processed SVG root element
@@ -461,6 +470,7 @@ export class SvgParser {
   // Placeholder methods that will be implemented in subsequent steps
   private mergeLines(_root: SVGElement, _tolerance: number): void {
     // This will be implemented in Step 7: Path Merging Logic
+    // Note: getEndpoints method is used by mergeLines when fully implemented
   }
 
   /**
@@ -841,14 +851,209 @@ export class SvgParser {
     element.removeAttribute('transform');
   }
 
-  // Placeholder methods that will be implemented in subsequent steps
-  private isClosed(_element: SVGElement): boolean {
-    // This will be implemented in Step 5: Path Utility Methods
+  /**
+   * Determines if an SVG element represents a closed shape
+   * @param element - The SVG element to check
+   * @param tolerance - Optional tolerance for endpoint comparison
+   * @returns True if the element represents a closed shape
+   */
+  private isClosed(element: SVGElement, tolerance?: number): boolean {
+    const openElements = ['line', 'polyline', 'path'];
+    
+    // Elements like rect, circle, ellipse are closed by definition
+    if (openElements.indexOf(element.tagName) < 0) {
+      return true;
+    }
+    
+    // Line elements are always open
+    if (element.tagName === 'line') {
+      return false;
+    }
+    
+    // Check polyline closure
+    if (element.tagName === 'polyline') {
+      const points = (element as any).points;
+      
+      // A 2-point polyline cannot be closed
+      if (points.length < 3) {
+        return false;
+      }
+      
+      const first = { x: points[0].x, y: points[0].y };
+      const last = { x: points[points.length - 1].x, y: points[points.length - 1].y };
+      
+      const usedTolerance = tolerance || this.conf.toleranceSvg;
+      return this.almostEqual(first.x, last.x, usedTolerance) && 
+             this.almostEqual(first.y, last.y, usedTolerance);
+    }
+    
+    // Check path closure
+    if (element.tagName === 'path') {
+      const seglist = (element as any).pathSegList;
+      
+      // Check for explicit Z/z command
+      for (let j = 0; j < seglist.numberOfItems; j++) {
+        const c = seglist.getItem(j);
+        if (c.pathSegTypeAsLetter === 'z' || c.pathSegTypeAsLetter === 'Z') {
+          return true;
+        }
+      }
+      
+      // Check if start and end points coincide
+      const test = this.polygonifyPath(element);
+      if (!test || test.length < 2) {
+        return test ? true : false;
+      }
+      
+      const first = test[0];
+      const last = test[test.length - 1];
+      const usedTolerance = tolerance || this.conf.toleranceSvg;
+      
+      return this.almostEqualPoints(first, last, usedTolerance);
+    }
+    
     return false;
   }
 
-  private pathToAbsolute(_element: SVGElement): void {
-    // This will be implemented in Step 5: Path Utility Methods
+  /**
+   * Converts relative path commands to absolute coordinates
+   * @param element - The path element to convert
+   * @throws Error if element is not a path
+   */
+  private pathToAbsolute(element: SVGElement): void {
+    if (!element || element.tagName !== 'path') {
+      throw new Error('invalid path');
+    }
+    
+    const seglist = (element as any).pathSegList;
+    let x = 0, y = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    
+    for (let i = 0; i < seglist.numberOfItems; i++) {
+      const command = seglist.getItem(i).pathSegTypeAsLetter;
+      const s = seglist.getItem(i);
+      
+      // Handle absolute commands
+      if (/[MLHVCSQTA]/.test(command)) {
+        if ('x' in s) x = s.x;
+        if ('y' in s) y = s.y;
+      } else {
+        // Handle relative commands
+        if ('x1' in s) x1 = x + s.x1;
+        if ('x2' in s) x2 = x + s.x2;
+        if ('y1' in s) y1 = y + s.y1;
+        if ('y2' in s) y2 = y + s.y2;
+        if ('x' in s) x += s.x;
+        if ('y' in s) y += s.y;
+        
+        // Convert relative commands to absolute
+        switch (command) {
+          case 'm':
+            seglist.replaceItem((element as any).createSVGPathSegMovetoAbs(x, y), i);
+            break;
+          case 'l':
+            seglist.replaceItem((element as any).createSVGPathSegLinetoAbs(x, y), i);
+            break;
+          case 'h':
+            seglist.replaceItem((element as any).createSVGPathSegLinetoHorizontalAbs(x), i);
+            break;
+          case 'v':
+            seglist.replaceItem((element as any).createSVGPathSegLinetoVerticalAbs(y), i);
+            break;
+          case 'c':
+            seglist.replaceItem((element as any).createSVGPathSegCurvetoCubicAbs(x, y, x1, y1, x2, y2), i);
+            break;
+          case 's':
+            seglist.replaceItem((element as any).createSVGPathSegCurvetoCubicSmoothAbs(x, y, x2, y2), i);
+            break;
+          case 'q':
+            seglist.replaceItem((element as any).createSVGPathSegCurvetoQuadraticAbs(x, y, x1, y1), i);
+            break;
+          case 't':
+            seglist.replaceItem((element as any).createSVGPathSegCurvetoQuadraticSmoothAbs(x, y), i);
+            break;
+          case 'a':
+            seglist.replaceItem((element as any).createSVGPathSegArcAbs(x, y, s.r1, s.r2, s.angle, s.largeArcFlag, s.sweepFlag), i);
+            break;
+          case 'z':
+          case 'Z':
+            x = x0;
+            y = y0;
+            break;
+        }
+      }
+      
+      // Record the start of a subpath
+      if (command === 'M' || command === 'm') {
+        x0 = x;
+        y0 = y;
+      }
+    }
+  }
+
+  /**
+   * Extracts the start and end points from an SVG element
+   * @param element - The SVG element to analyze
+   * @returns Object with start and end points, or null if unable to determine
+   */
+  private getEndpoints(element: SVGElement): { start: Point; end: Point } | null {
+    let start: Point, end: Point;
+    
+    if (element.tagName === 'line') {
+      start = new Point(
+        Number(element.getAttribute('x1') || '0'),
+        Number(element.getAttribute('y1') || '0')
+      );
+      end = new Point(
+        Number(element.getAttribute('x2') || '0'),
+        Number(element.getAttribute('y2') || '0')
+      );
+    } else if (element.tagName === 'polyline') {
+      const points = (element as any).points;
+      if (points.length === 0) {
+        return null;
+      }
+      start = new Point(points[0].x, points[0].y);
+      end = new Point(points[points.length - 1].x, points[points.length - 1].y);
+    } else if (element.tagName === 'path') {
+      const poly = this.polygonifyPath(element);
+      if (!poly || poly.length === 0) {
+        return null;
+      }
+      start = poly[0];
+      end = poly[poly.length - 1];
+    } else {
+      return null;
+    }
+    
+    return { start, end };
+  }
+
+  /**
+   * Utility method for floating point comparison
+   * @param a - First value
+   * @param b - Second value
+   * @param tolerance - Comparison tolerance
+   * @returns True if values are approximately equal
+   */
+  private almostEqual(a: number, b: number, tolerance: number): boolean {
+    return Math.abs(a - b) < tolerance;
+  }
+
+  /**
+   * Utility method for comparing two points
+   * @param a - First point
+   * @param b - Second point
+   * @param tolerance - Comparison tolerance
+   * @returns True if points are approximately equal
+   */
+  private almostEqualPoints(a: Point, b: Point, tolerance: number): boolean {
+    return this.almostEqual(a.x, b.x, tolerance) && this.almostEqual(a.y, b.y, tolerance);
+  }
+
+  // Placeholder for polygonifyPath - will be implemented in Step 9
+  private polygonifyPath(_element: SVGElement): Point[] | null {
+    // This will be implemented in Step 9: Shape Conversion Methods
+    return null;
   }
 
   // Remaining methods will be converted in subsequent steps...

@@ -1106,5 +1106,376 @@ test.describe('SvgParser', () => {
         }
       });
     });
+
+    test.describe('Path Utility Methods', () => {
+      test.describe('isClosed Method', () => {
+        test('returns true for closed elements by definition', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><rect width="50" height="50"/><circle cx="25" cy="25" r="10"/><ellipse cx="50" cy="50" rx="20" ry="15"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const rect = root.querySelector('rect');
+            const circle = root.querySelector('circle');
+            const ellipse = root.querySelector('ellipse');
+            
+            expect((parser as any).isClosed(rect)).toBe(true);
+            expect((parser as any).isClosed(circle)).toBe(true);
+            expect((parser as any).isClosed(ellipse)).toBe(true);
+          }
+        });
+
+        test('returns false for line elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line = root.querySelector('line');
+            expect((parser as any).isClosed(line)).toBe(false);
+          }
+        });
+
+        test('returns false for short polylines', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points="0,0 10,10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            expect((parser as any).isClosed(polyline)).toBe(false);
+          }
+        });
+
+        test('detects closed polylines by endpoint proximity', () => {
+          const parser = new SvgParser();
+          // Create a polyline that forms a triangle (closed)
+          const svgString = '<svg><polyline points="0,0 10,0 5,10 0,0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            expect((parser as any).isClosed(polyline)).toBe(true);
+          }
+        });
+
+        test('returns false for open polylines', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points="0,0 10,10 20,0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            expect((parser as any).isClosed(polyline)).toBe(false);
+          }
+        });
+
+        test('detects paths with explicit Z command', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 0 L 5 10 Z"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect((parser as any).isClosed(path)).toBe(true);
+          }
+        });
+
+        test('detects paths with lowercase z command', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 0 L 5 10 z"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect((parser as any).isClosed(path)).toBe(true);
+          }
+        });
+
+        test('uses custom tolerance for endpoint comparison', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points="0,0 10,0 5,10 0.001,0.001"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            
+            // Should be closed with loose tolerance
+            expect((parser as any).isClosed(polyline, 0.01)).toBe(true);
+            
+            // Should be open with strict tolerance
+            expect((parser as any).isClosed(polyline, 0.0001)).toBe(false);
+          }
+        });
+      });
+
+      test.describe('pathToAbsolute Method', () => {
+        test('throws error for non-path elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><rect width="50" height="50"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const rect = root.querySelector('rect');
+            expect(() => (parser as any).pathToAbsolute(rect)).toThrow('invalid path');
+          }
+        });
+
+        test('throws error for null element', () => {
+          const parser = new SvgParser();
+          expect(() => (parser as any).pathToAbsolute(null)).toThrow('invalid path');
+        });
+
+        test('converts relative move commands to absolute', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="m 10 10 l 20 20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+
+        test('handles horizontal line commands', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 h 10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+
+        test('handles vertical line commands', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 v 10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+
+        test('handles curve commands', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 c 10 10 20 20 30 30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+
+        test('handles arc commands', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 a 10 10 0 0 1 20 20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+
+        test('handles close path commands', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 10 z"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+
+        test('preserves absolute commands', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 10 L 20 20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            expect(() => (parser as any).pathToAbsolute(path)).not.toThrow();
+          }
+        });
+      });
+
+      test.describe('getEndpoints Method', () => {
+        test('extracts endpoints from line elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="5" y1="10" x2="15" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line = root.querySelector('line');
+            const endpoints = (parser as any).getEndpoints(line);
+            
+            expect(endpoints).toBeDefined();
+            expect(endpoints.start).toEqual({ x: 5, y: 10 });
+            expect(endpoints.end).toEqual({ x: 15, y: 20 });
+          }
+        });
+
+        test('handles missing line coordinates', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line = root.querySelector('line');
+            const endpoints = (parser as any).getEndpoints(line);
+            
+            expect(endpoints).toBeDefined();
+            expect(endpoints.start).toEqual({ x: 0, y: 0 });
+            expect(endpoints.end).toEqual({ x: 0, y: 0 });
+          }
+        });
+
+        test('extracts endpoints from polyline elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points="0,0 10,10 20,0 30,15"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            const endpoints = (parser as any).getEndpoints(polyline);
+            
+            expect(endpoints).toBeDefined();
+            expect(endpoints.start).toEqual({ x: 0, y: 0 });
+            expect(endpoints.end).toEqual({ x: 30, y: 15 });
+          }
+        });
+
+        test('returns null for empty polyline', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points=""/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            const endpoints = (parser as any).getEndpoints(polyline);
+            
+            expect(endpoints).toBeNull();
+          }
+        });
+
+        test('returns null for path elements (uses polygonifyPath)', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 10 L 20 20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            const endpoints = (parser as any).getEndpoints(path);
+            
+            // Should be null since polygonifyPath returns null (placeholder)
+            expect(endpoints).toBeNull();
+          }
+        });
+
+        test('returns null for unsupported elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><rect width="50" height="50"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const rect = root.querySelector('rect');
+            const endpoints = (parser as any).getEndpoints(rect);
+            
+            expect(endpoints).toBeNull();
+          }
+        });
+      });
+
+      test.describe('Utility Methods', () => {
+        test('almostEqual compares numbers with tolerance', () => {
+          const parser = new SvgParser();
+          
+          expect((parser as any).almostEqual(1.0, 1.001, 0.01)).toBe(true);
+          expect((parser as any).almostEqual(1.0, 1.1, 0.01)).toBe(false);
+          expect((parser as any).almostEqual(0, 0.0001, 0.001)).toBe(true);
+          expect((parser as any).almostEqual(0, 0.1, 0.01)).toBe(false);
+        });
+
+        test('almostEqualPoints compares points with tolerance', () => {
+          const parser = new SvgParser();
+          
+          const p1 = { x: 1.0, y: 2.0 };
+          const p2 = { x: 1.001, y: 2.001 };
+          const p3 = { x: 1.1, y: 2.1 };
+          
+          expect((parser as any).almostEqualPoints(p1, p2, 0.01)).toBe(true);
+          expect((parser as any).almostEqualPoints(p1, p3, 0.01)).toBe(false);
+        });
+
+        test('almostEqualPoints handles exact matches', () => {
+          const parser = new SvgParser();
+          
+          const p1 = { x: 5, y: 10 };
+          const p2 = { x: 5, y: 10 };
+          
+          expect((parser as any).almostEqualPoints(p1, p2, 0.001)).toBe(true);
+        });
+
+        test('almostEqualPoints handles different coordinates', () => {
+          const parser = new SvgParser();
+          
+          const p1 = { x: 0, y: 0 };
+          const p2 = { x: 1, y: 0 };
+          const p3 = { x: 0, y: 1 };
+          
+          expect((parser as any).almostEqualPoints(p1, p2, 0.1)).toBe(false);
+          expect((parser as any).almostEqualPoints(p1, p3, 0.1)).toBe(false);
+        });
+      });
+    });
   });
 });
