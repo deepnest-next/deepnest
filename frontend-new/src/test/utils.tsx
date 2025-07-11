@@ -1,7 +1,7 @@
 import { render, RenderResult } from '@solidjs/testing-library';
 import { Component, createSignal, JSX } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import type { GlobalState, UIState, AppState, ProcessState } from '@/types/store.types';
+import { vi } from 'vitest';
 
 // Mock translation hook
 export const mockTranslation = (namespace: string = 'common') => {
@@ -14,8 +14,8 @@ export const mockTranslation = (namespace: string = 'common') => {
   return [t];
 };
 
-// Mock global state for testing
-export const createMockGlobalState = (): GlobalState => ({
+// Mock global state for testing  
+export const createMockGlobalState = () => ({
   ui: {
     activeTab: 'parts',
     darkMode: false,
@@ -28,7 +28,7 @@ export const createMockGlobalState = (): GlobalState => ({
       partsWidth: 300,
       resultsHeight: 200,
     },
-  } as UIState,
+  },
   config: {
     units: 'mm',
     scale: 1,
@@ -59,7 +59,7 @@ export const createMockGlobalState = (): GlobalState => ({
     nests: [],
     presets: {},
     importedFiles: [],
-  } as AppState,
+  },
   process: {
     isNesting: false,
     progress: 0,
@@ -70,7 +70,7 @@ export const createMockGlobalState = (): GlobalState => ({
       threadsActive: 0,
     },
     lastError: null,
-  } as ProcessState,
+  },
 });
 
 // Mock global actions
@@ -121,7 +121,7 @@ export const createMockIPCService = () => ({
 // Test wrapper component with providers
 interface TestWrapperProps {
   children: JSX.Element;
-  initialState?: Partial<GlobalState>;
+  initialState?: any;
 }
 
 export const TestWrapper: Component<TestWrapperProps> = (props) => {
@@ -138,7 +138,7 @@ export const TestWrapper: Component<TestWrapperProps> = (props) => {
 export const renderWithProviders = (
   component: () => JSX.Element,
   options: {
-    initialState?: Partial<GlobalState>;
+    initialState?: any;
     wrapperProps?: any;
   } = {}
 ): RenderResult => {
