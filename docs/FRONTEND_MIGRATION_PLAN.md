@@ -126,16 +126,16 @@ interface GlobalState {
 ### Phase 2: Core Components with i18n (Week 3-5)
 
 #### 2.1 Layout Components
-- [ ] **Header**: App title, language selector, dark mode toggle
-- [ ] **Navigation**: Tab navigation with active state
-- [ ] **Resizable Panels**: Left sidebar (parts) and main content area
-- [ ] **StatusBar**: Progress indicator and connection status
+- [x] **Header**: App title, language selector, dark mode toggle
+- [x] **Navigation**: Tab navigation with active state
+- [x] **Resizable Panels**: Left sidebar (parts) and main content area
+- [x] **StatusBar**: Progress indicator and connection status
 
 #### 2.2 Parts Management
-- [ ] **Parts Panel**: List view with selection, search, and filters
-- [ ] **Import Dialog**: File browser with drag-and-drop support
-- [ ] **Part Preview**: SVG rendering with zoom/pan capabilities
-- [ ] **Part Details**: Properties, quantity, rotation settings
+- [x] **Parts Panel**: List view with selection, search, and filters
+- [x] **Import Dialog**: File browser with drag-and-drop support
+- [x] **Part Preview**: SVG rendering with zoom/pan capabilities
+- [x] **Part Details**: Properties, quantity, rotation settings
 
 #### 2.3 Nesting Results
 - [ ] **Progress Display**: Real-time progress with translated status
