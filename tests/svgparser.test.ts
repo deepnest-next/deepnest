@@ -2664,4 +2664,245 @@ test.describe('SvgParser', () => {
       });
     });
   });
+
+  test.describe('Shape Conversion Methods (Step 9)', () => {
+    test.describe('convertToPolygon Method', () => {
+      test('converts polygon elements to point arrays', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polygon points="0,0 10,0 10,10 0,10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const polygonElement = root.querySelector('polygon') as SVGElement;
+          expect(polygonElement).toBeDefined();
+          
+          if (polygonElement) {
+            const result = parser.convertToPolygon(polygonElement);
+            
+            expect(result).toBeDefined();
+            expect(Array.isArray(result)).toBe(true);
+            
+            if (result) {
+              expect(result.length).toBe(4);
+              expect(result[0].x).toBe(0);
+              expect(result[0].y).toBe(0);
+              expect(result[1].x).toBe(10);
+              expect(result[1].y).toBe(0);
+              expect(result[2].x).toBe(10);
+              expect(result[2].y).toBe(10);
+              expect(result[3].x).toBe(0);
+              expect(result[3].y).toBe(10);
+            }
+          }
+        }
+      });
+
+      test('converts rectangle elements to point arrays', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="5" y="10" width="20" height="15"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const rectElement = root.querySelector('rect') as SVGElement;
+          
+          if (rectElement) {
+            const result = parser.convertToPolygon(rectElement);
+            
+            expect(result).toBeDefined();
+            if (result) {
+              expect(result.length).toBe(4);
+              
+              // Verify rectangle corners
+              expect(result[0].x).toBe(5);
+              expect(result[0].y).toBe(10);
+              expect(result[1].x).toBe(25);
+              expect(result[1].y).toBe(10);
+              expect(result[2].x).toBe(25);
+              expect(result[2].y).toBe(25);
+              expect(result[3].x).toBe(5);
+              expect(result[3].y).toBe(25);
+            }
+          }
+        }
+      });
+
+      test('converts circle elements to polygonal approximations', () => {
+        const parser = new SvgParser();
+        parser.config({ tolerance: 1 }); // Lower tolerance for more segments
+        
+        const svgString = '<svg><circle cx="10" cy="10" r="5"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const circleElement = root.querySelector('circle') as SVGElement;
+          
+          if (circleElement) {
+            const result = parser.convertToPolygon(circleElement);
+            
+            expect(result).toBeDefined();
+            if (result) {
+              // Should have at least 12 points
+              expect(result.length).toBeGreaterThanOrEqual(12);
+              
+              // All points should be approximately 5 units from center
+              for (const point of result) {
+                const distance = Math.sqrt((point.x - 10) ** 2 + (point.y - 10) ** 2);
+                expect(distance).toBeCloseTo(5, 1);
+              }
+            }
+          }
+        }
+      });
+
+      test('handles invalid circle dimensions', () => {
+        const parser = new SvgParser();
+        
+        // Circle with zero radius
+        const svgString1 = '<svg><circle cx="10" cy="10" r="0"/></svg>';
+        parser.load(null, svgString1, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const circleElement = root.querySelector('circle') as SVGElement;
+          if (circleElement) {
+            const result = parser.convertToPolygon(circleElement);
+            expect(result).toBeNull();
+          }
+        }
+      });
+
+      test('returns null for unsupported element types', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><text>Hello World</text></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const textElement = root.querySelector('text') as SVGElement;
+          
+          if (textElement) {
+            const result = parser.convertToPolygon(textElement);
+            expect(result).toBeNull();
+          }
+        }
+      });
+    });
+
+    test.describe('convertPathToPolygon Method', () => {
+      test('converts simple linear path to points', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 0 L 10 10 L 0 10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          
+          if (pathElement) {
+            const result = parser.convertPathToPolygon(pathElement);
+            
+            expect(result).toBeDefined();
+            if (result) {
+              expect(result.length).toBe(4);
+              expect(result[0].x).toBe(0);
+              expect(result[0].y).toBe(0);
+              expect(result[1].x).toBe(10);
+              expect(result[1].y).toBe(0);
+              expect(result[2].x).toBe(10);
+              expect(result[2].y).toBe(10);
+              expect(result[3].x).toBe(0);
+              expect(result[3].y).toBe(10);
+            }
+          }
+        }
+      });
+
+      test('handles horizontal and vertical line commands', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 H 10 V 10 H 0 Z"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          
+          if (pathElement) {
+            const result = parser.convertPathToPolygon(pathElement);
+            
+            expect(result).toBeDefined();
+            if (result) {
+              expect(result.length).toBe(4);
+              expect(result[1].x).toBe(10);
+              expect(result[1].y).toBe(0);
+              expect(result[2].x).toBe(10);
+              expect(result[2].y).toBe(10);
+              expect(result[3].x).toBe(0);
+              expect(result[3].y).toBe(10);
+            }
+          }
+        }
+      });
+
+      test('returns null for empty paths', () => {
+        const parser = new SvgParser();
+        
+        // Empty path
+        const svgString1 = '<svg><path d=""/></svg>';
+        parser.load(null, svgString1, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          if (pathElement) {
+            const result = parser.convertPathToPolygon(pathElement);
+            expect(result).toBeNull();
+          }
+        }
+      });
+    });
+
+    test.describe('Integration Tests', () => {
+      test('polygon conversion works with all supported element types', () => {
+        const parser = new SvgParser();
+        const svgString = `
+          <svg>
+            <rect x="0" y="0" width="10" height="10"/>
+            <circle cx="20" cy="5" r="3"/>
+            <polygon points="30,0 35,5 30,10 25,5"/>
+            <path d="M 40 0 L 50 0 L 50 10 L 40 10 Z"/>
+          </svg>
+        `;
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const elements = ['rect', 'circle', 'polygon', 'path'];
+          
+          for (const tagName of elements) {
+            const element = root.querySelector(tagName) as SVGElement;
+            expect(element).toBeDefined();
+            
+            if (element) {
+              const result = parser.convertToPolygon(element);
+              expect(result).toBeDefined();
+              expect(Array.isArray(result)).toBe(true);
+              if (result) {
+                expect(result.length).toBeGreaterThan(0);
+              }
+            }
+          }
+        }
+      });
+    });
+  });
 });

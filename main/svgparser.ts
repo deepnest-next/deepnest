@@ -8,6 +8,10 @@
 import { Matrix } from './util/matrix.js';
 import { Point } from './util/point.js';
 
+// Import GeometryUtil as a global
+import './util/geometryutil.js';
+declare const GeometryUtil: any;
+
 // Type definitions
 interface SvgParserConfig {
   /** Maximum bound for bezier->line segment conversion, in native SVG units */
@@ -1769,10 +1773,288 @@ export class SvgParser {
     }
   }
 
-  // Placeholder for polygonifyPath - will be implemented in Step 9
-  private polygonifyPath(_element: SVGElement): Point[] | null {
-    // This will be implemented in Step 9: Shape Conversion Methods
-    return null;
+  /**
+   * Converts an SVG element to a polygon represented as an array of points
+   * @param element - The SVG element to convert (polygon, polyline, rect, circle, ellipse, path)
+   * @returns Array of points representing the polygon, or null if conversion fails
+   */
+  private polygonify(element: SVGElement): Point[] | null {
+    const poly: Point[] = [];
+
+    switch (element.tagName) {
+      case 'polygon':
+      case 'polyline': {
+        const points = (element as any).points;
+        if (!points) return null;
+        
+        for (let i = 0; i < points.length; i++) {
+          poly.push(new Point(points[i].x, points[i].y));
+        }
+        break;
+      }
+      
+      case 'rect': {
+        const x = parseFloat(element.getAttribute('x') || '0');
+        const y = parseFloat(element.getAttribute('y') || '0');
+        const width = parseFloat(element.getAttribute('width') || '0');
+        const height = parseFloat(element.getAttribute('height') || '0');
+
+        poly.push(new Point(x, y));
+        poly.push(new Point(x + width, y));
+        poly.push(new Point(x + width, y + height));
+        poly.push(new Point(x, y + height));
+        break;
+      }
+      
+      case 'circle': {
+        const radius = parseFloat(element.getAttribute('r') || '0');
+        const cx = parseFloat(element.getAttribute('cx') || '0');
+        const cy = parseFloat(element.getAttribute('cy') || '0');
+
+        if (radius <= 0) return null;
+
+        // Calculate minimum number of segments to approximate circle to given tolerance
+        let num = Math.ceil((2 * Math.PI) / Math.acos(1 - (this.conf.tolerance / radius)));
+        if (num < 12) {
+          num = 12;
+        }
+
+        // Create polygon points for full circle
+        for (let i = 0; i <= num; i++) {
+          const theta = i * ((2 * Math.PI) / num);
+          const x = radius * Math.cos(theta) + cx;
+          const y = radius * Math.sin(theta) + cy;
+          poly.push(new Point(x, y));
+        }
+        break;
+      }
+      
+      case 'ellipse': {
+        const rx = parseFloat(element.getAttribute('rx') || '0');
+        const ry = parseFloat(element.getAttribute('ry') || '0');
+        const cx = parseFloat(element.getAttribute('cx') || '0');
+        const cy = parseFloat(element.getAttribute('cy') || '0');
+
+        if (rx <= 0 || ry <= 0) return null;
+
+        const maxRadius = Math.max(rx, ry);
+        let num = Math.ceil((2 * Math.PI) / Math.acos(1 - (this.conf.tolerance / maxRadius)));
+        if (num < 12) {
+          num = 12;
+        }
+
+        // Create polygon points for full ellipse
+        for (let i = 0; i <= num; i++) {
+          const theta = i * ((2 * Math.PI) / num);
+          const x = rx * Math.cos(theta) + cx;
+          const y = ry * Math.sin(theta) + cy;
+          poly.push(new Point(x, y));
+        }
+        break;
+      }
+      
+      case 'path': {
+        const pathPoly = this.polygonifyPath(element);
+        if (pathPoly) {
+          poly.push(...pathPoly);
+        }
+        break;
+      }
+      
+      default:
+        return null;
+    }
+
+    // Remove duplicate end point if it coincides with starting point
+    while (poly.length > 0 && 
+           this.almostEqual(poly[0].x, poly[poly.length - 1].x, this.conf.toleranceSvg) && 
+           this.almostEqual(poly[0].y, poly[poly.length - 1].y, this.conf.toleranceSvg)) {
+      poly.pop();
+    }
+
+    return poly.length > 0 ? poly : null;
+  }
+
+  /**
+   * Converts a path element to a polygon by linearizing curves
+   * Assumes splitPath has been run and path has only one M/m command
+   * @param path - The path element to convert
+   * @returns Array of points representing the linearized path, or null if conversion fails
+   */
+  private polygonifyPath(path: SVGElement): Point[] | null {
+    const seglist = (path as any).pathSegList;
+    if (!seglist || seglist.numberOfItems === 0) {
+      return null;
+    }
+
+    const poly: Point[] = [];
+    
+    let x = 0, y = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    let prevx = 0, prevy = 0, prevx1 = 0, prevy1 = 0, prevx2 = 0, prevy2 = 0;
+
+    for (let i = 0; i < seglist.numberOfItems; i++) {
+      const s = seglist.getItem(i);
+      const command = s.pathSegTypeAsLetter;
+
+      prevx = x;
+      prevy = y;
+      prevx1 = x1;
+      prevy1 = y1;
+      prevx2 = x2;
+      prevy2 = y2;
+
+      // Handle absolute vs relative coordinates
+      if (/[MLHVCSQTA]/.test(command)) {
+        // Absolute coordinates
+        if ('x1' in s) x1 = s.x1;
+        if ('x2' in s) x2 = s.x2;
+        if ('y1' in s) y1 = s.y1;
+        if ('y2' in s) y2 = s.y2;
+        if ('x' in s) x = s.x;
+        if ('y' in s) y = s.y;
+      } else {
+        // Relative coordinates
+        if ('x1' in s) x1 = x + s.x1;
+        if ('x2' in s) x2 = x + s.x2;
+        if ('y1' in s) y1 = y + s.y1;
+        if ('y2' in s) y2 = y + s.y2;
+        if ('x' in s) x += s.x;
+        if ('y' in s) y += s.y;
+      }
+
+      switch (command) {
+        // Linear commands
+        case 'm':
+        case 'M':
+        case 'l':
+        case 'L':
+        case 'h':
+        case 'H':
+        case 'v':
+        case 'V':
+          poly.push(new Point(x, y));
+          break;
+
+        // Smooth quadratic curves
+        case 't':
+        case 'T': {
+          // Calculate implicit control point
+          if (i > 0 && /[QqTt]/.test(seglist.getItem(i - 1).pathSegTypeAsLetter)) {
+            x1 = prevx + (prevx - prevx1);
+            y1 = prevy + (prevy - prevy1);
+          } else {
+            x1 = prevx;
+            y1 = prevy;
+          }
+          
+          const pointlist = GeometryUtil.QuadraticBezier.linearize(
+            { x: prevx, y: prevy }, 
+            { x: x, y: y }, 
+            { x: x1, y: y1 }, 
+            this.conf.tolerance
+          );
+          pointlist.shift(); // Remove first point (already in polygon)
+          
+          for (const point of pointlist) {
+            poly.push(new Point(point.x, point.y));
+          }
+          break;
+        }
+
+        case 'q':
+        case 'Q': {
+          const pointlist = GeometryUtil.QuadraticBezier.linearize(
+            { x: prevx, y: prevy }, 
+            { x: x, y: y }, 
+            { x: x1, y: y1 }, 
+            this.conf.tolerance
+          );
+          pointlist.shift(); // Remove first point (already in polygon)
+          
+          for (const point of pointlist) {
+            poly.push(new Point(point.x, point.y));
+          }
+          break;
+        }
+
+        // Smooth cubic curves
+        case 's':
+        case 'S': {
+          // Calculate implicit control point
+          if (i > 0 && /[CcSs]/.test(seglist.getItem(i - 1).pathSegTypeAsLetter)) {
+            x1 = prevx + (prevx - prevx2);
+            y1 = prevy + (prevy - prevy2);
+          } else {
+            x1 = prevx;
+            y1 = prevy;
+          }
+          
+          const pointlist = GeometryUtil.CubicBezier.linearize(
+            { x: prevx, y: prevy }, 
+            { x: x, y: y }, 
+            { x: x1, y: y1 }, 
+            { x: x2, y: y2 }, 
+            this.conf.tolerance
+          );
+          pointlist.shift(); // Remove first point (already in polygon)
+          
+          for (const point of pointlist) {
+            poly.push(new Point(point.x, point.y));
+          }
+          break;
+        }
+
+        case 'c':
+        case 'C': {
+          const pointlist = GeometryUtil.CubicBezier.linearize(
+            { x: prevx, y: prevy }, 
+            { x: x, y: y }, 
+            { x: x1, y: y1 }, 
+            { x: x2, y: y2 }, 
+            this.conf.tolerance
+          );
+          pointlist.shift(); // Remove first point (already in polygon)
+          
+          for (const point of pointlist) {
+            poly.push(new Point(point.x, point.y));
+          }
+          break;
+        }
+
+        // Arc commands
+        case 'a':
+        case 'A': {
+          const pointlist = GeometryUtil.Arc.linearize(
+            { x: prevx, y: prevy }, 
+            { x: x, y: y }, 
+            s.r1, s.r2, s.angle, 
+            s.largeArcFlag, s.sweepFlag, 
+            this.conf.tolerance
+          );
+          pointlist.shift(); // Remove first point (already in polygon)
+          
+          for (const point of pointlist) {
+            poly.push(new Point(point.x, point.y));
+          }
+          break;
+        }
+
+        // Close path
+        case 'z':
+        case 'Z':
+          x = x0;
+          y = y0;
+          break;
+      }
+
+      // Record the start of a subpath
+      if (command === 'M' || command === 'm') {
+        x0 = x;
+        y0 = y;
+      }
+    }
+
+    return poly.length > 0 ? poly : null;
   }
 
   /**
@@ -1802,5 +2084,21 @@ export class SvgParser {
     this.mergeOverlap(root, actualTolerance);
   }
 
-  // Remaining methods will be converted in subsequent steps...
+  /**
+   * Public API method to convert SVG element to polygon
+   * @param element - The SVG element to convert
+   * @returns Array of points representing the polygon, or null if conversion fails
+   */
+  public convertToPolygon(element: SVGElement): Point[] | null {
+    return this.polygonify(element);
+  }
+
+  /**
+   * Public API method to convert path element to polygon
+   * @param path - The path element to convert
+   * @returns Array of points representing the polygon, or null if conversion fails
+   */
+  public convertPathToPolygon(path: SVGElement): Point[] | null {
+    return this.polygonifyPath(path);
+  }
 }

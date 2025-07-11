@@ -69,11 +69,11 @@ This document outlines the systematic migration of `main/svgparser.js` to TypeSc
 - [x] **Document**: Path merging algorithms and tolerance handling
 
 #### Step 8: Path Segmentation
-- [ ] Convert `splitLines()` method
-- [ ] Convert `splitPathSegments()` method
-- [ ] Convert `mergeOverlap()` method (complex - overlap detection)
-- [ ] **Test**: Path segmentation and overlap handling
-- [ ] **Document**: Line segmentation and overlap resolution
+- [x] Convert `splitLines()` method
+- [x] Convert `splitPathSegments()` method
+- [x] Convert `mergeOverlap()` method (complex - overlap detection)
+- [x] **Test**: Path segmentation and overlap handling
+- [x] **Document**: Line segmentation and overlap resolution
 
 #### Step 9: Shape Conversion Methods
 - [ ] Convert `polygonify()` method (handles multiple SVG element types)
@@ -166,7 +166,7 @@ Special attention to:
 - [x] Step 5: Path Utility Methods (✅ Complete - Commit: fb17ea4)
 - [x] Step 6: Path Manipulation Methods (✅ Complete - Commit: 78cfc40)
 - [x] Step 7: Path Merging Logic (✅ Complete - Commit: 9ee6781)
-- [ ] Step 8: Path Segmentation
+- [x] Step 8: Path Segmentation (✅ Complete - Commit: 4a5e192)
 - [ ] Step 9: Shape Conversion Methods
 
 ## Success Criteria
