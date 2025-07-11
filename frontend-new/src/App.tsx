@@ -1,17 +1,19 @@
-import { Component, createEffect, onMount } from 'solid-js';
-import { I18nProvider } from './utils/i18n';
-import { globalState, globalActions } from './stores/global.store';
-import { ipcService } from './services/ipc.service';
-import Layout from './components/layout/Layout';
+import { Component, createEffect, onMount } from "solid-js";
+import { globalState, globalActions } from "./stores/global.store";
+import { ipcService } from "./services/ipc.service";
+import Layout from "./components/layout/Layout";
 
 const App: Component = () => {
   // Reactive effect to apply dark mode changes
   createEffect(() => {
     const isDark = globalState.ui.darkMode;
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', isDark);
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", isDark);
       // Also set a data attribute for additional styling if needed
-      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      document.documentElement.setAttribute(
+        "data-theme",
+        isDark ? "dark" : "light",
+      );
     }
   });
 
@@ -25,7 +27,7 @@ const App: Component = () => {
         const config = await ipcService.readConfig();
         globalActions.updateConfig(config);
       } catch (error) {
-        console.warn('Failed to load initial config:', error);
+        console.warn("Failed to load initial config:", error);
       }
     }
   });
@@ -62,11 +64,11 @@ const App: Component = () => {
   };
 
   return (
-    <I18nProvider>
-      <div class={`app min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200`}>
-        <Layout />
-      </div>
-    </I18nProvider>
+    <div
+      class={`app min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200`}
+    >
+      <Layout />
+    </div>
   );
 };
 

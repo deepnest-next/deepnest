@@ -3,6 +3,8 @@ import { render } from 'solid-js/web';
 import './styles/globals.css';
 import App from './App';
 
+import { I18nProvider } from './utils/i18n';
+
 const root = document.getElementById('root');
 
 if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
@@ -11,4 +13,4 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
   );
 }
 
-render(() => <App />, root!);
+render(() => <I18nProvider><App /></I18nProvider>, root!);
