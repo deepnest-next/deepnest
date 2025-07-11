@@ -8,6 +8,7 @@ import enCommon from '../locales/en/common.json';
 import enMessages from '../locales/en/messages.json';
 import enParts from '../locales/en/parts.json';
 import enNesting from '../locales/en/nesting.json';
+import enSheets from '../locales/en/sheets.json';
 
 export const i18nConfig = {
   fallbackLng: 'en',
@@ -25,7 +26,8 @@ export const i18nConfig = {
       common: enCommon,
       messages: enMessages,
       parts: enParts,
-      nesting: enNesting
+      nesting: enNesting,
+      sheets: enSheets
     }
   }
 };
