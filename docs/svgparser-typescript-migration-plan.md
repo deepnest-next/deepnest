@@ -54,11 +54,12 @@ This document outlines the systematic migration of `main/svgparser.js` to TypeSc
 - [x] **Document**: Path coordinate systems and closure detection
 
 #### Step 6: Path Manipulation Methods
-- [ ] Convert `splitPath()` method
-- [ ] Convert `recurse()` method
-- [ ] Convert `reverseOpenPath()` method
-- [ ] **Test**: Path splitting and reversal operations
-- [ ] **Document**: Path manipulation algorithms
+- [x] Convert `splitPath()` method (already implemented in Step 4)
+- [x] Convert `recurse()` method (already implemented in Step 4)
+- [x] Convert `reverseOpenPath()` method
+- [x] Convert `mergeOpenPaths()` method
+- [x] **Test**: Path splitting and reversal operations
+- [x] **Document**: Path manipulation algorithms
 
 #### Step 7: Path Merging Logic
 - [ ] Convert `getCoincident()` method
@@ -163,7 +164,7 @@ Special attention to:
 - [x] Step 3: Transform Processing (✅ Complete - Commit: 4515701)
 - [x] Step 4: Preprocessing Methods (✅ Complete - Commit: 4f2bf84)
 - [x] Step 5: Path Utility Methods (✅ Complete - Commit: fb17ea4)
-- [ ] Step 6: Path Manipulation Methods
+- [x] Step 6: Path Manipulation Methods (✅ Complete - Commit: 78cfc40)
 - [ ] Step 7: Path Merging Logic
 - [ ] Step 8: Path Segmentation
 - [ ] Step 9: Shape Conversion Methods

@@ -273,6 +273,30 @@ export class SvgParser {
   }
 
   /**
+   * Finds coincident paths for testing
+   * @param path - The path to find coincident paths for
+   * @param list - List of paths to search
+   * @param tolerance - Distance tolerance for endpoint matching
+   * @returns Coincident path info or null if none found
+   */
+  findCoincidentPath(
+    path: SVGElement & { endpoints?: { start: Point; end: Point } },
+    list: Array<SVGElement & { endpoints?: { start: Point; end: Point } }>,
+    tolerance: number
+  ): { path: SVGElement; reverse1: boolean; reverse2: boolean } | null {
+    return this.getCoincident(path, list, tolerance);
+  }
+
+  /**
+   * Merges all open paths in the root element (for testing)
+   * @param root - The SVG root element containing paths
+   * @param tolerance - Distance tolerance for endpoint matching
+   */
+  mergeAllLines(root: SVGElement, tolerance: number): void {
+    this.mergeLines(root, tolerance);
+  }
+
+  /**
    * Prepares the SVG for CAD/CAM operations by applying all necessary preprocessing steps
    * @param dxfFlag - Special flag for DXF import handling
    * @returns The processed SVG root element
@@ -485,10 +509,153 @@ export class SvgParser {
     return addedPaths;
   }
 
-  // Placeholder methods that will be implemented in subsequent steps
-  private mergeLines(_root: SVGElement, _tolerance: number): void {
-    // This will be implemented in Step 7: Path Merging Logic
-    // Note: getEndpoints method is used by mergeLines when fully implemented
+  /**
+   * Finds a path from list that has one endpoint coincident with the given path
+   * @param path - The path to find coincident paths for
+   * @param list - List of paths to search
+   * @param tolerance - Distance tolerance for endpoint matching
+   * @returns Coincident path info or null if none found
+   */
+  private getCoincident(
+    path: SVGElement & { endpoints?: { start: Point; end: Point } },
+    list: Array<SVGElement & { endpoints?: { start: Point; end: Point } }>,
+    tolerance: number
+  ): { path: SVGElement; reverse1: boolean; reverse2: boolean } | null {
+    const index = list.indexOf(path);
+
+    if (index < 0 || index === list.length - 1) {
+      return null;
+    }
+
+    const coincident: Array<{ path: SVGElement; reverse1: boolean; reverse2: boolean }> = [];
+    
+    for (let i = index + 1; i < list.length; i++) {
+      const c = list[i];
+      
+      if (!path.endpoints || !c.endpoints) {
+        continue;
+      }
+
+      // Check all possible endpoint connections
+      if (this.almostEqualPoints(path.endpoints.start, c.endpoints.start, tolerance)) {
+        coincident.push({ path: c, reverse1: true, reverse2: false });
+      } else if (this.almostEqualPoints(path.endpoints.start, c.endpoints.end, tolerance)) {
+        coincident.push({ path: c, reverse1: true, reverse2: true });
+      } else if (this.almostEqualPoints(path.endpoints.end, c.endpoints.end, tolerance)) {
+        coincident.push({ path: c, reverse1: false, reverse2: true });
+      } else if (this.almostEqualPoints(path.endpoints.end, c.endpoints.start, tolerance)) {
+        coincident.push({ path: c, reverse1: false, reverse2: false });
+      }
+    }
+
+    // There is an edge case where the start point of 3 segments coincide
+    // For now, just return the first coincident path found
+    if (coincident.length > 0) {
+      return coincident[0];
+    }
+    
+    return null;
+  }
+
+  /**
+   * Merges all open paths that share endpoints into continuous paths
+   * @param root - The SVG root element containing paths
+   * @param tolerance - Distance tolerance for endpoint matching
+   */
+  private mergeLines(root: SVGElement, tolerance: number): void {
+    // Find all open paths
+    const openpaths: Array<SVGElement & { endpoints?: { start: Point; end: Point } }> = [];
+    
+    for (let i = 0; i < root.children.length; i++) {
+      const p = root.children[i] as SVGElement;
+      
+      if (!this.isClosed(p, tolerance)) {
+        openpaths.push(p);
+      } else if (p.tagName === 'path') {
+        // Ensure closed paths have explicit Z command
+        const seglist = (p as any).pathSegList;
+        if (seglist && seglist.numberOfItems > 0) {
+          const lastCommand = seglist.getItem(seglist.numberOfItems - 1).pathSegTypeAsLetter;
+          if (lastCommand !== 'z' && lastCommand !== 'Z') {
+            // Endpoints are actually far apart, add close path command
+            seglist.appendItem((p as any).createSVGPathSegClosePath());
+          }
+        }
+      }
+    }
+
+    // Record endpoints for all open paths
+    for (const p of openpaths) {
+      const endpoints = this.getEndpoints(p);
+      if (endpoints) {
+        p.endpoints = endpoints;
+      }
+    }
+
+    // Merge paths that share endpoints
+    for (let i = 0; i < openpaths.length; i++) {
+      const p = openpaths[i];
+      let c = this.getCoincident(p, openpaths, tolerance);
+
+      while (c) {
+        // Reverse paths as needed to align endpoints
+        if (c.reverse1) {
+          this.reverseOpenPath(p);
+        }
+        if (c.reverse2) {
+          this.reverseOpenPath(c.path);
+        }
+
+        // Merge the paths
+        const merged = this.mergeOpenPaths(p, c.path);
+        
+        if (!merged) {
+          break;
+        }
+
+        // Remove the source path from the list
+        const pathIndex = openpaths.indexOf(c.path);
+        if (pathIndex >= 0) {
+          openpaths.splice(pathIndex, 1);
+          // Adjust index if necessary
+          if (pathIndex < i) {
+            i--;
+          }
+        }
+
+        // Add merged path to the DOM
+        root.appendChild(merged);
+
+        // Replace the current path with the merged one
+        openpaths[i] = merged;
+
+        // Check if the merged path is now closed
+        if (this.isClosed(merged, tolerance)) {
+          const seglist = (merged as any).pathSegList;
+          if (seglist && seglist.numberOfItems > 0) {
+            const lastCommand = seglist.getItem(seglist.numberOfItems - 1).pathSegTypeAsLetter;
+            if (lastCommand !== 'z' && lastCommand !== 'Z') {
+              // Add close path command
+              seglist.appendItem((merged as any).createSVGPathSegClosePath());
+            }
+          }
+
+          // Remove closed path from open paths list
+          openpaths.splice(i, 1);
+          i--;
+          break;
+        }
+
+        // Update endpoints for the merged path
+        const endpoints = this.getEndpoints(merged);
+        if (endpoints) {
+          (merged as any).endpoints = endpoints;
+        }
+
+        // Continue merging with the new path
+        c = this.getCoincident(merged, openpaths, tolerance);
+      }
+    }
   }
 
   /**

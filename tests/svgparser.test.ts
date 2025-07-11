@@ -1831,5 +1831,374 @@ test.describe('SvgParser', () => {
         });
       });
     });
+
+    test.describe('Path Merging Logic', () => {
+      test.describe('getCoincident Method', () => {
+        test('finds coincident paths with matching endpoints', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="10" y1="10" x2="20" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1') as SVGElement & { endpoints?: any };
+            const line2 = root.querySelector('#line2') as SVGElement & { endpoints?: any };
+            
+            if (line1 && line2) {
+              // Set endpoints manually for testing
+              line1.endpoints = parser.getElementEndpoints(line1);
+              line2.endpoints = parser.getElementEndpoints(line2);
+              
+              const list = [line1, line2];
+              const coincident = parser.findCoincidentPath(line1, list, 0.1);
+              
+              expect(coincident).toBeDefined();
+              expect(coincident?.path).toBe(line2);
+              expect(coincident?.reverse1).toBe(false);
+              expect(coincident?.reverse2).toBe(false);
+            }
+          }
+        });
+
+        test('detects when paths need reversal', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="20" y1="20" x2="10" y2="10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1') as SVGElement & { endpoints?: any };
+            const line2 = root.querySelector('#line2') as SVGElement & { endpoints?: any };
+            
+            if (line1 && line2) {
+              line1.endpoints = parser.getElementEndpoints(line1);
+              line2.endpoints = parser.getElementEndpoints(line2);
+              
+              const list = [line1, line2];
+              const coincident = parser.findCoincidentPath(line1, list, 0.1);
+              
+              expect(coincident).toBeDefined();
+              expect(coincident?.path).toBe(line2);
+              expect(coincident?.reverse1).toBe(false);
+              expect(coincident?.reverse2).toBe(true);
+            }
+          }
+        });
+
+        test('returns null when no coincident paths found', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="20" y1="20" x2="30" y2="30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1') as SVGElement & { endpoints?: any };
+            const line2 = root.querySelector('#line2') as SVGElement & { endpoints?: any };
+            
+            if (line1 && line2) {
+              line1.endpoints = parser.getElementEndpoints(line1);
+              line2.endpoints = parser.getElementEndpoints(line2);
+              
+              const list = [line1, line2];
+              const coincident = parser.findCoincidentPath(line1, list, 0.1);
+              
+              expect(coincident).toBeNull();
+            }
+          }
+        });
+
+        test('handles tolerance for near-coincident endpoints', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="10.05" y1="10.05" x2="20" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1') as SVGElement & { endpoints?: any };
+            const line2 = root.querySelector('#line2') as SVGElement & { endpoints?: any };
+            
+            if (line1 && line2) {
+              line1.endpoints = parser.getElementEndpoints(line1);
+              line2.endpoints = parser.getElementEndpoints(line2);
+              
+              const list = [line1, line2];
+              
+              // Should find with loose tolerance
+              const coincidentLoose = parser.findCoincidentPath(line1, list, 0.1);
+              expect(coincidentLoose).toBeDefined();
+              
+              // Should not find with strict tolerance
+              const coincidentStrict = parser.findCoincidentPath(line1, list, 0.01);
+              expect(coincidentStrict).toBeNull();
+            }
+          }
+        });
+
+        test('handles paths without endpoints property', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="10" y1="10" x2="20" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1') as SVGElement & { endpoints?: any };
+            const line2 = root.querySelector('#line2') as SVGElement & { endpoints?: any };
+            
+            if (line1 && line2) {
+              // Only set endpoints for line1
+              line1.endpoints = parser.getElementEndpoints(line1);
+              
+              const list = [line1, line2];
+              const coincident = parser.findCoincidentPath(line1, list, 0.1);
+              
+              expect(coincident).toBeNull();
+            }
+          }
+        });
+
+        test('checks all endpoint combinations', () => {
+          const parser = new SvgParser();
+          
+          // Test start-start connection
+          const svgString1 = '<svg><line id="line1" x1="10" y1="10" x2="0" y2="0"/><line id="line2" x1="10" y1="10" x2="20" y2="20"/></svg>';
+          parser.load(null, svgString1, 72);
+          let root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1') as SVGElement & { endpoints?: any };
+            const line2 = root.querySelector('#line2') as SVGElement & { endpoints?: any };
+            
+            if (line1 && line2) {
+              line1.endpoints = parser.getElementEndpoints(line1);
+              line2.endpoints = parser.getElementEndpoints(line2);
+              
+              const coincident = parser.findCoincidentPath(line1, [line1, line2], 0.1);
+              expect(coincident?.reverse1).toBe(true);
+              expect(coincident?.reverse2).toBe(false);
+            }
+          }
+        });
+      });
+
+      test.describe('mergeLines Method', () => {
+        test('merges simple connected lines', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10"/><line x1="10" y1="10" x2="20" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const initialChildCount = root.children.length;
+            parser.mergeAllLines(root, 0.1);
+            
+            // Should have one merged path instead of two lines
+            expect(root.children.length).toBeLessThan(initialChildCount);
+            
+            // Should have created a path element
+            const paths = root.querySelectorAll('path');
+            expect(paths.length).toBeGreaterThan(0);
+          }
+        });
+
+        test('reverses paths when needed to connect endpoints', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10"/><line x1="20" y1="20" x2="10" y2="10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            parser.mergeAllLines(root, 0.1);
+            
+            // Should have merged into one path
+            const paths = root.querySelectorAll('path');
+            expect(paths.length).toBe(1);
+          }
+        });
+
+        test('creates closed paths when endpoints meet', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="0" y1="0" x2="10" y2="0"/><line x1="10" y1="0" x2="10" y2="10"/><line x1="10" y1="10" x2="0" y2="10"/><line x1="0" y1="10" x2="0" y2="0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            parser.mergeAllLines(root, 0.1);
+            
+            // Should have merged into one closed path
+            const paths = root.querySelectorAll('path');
+            expect(paths.length).toBe(1);
+            
+            if (paths.length > 0) {
+              const pathData = paths[0].getAttribute('d');
+              expect(pathData).toBeDefined();
+              // Should have a Z command at the end
+              expect(pathData).toMatch(/[Zz]$/);
+            }
+          }
+        });
+
+        test('handles multiple disconnected path groups', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10"/><line x1="10" y1="10" x2="20" y2="20"/><line x1="30" y1="30" x2="40" y2="40"/><line x1="40" y1="40" x2="50" y2="50"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            parser.mergeAllLines(root, 0.1);
+            
+            // Should have two merged paths (two separate groups)
+            const paths = root.querySelectorAll('path');
+            expect(paths.length).toBe(2);
+          }
+        });
+
+        test('preserves already closed paths', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 0 L 10 10 L 0 10 Z"/><line x1="20" y1="20" x2="30" y2="30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const initialClosedPath = root.querySelector('path');
+            const initialPathData = initialClosedPath?.getAttribute('d');
+            
+            parser.mergeAllLines(root, 0.1);
+            
+            // Closed path should remain unchanged
+            const closedPath = root.querySelector('path[d*="Z"]');
+            expect(closedPath).toBeDefined();
+            expect(closedPath?.getAttribute('d')).toBe(initialPathData);
+          }
+        });
+
+        test('handles tolerance for near-connections', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10"/><line x1="10.05" y1="10.05" x2="20" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const rootClone = root.cloneNode(true) as SVGElement;
+            
+            // Merge with loose tolerance
+            parser.mergeAllLines(root, 0.1);
+            const pathsLoose = root.querySelectorAll('path');
+            expect(pathsLoose.length).toBe(1);
+            
+            // Merge with strict tolerance (using clone)
+            parser.mergeAllLines(rootClone, 0.01);
+            const pathsStrict = rootClone.querySelectorAll('path');
+            expect(pathsStrict.length).toBe(0); // No merge should happen
+          }
+        });
+
+        test('adds close path command to paths missing it', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 0 L 10 10 L 0 10 L 0 0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            parser.mergeAllLines(root, 0.1);
+            
+            const path = root.querySelector('path');
+            const pathData = path?.getAttribute('d');
+            
+            // Should have added Z command
+            expect(pathData).toMatch(/[Zz]$/);
+          }
+        });
+
+        test('handles complex merge scenarios', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points="0,0 10,10"/><path d="M 10 10 L 20 20"/><line x1="20" y1="20" x2="30" y2="30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            parser.mergeAllLines(root, 0.1);
+            
+            // All should merge into one path
+            const paths = root.querySelectorAll('path');
+            expect(paths.length).toBe(1);
+          }
+        });
+      });
+
+      test.describe('Integration Tests', () => {
+        test('complete path merging workflow', () => {
+          const parser = new SvgParser();
+          const svgString = `
+            <svg>
+              <line x1="0" y1="0" x2="10" y2="0"/>
+              <line x1="20" y1="10" x2="10" y2="10"/>
+              <line x1="10" y1="0" x2="10" y2="10"/>
+              <line x1="20" y1="10" x2="20" y2="0"/>
+              <line x1="20" y1="0" x2="10" y2="0"/>
+            </svg>
+          `;
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            parser.mergeAllLines(root, 0.1);
+            
+            // Should result in one or two closed paths
+            const paths = root.querySelectorAll('path');
+            expect(paths.length).toBeGreaterThan(0);
+            expect(paths.length).toBeLessThanOrEqual(2);
+            
+            // At least one should be closed
+            let hasClosedPath = false;
+            paths.forEach(path => {
+              const d = path.getAttribute('d');
+              if (d && /[Zz]/.test(d)) {
+                hasClosedPath = true;
+              }
+            });
+            expect(hasClosedPath).toBe(true);
+          }
+        });
+
+        test('handles real-world SVG preprocessing', () => {
+          const parser = new SvgParser();
+          const svgString = `
+            <svg>
+              <g transform="translate(10, 10)">
+                <line x1="0" y1="0" x2="10" y2="10"/>
+                <line x1="10" y1="10" x2="20" y2="20"/>
+              </g>
+            </svg>
+          `;
+          
+          parser.load(null, svgString, 72);
+          
+          // Run full preprocessing pipeline
+          const result = parser.cleanInput();
+          
+          if (result) {
+            // Group should be flattened and lines merged
+            expect(result.querySelector('g')).toBeNull();
+            
+            const paths = result.querySelectorAll('path');
+            expect(paths.length).toBeGreaterThan(0);
+          }
+        });
+      });
+    });
   });
 });
