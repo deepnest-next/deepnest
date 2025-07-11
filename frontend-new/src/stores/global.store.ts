@@ -114,10 +114,6 @@ export const globalActions = {
 
   setDarkMode: (enabled: boolean) => {
     setGlobalState('ui', 'darkMode', enabled);
-    // Apply dark mode class to document root for Tailwind
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', enabled);
-    }
     // Persist to localStorage
     if (typeof localStorage !== 'undefined') {
       try {

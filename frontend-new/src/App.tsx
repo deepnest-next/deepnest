@@ -5,8 +5,18 @@ import { ipcService } from './services/ipc.service';
 import Layout from './components/layout/Layout';
 
 const App: Component = () => {
+  // Reactive effect to apply dark mode changes
+  createEffect(() => {
+    const isDark = globalState.ui.darkMode;
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', isDark);
+      // Also set a data attribute for additional styling if needed
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    }
+  });
+
   onMount(async () => {
-    // Apply initial dark mode
+    // Apply initial dark mode immediately
     globalActions.setDarkMode(globalState.ui.darkMode);
 
     // Initialize IPC listeners
@@ -56,7 +66,7 @@ const App: Component = () => {
 
   return (
     <I18nProvider>
-      <div class="app">
+      <div class={`app min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200`}>
         <Layout />
       </div>
     </I18nProvider>
