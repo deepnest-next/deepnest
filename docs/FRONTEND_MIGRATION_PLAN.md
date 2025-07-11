@@ -179,6 +179,26 @@ interface GlobalState {
 - Added proper event abstractions (high-level UI events vs low-level worker events)
 - Integrated mock worker simulation for development mode testing
 
+### Phase 3.5: Legal & Information Pages (Additional Feature)
+
+#### 3.5.1 Imprint Page Implementation
+- [x] **ImprintPanel Component**: Comprehensive about page with DeepNest Next branding
+- [x] **Privacy Policy Modal**: Detailed privacy policy covering data collection and user rights
+- [x] **Legal Notice Modal**: Software licensing, disclaimers, and third-party attributions
+- [x] **Navigation Integration**: Added Imprint tab to bottom navigation with info icon
+- [x] **Version Management**: Centralized version utility for consistent version display
+- [x] **Internationalization**: Complete translation keys for all imprint content
+
+**Implementation Details:**
+- Professional about page with project information and feature highlights
+- Technical information section showing frontend/backend technologies
+- Contact information with GitHub links for issues and discussions
+- Comprehensive privacy policy explaining local data storage and no tracking
+- Legal notices with MIT License information and proper attributions
+- Modal system with backdrop click to close and accessibility support
+- Full dark mode compatibility and responsive design
+- Version utility integration for dynamic version display throughout app
+
 #### 3.3 Advanced Interactions
 - [ ] **Zoom/Pan**: Viewport controls for large visualizations
 - [ ] **Selection Tools**: Multi-select with keyboard shortcuts
@@ -206,6 +226,7 @@ interface GlobalState {
 - [x] **Sheets Components**: SheetsPanel, SheetConfig with form styling
 - [x] **Settings Components**: SettingsPanel with sidebar navigation
 - [x] **Files Components**: DragDropZone, ExportDialog, RecentFiles, FilesPanel
+- [x] **Imprint Components**: ImprintPanel, PrivacyModal, LegalNoticeModal with comprehensive legal information
 
 #### 4.3 Design System Standardization
 - [x] **Utility Classes**: Create reusable component styles using @layer components
@@ -354,7 +375,9 @@ frontend-new/
 │   │   │   ├── PartPreview.tsx
 │   │   │   └── ImportDialog.tsx
 │   │   ├── nesting/
+│   │   │   ├── NestingPanel.tsx
 │   │   │   ├── NestingProgress.tsx
+│   │   │   ├── LiveResultViewer.tsx
 │   │   │   ├── ResultsGrid.tsx
 │   │   │   ├── ResultViewer.tsx
 │   │   │   └── NestingStats.tsx
@@ -367,6 +390,10 @@ frontend-new/
 │   │   │   ├── PresetManager.tsx
 │   │   │   ├── AlgorithmSettings.tsx
 │   │   │   └── UIPreferences.tsx
+│   │   ├── imprint/
+│   │   │   ├── ImprintPanel.tsx
+│   │   │   ├── PrivacyModal.tsx
+│   │   │   └── LegalNoticeModal.tsx
 │   │   └── common/
 │   │       ├── Button.tsx
 │   │       ├── Input.tsx
@@ -379,12 +406,15 @@ frontend-new/
 │   │   └── ui.store.ts
 │   ├── services/
 │   │   ├── ipc.service.ts
+│   │   ├── nesting.service.ts
+│   │   ├── connection.service.ts
 │   │   ├── file.service.ts
 │   │   └── preset.service.ts
 │   ├── utils/
 │   │   ├── geometry.ts
 │   │   ├── validation.ts
-│   │   └── formatters.ts
+│   │   ├── formatters.ts
+│   │   └── version.ts
 │   ├── types/
 │   │   ├── app.types.ts
 │   │   ├── ipc.types.ts
@@ -395,6 +425,14 @@ frontend-new/
 │   │   └── useLocalStorage.ts
 │   ├── locales/
 │   │   ├── en/
+│   │   │   ├── common.json
+│   │   │   ├── parts.json
+│   │   │   ├── nesting.json
+│   │   │   ├── sheets.json
+│   │   │   ├── settings.json
+│   │   │   ├── files.json
+│   │   │   ├── messages.json
+│   │   │   └── imprint.json
 │   │   ├── de/
 │   │   ├── fr/
 │   │   └── es/
