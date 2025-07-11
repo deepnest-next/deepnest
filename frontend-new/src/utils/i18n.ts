@@ -1,4 +1,4 @@
-import { createSignal, createContext, useContext, onMount, createEffect, createMemo } from 'solid-js';
+import { createSignal, createContext, useContext, onMount, onCleanup } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import i18next from 'i18next';
 import { globalState } from '../stores/global.store';
@@ -58,126 +58,117 @@ interface TranslationOptions {
   [key: string]: unknown;
 }
 
+// Fallback translation function
+const fallbackT = (key: string) => key;
+
+// Context type
+interface I18nContextType {
+  t: () => typeof i18next.t;
+  changeLanguage: (lng: string) => Promise<void>;
+  getLanguage: () => string;
+  getInstance: () => typeof i18next;
+}
+
+// Create the translation signal - this is the core of solid-i18next pattern
+const [translate, setTranslate] = createSignal<typeof i18next.t>(fallbackT);
+const [currentLanguage, setCurrentLanguage] = createSignal('en');
+
 // Default context value
-const defaultContext = {
-  t: (key: string) => key,
+const defaultContext: I18nContextType = {
+  t: translate,
   changeLanguage: async (_lng: string) => {},
-  language: () => 'en',
-  ready: () => false
+  getLanguage: () => 'en',
+  getInstance: () => i18next
 };
 
-// Create i18n context with default value
-const I18nContext = createContext<{
-  t: (key: string, options?: TranslationOptions) => string;
-  changeLanguage: (lng: string) => Promise<void>;
-  language: () => string;
-  ready: () => boolean;
-}>(defaultContext);
+// Create i18n context
+const I18nContext = createContext<I18nContextType>(defaultContext);
 
+// Simple useTranslation hook following solid-i18next pattern
 export const useTranslation = (namespace = 'translation') => {
   const context = useContext(I18nContext);
-  console.log('useTranslation called with namespace:', namespace, 'context exists:', !!context);
   
-  // If context is null or undefined, return default functions
+  // If no context, return fallback
   if (!context) {
-    return [
-      (key: string) => key,
-      { 
-        changeLanguage: async (_lng: string) => {},
-        language: () => 'en'
-      }
-    ] as const;
+    return [fallbackT, { changeLanguage: async (_lng: string) => {}, language: () => 'en' }] as const;
   }
   
+  // Create a namespaced translation function
   const t = (key: string, options?: TranslationOptions) => {
-    // Make this function reactive to the ready state
-    const isReady = context.ready();
-    const tFn = context.t;
-    
-    if (!isReady) {
-      console.warn(`i18n not ready, returning key: ${key}`);
-      return key; // Return key if i18n not ready yet
-    }
-    
-    // Use i18next namespace option for proper key resolution
+    const tFn = context.t();
     const optionsWithNS = { ns: namespace, ...options };
-    console.log(`Translating key: ${key} with namespace: ${namespace}`);
-    const result = tFn(key, optionsWithNS);
-    console.log(`Translation result: ${key} -> ${result}`);
-    return result;
+    return tFn(key, optionsWithNS) || key;
   };
   
-  return [t, { changeLanguage: context.changeLanguage, language: context.language }] as const;
+  return [t, { 
+    changeLanguage: context.changeLanguage, 
+    language: context.getLanguage,
+    i18n: context.getInstance
+  }] as const;
 };
 
 export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
-  console.log('I18nProvider: component created');
-  const [language, setLanguage] = createSignal(globalState.ui.language || 'en');
-  const [ready, setReady] = createSignal(false);
+  console.log('I18nProvider: initializing');
   
-  // Create a signal for the translation function - this is the key!
-  const [translateFn, setTranslateFn] = createSignal<typeof i18next.t | null>(null);
-  
-  // Initialize i18next on mount with global state language
+  // Initialize i18next on mount
   onMount(async () => {
     try {
       const initialLang = globalState.ui.language || 'en';
+      
+      // Initialize i18next with resources
       await i18next.init({
         ...i18nConfig,
         lng: initialLang
       });
-      setLanguage(initialLang);
-      setTranslateFn(() => i18next.t); // Set the reactive translation function
-      setReady(true);
-      console.log('I18nProvider: i18next initialized and ready set to true');
+      
+      console.log('I18nProvider: i18next initialized');
+      
+      // Set initial translation function - this is the key pattern from solid-i18next
+      setTranslate(() => i18next.t);
+      setCurrentLanguage(initialLang);
+      
+      // Listen to i18next events for reactive updates - this is what we were missing!
+      const onLoaded = () => {
+        console.log('I18nProvider: resources loaded, updating translation function');
+        setTranslate(() => i18next.t);
+      };
+      
+      const onLanguageChanged = (lng: string) => {
+        console.log(`I18nProvider: language changed to ${lng}, updating translation function`);
+        setTranslate(() => i18next.t);
+        setCurrentLanguage(lng);
+      };
+      
+      // Event listeners - this is the solid-i18next pattern we were missing
+      i18next.on('loaded', onLoaded);
+      i18next.on('languageChanged', onLanguageChanged);
+      
+      // Cleanup listeners
+      onCleanup(() => {
+        i18next.off('loaded', onLoaded);
+        i18next.off('languageChanged', onLanguageChanged);
+      });
+      
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
-      setReady(true); // Set ready even on error to prevent blocking
+      // Keep fallback function on error
     }
   });
-
-  // Sync global state language changes with i18next
-  createEffect(async () => {
-    const globalLang = globalState.ui.language;
-    if (ready() && globalLang && globalLang !== language()) {
+  
+  // Simple context value - no complex memo needed
+  const contextValue: I18nContextType = {
+    t: translate,
+    changeLanguage: async (lng: string) => {
       try {
-        const newT = await i18next.changeLanguage(globalLang);
-        setLanguage(globalLang);
-        setTranslateFn(() => newT); // Update the reactive translation function!
+        await i18next.changeLanguage(lng);
+        // Language change will be handled by the event listener
       } catch (error) {
-        console.error('Failed to sync language with global state:', error);
+        console.error('Failed to change language:', error);
       }
-    }
-  });
-  
-  const t = (key: string, options?: TranslationOptions) => {
-    const tFn = translateFn();
-    if (!ready() || !tFn) {
-      return key; // Return key if i18n not ready yet
-    }
-    return tFn(key, options) || key;
+    },
+    getLanguage: currentLanguage,
+    getInstance: () => i18next
   };
   
-  const changeLanguage = async (lng: string) => {
-    try {
-      const newT = await i18next.changeLanguage(lng);
-      setLanguage(lng);
-      setTranslateFn(() => newT); // Update the reactive translation function!
-    } catch (error) {
-      console.error('Failed to change language:', error);
-    }
-  };
-  
-  // Create reactive context value
-  const value = createMemo(() => {
-    console.log('I18nProvider: creating context value, ready =', ready());
-    return {
-      t,
-      changeLanguage,
-      language,
-      ready
-    };
-  });
-  
-  return I18nContext.Provider({ value: value, children: props.children });
+  return I18nContext.Provider({ value: contextValue, children: props.children });
 };
