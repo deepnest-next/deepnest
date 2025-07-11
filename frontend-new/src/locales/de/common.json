@@ -1,8 +1,8 @@
 {
   "navigation": {
-    "page_title": "deepnest - Industrial nesting",
+    "page_title": "de deepnest - Industrial nesting",
     "parts": "Parts",
-    "nests": "Nests", 
+    "nests": "Nests",
     "sheets": "Sheets",
     "settings": "Settings"
   },
@@ -10,7 +10,7 @@
     "stop_nest": "Stop nest",
     "export": "Export",
     "export_svg": "SVG file",
-    "export_dxf": "DXF file", 
+    "export_dxf": "DXF file",
     "export_json": "JSON file",
     "back": "Back",
     "import": "Import",
