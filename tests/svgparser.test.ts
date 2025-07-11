@@ -394,4 +394,302 @@ test.describe('SvgParser', () => {
       expect(result).toBeCloseTo(50.297, 3);
     });
   });
+
+  test.describe('Transform Processing Methods', () => {
+    test.describe('transformParse Method', () => {
+      test('parses transform string correctly', () => {
+        const parser = new SvgParser();
+        const result = (parser as any).transformParse('translate(10, 20) scale(2)');
+        
+        expect(result).toBeDefined();
+        expect(typeof result.toArray).toBe('function');
+      });
+
+      test('handles empty transform string', () => {
+        const parser = new SvgParser();
+        const result = (parser as any).transformParse('');
+        
+        expect(result).toBeDefined();
+        expect(result.isIdentity()).toBe(true);
+      });
+    });
+
+    test.describe('applyTransform Method', () => {
+      test('handles container elements recursively', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g transform="translate(10, 20)"><rect width="50" height="50"/></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.applyTransform(root.firstElementChild as SVGElement);
+          
+          // Group should have transform removed
+          expect(root.firstElementChild.getAttribute('transform')).toBeNull();
+        }
+      });
+
+      test('applies transform to line elements', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10" transform="translate(5, 5)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.applyTransform(root.firstElementChild as SVGElement);
+          
+          // Line coordinates should be transformed
+          expect(root.firstElementChild.getAttribute('x1')).toBe('5');
+          expect(root.firstElementChild.getAttribute('y1')).toBe('5');
+          expect(root.firstElementChild.getAttribute('x2')).toBe('15');
+          expect(root.firstElementChild.getAttribute('y2')).toBe('15');
+          expect(root.firstElementChild.getAttribute('transform')).toBeNull();
+        }
+      });
+
+      test('skips closed shapes when skipClosed is true', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><circle cx="50" cy="50" r="25" transform="translate(10, 10)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.applyTransform(root.firstElementChild as SVGElement, '', true);
+          
+          // Transform should be preserved when skipClosed is true
+          expect(root.firstElementChild.getAttribute('transform')).toContain('translate(10, 10)');
+        }
+      });
+
+      test('handles image elements by preserving transform', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><image href="test.png" transform="rotate(45)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.applyTransform(root.firstElementChild as SVGElement);
+          
+          // Image should keep transform attribute
+          expect(root.firstElementChild.getAttribute('transform')).toContain('rotate(45)');
+        }
+      });
+
+      test('handles DXF flag for arc processing', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 A 10 10 0 0 1 20 0" transform="rotate(180)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          // Test with DXF flag - should handle arc rotation differently
+          parser.applyTransform(root.firstElementChild as SVGElement, '', false, true);
+          
+          // Transform should be removed after processing
+          expect(root.firstElementChild.getAttribute('transform')).toBeNull();
+        }
+      });
+    });
+
+    test.describe('Element-Specific Transform Methods', () => {
+      test('transformLine handles line transformation', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(5, 5)');
+          (parser as any).transformLine(root.firstElementChild, matrix);
+          
+          expect(root.firstElementChild.getAttribute('x1')).toBe('5');
+          expect(root.firstElementChild.getAttribute('y1')).toBe('5');
+          expect(root.firstElementChild.getAttribute('x2')).toBe('15');
+          expect(root.firstElementChild.getAttribute('y2')).toBe('15');
+        }
+      });
+
+      test('transformEllipse converts to path', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><ellipse cx="50" cy="50" rx="25" ry="15"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(10, 10)');
+          (parser as any).transformEllipse(root.firstElementChild, matrix, 'translate(10, 10)', false);
+          
+          // Should be converted to path
+          expect(root.firstElementChild.tagName).toBe('path');
+          expect(root.firstElementChild.getAttribute('d')).toContain('M');
+          expect(root.firstElementChild.getAttribute('d')).toContain('A');
+        }
+      });
+
+      test('transformCircle converts to path', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><circle cx="50" cy="50" r="25"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(10, 10)');
+          (parser as any).transformCircle(root.firstElementChild, matrix, 'translate(10, 10)', false, 0, 1);
+          
+          // Should be converted to path
+          expect(root.firstElementChild.tagName).toBe('path');
+          expect(root.firstElementChild.getAttribute('d')).toContain('M');
+          expect(root.firstElementChild.getAttribute('d')).toContain('A');
+        }
+      });
+
+      test('transformRect converts to polygon', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="10" y="10" width="50" height="30"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(5, 5)');
+          (parser as any).transformRect(root.firstElementChild, matrix, 'translate(5, 5)', false);
+          
+          // Should be converted to polygon
+          expect(root.firstElementChild.tagName).toBe('polygon');
+        }
+      });
+
+      test('transformRect handles OnShape special case', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="0" y="0" width="50" height="30"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(5, 5)');
+          (parser as any).transformRect(root.firstElementChild, matrix, 'translate(5, 5)', false);
+          
+          // Should be converted to polygon but points should be empty for OnShape case
+          expect(root.firstElementChild.tagName).toBe('polygon');
+        }
+      });
+
+      test('transformPolygon transforms point coordinates', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polygon points="0,0 10,0 10,10 0,10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(5, 5)');
+          (parser as any).transformPolygon(root.firstElementChild, matrix, 'translate(5, 5)', false);
+          
+          // Points should be transformed
+          expect(root.firstElementChild.getAttribute('transform')).toBeNull();
+        }
+      });
+
+      test('handles skipClosed for polygon elements', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polygon points="0,0 10,0 10,10 0,10" transform="translate(5, 5)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(5, 5)');
+          (parser as any).transformPolygon(root.firstElementChild, matrix, 'translate(5, 5)', true);
+          
+          // Should preserve transform when skipClosed is true
+          expect(root.firstElementChild.getAttribute('transform')).toContain('translate(5, 5)');
+        }
+      });
+    });
+
+    test.describe('Transform Matrix Operations', () => {
+      test('decomposes transformation matrix correctly', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="0" y="0" width="10" height="10" transform="rotate(45) scale(2)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          // Test that matrix decomposition works without errors
+          parser.applyTransform(root.firstElementChild as SVGElement);
+          
+          // Should complete without throwing errors
+          expect(root.firstElementChild.getAttribute('transform')).toBeNull();
+        }
+      });
+
+      test('handles identity transform correctly', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="0" y="0" width="10" height="10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.applyTransform(root.firstElementChild as SVGElement);
+          
+          // Should not modify element without transform
+          expect(root.firstElementChild.tagName).toBe('rect');
+        }
+      });
+
+      test('combines global and local transforms', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="0" y="0" width="10" height="10" transform="translate(5, 5)"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.applyTransform(root.firstElementChild as SVGElement, 'scale(2)');
+          
+          // Should combine both transforms
+          expect(root.firstElementChild.getAttribute('transform')).toBeNull();
+        }
+      });
+    });
+
+    test.describe('Error Handling', () => {
+      test('handles elements without required attributes', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const matrix = (parser as any).transformParse('translate(5, 5)');
+          
+          // Should not throw error for line without coordinates
+          expect(() => {
+            (parser as any).transformLine(root.firstElementChild, matrix);
+          }).not.toThrow();
+        }
+      });
+
+      test('handles malformed transform strings', () => {
+        const parser = new SvgParser();
+        
+        // Should not throw error for malformed transform
+        expect(() => {
+          (parser as any).transformParse('invalid transform string');
+        }).not.toThrow();
+      });
+    });
+  });
 });

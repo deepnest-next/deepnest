@@ -5,6 +5,8 @@
  */
 
 // Polyfill for DOMParser will be handled at runtime
+import { Matrix } from './util/matrix.js';
+import { Point } from './util/point.js';
 
 // Type definitions
 interface SvgParserConfig {
@@ -213,6 +215,394 @@ export class SvgParser {
    */
   get directoryPath(): string | null {
     return this.dirPath;
+  }
+
+  /**
+   * Parses an SVG transform string and returns the corresponding transformation matrix
+   * @param transformString - The SVG transform string to parse
+   * @returns The transformation matrix
+   */
+  private transformParse(transformString: string): Matrix {
+    return new Matrix().applyTransformString(transformString);
+  }
+
+  /**
+   * Recursively applies transform properties to SVG elements
+   * @param element - The SVG element to transform
+   * @param globalTransform - The accumulated parent transform string
+   * @param skipClosed - Whether to skip closed shapes (leave transform attribute)
+   * @param dxfFlag - Special flag for DXF import handling
+   */
+  applyTransform(element: SVGElement, globalTransform: string = '', skipClosed: boolean = false, dxfFlag: boolean = false): void {
+    // Combine global and local transforms
+    const elementTransform = element.getAttribute('transform') || '';
+    const transformString = (globalTransform + ' ' + elementTransform).trim();
+
+    // Parse the transform string
+    let transform: Matrix;
+    if (transformString.length > 0) {
+      transform = this.transformParse(transformString);
+    } else {
+      transform = new Matrix();
+    }
+
+    // Decompose the transformation matrix
+    const tarray = transform.toArray();
+    const rotate = Math.atan2(tarray[1], tarray[3]) * 180 / Math.PI;
+    const scale = Math.hypot(tarray[0], tarray[2]);
+
+    // Handle container elements (recursively process children)
+    if (element.tagName === 'g' || element.tagName === 'svg' || element.tagName === 'defs') {
+      element.removeAttribute('transform');
+      const children = Array.from(element.children) as SVGElement[];
+      for (const child of children) {
+        this.applyTransform(child, transformString, skipClosed, dxfFlag);
+      }
+      return;
+    }
+
+    // Apply transforms to specific element types
+    if (transform && !transform.isIdentity()) {
+      this.applyTransformToElement(element, transform, transformString, skipClosed, dxfFlag, rotate, scale);
+    }
+  }
+
+  /**
+   * Applies transformation to a specific SVG element based on its type
+   * @param element - The SVG element to transform
+   * @param transform - The transformation matrix
+   * @param transformString - The original transform string
+   * @param skipClosed - Whether to skip closed shapes
+   * @param dxfFlag - Special flag for DXF import handling
+   * @param rotate - Rotation angle in degrees
+   * @param scale - Scale factor
+   */
+  private applyTransformToElement(
+    element: SVGElement,
+    transform: Matrix,
+    transformString: string,
+    skipClosed: boolean,
+    dxfFlag: boolean,
+    rotate: number,
+    scale: number
+  ): void {
+    switch (element.tagName) {
+      case 'ellipse':
+        this.transformEllipse(element, transform, transformString, skipClosed);
+        break;
+      case 'path':
+        this.transformPath(element, transform, transformString, skipClosed, dxfFlag, rotate, scale);
+        break;
+      case 'image':
+        element.setAttribute('transform', transformString);
+        break;
+      case 'line':
+        this.transformLine(element, transform);
+        break;
+      case 'circle':
+        this.transformCircle(element, transform, transformString, skipClosed, rotate, scale);
+        break;
+      case 'rect':
+        this.transformRect(element, transform, transformString, skipClosed);
+        break;
+      case 'polygon':
+      case 'polyline':
+        this.transformPolygon(element, transform, transformString, skipClosed);
+        break;
+    }
+  }
+
+  /**
+   * Transforms an ellipse element by converting it to a path
+   * @param element - The ellipse element
+   * @param transform - The transformation matrix
+   * @param transformString - The original transform string
+   * @param skipClosed - Whether to skip closed shapes
+   */
+  private transformEllipse(element: SVGElement, transform: Matrix, transformString: string, skipClosed: boolean): void {
+    if (skipClosed) {
+      element.setAttribute('transform', transformString);
+      return;
+    }
+
+    // Convert ellipse to path for better transform handling
+    const path = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const cx = parseFloat(element.getAttribute('cx') || '0');
+    const cy = parseFloat(element.getAttribute('cy') || '0');
+    const rx = parseFloat(element.getAttribute('rx') || '0');
+    const ry = parseFloat(element.getAttribute('ry') || '0');
+
+    // Create ellipse path using arc commands
+    const d = `M ${cx - rx},${cy} A ${rx},${ry} 0 1,0 ${cx + rx},${cy} A ${rx},${ry} 0 1,0 ${cx - rx},${cy} Z`;
+    path.setAttribute('d', d);
+
+    // Copy transform property if it exists
+    const transformProperty = element.getAttribute('transform');
+    if (transformProperty) {
+      path.setAttribute('transform', transformProperty);
+    }
+
+    // Replace ellipse with path
+    element.parentElement!.replaceChild(path, element);
+    
+    // Process the path with transform
+    this.transformPath(path, transform, transformString, skipClosed, false, 0, 1);
+  }
+
+  /**
+   * Transforms a path element by processing each path segment
+   * @param element - The path element
+   * @param transform - The transformation matrix
+   * @param transformString - The original transform string
+   * @param skipClosed - Whether to skip closed shapes
+   * @param dxfFlag - Special flag for DXF import handling
+   * @param rotate - Rotation angle in degrees
+   * @param scale - Scale factor
+   */
+  private transformPath(
+    element: SVGElement,
+    transform: Matrix,
+    transformString: string,
+    skipClosed: boolean,
+    dxfFlag: boolean,
+    rotate: number,
+    scale: number
+  ): void {
+    if (skipClosed && this.isClosed(element)) {
+      element.setAttribute('transform', transformString);
+      return;
+    }
+
+    this.pathToAbsolute(element);
+    const seglist = (element as any).pathSegList;
+    let prevx = 0;
+    let prevy = 0;
+
+    for (let i = 0; i < seglist.numberOfItems; i++) {
+      const s = seglist.getItem(i);
+      const command = s.pathSegTypeAsLetter;
+
+      // Handle horizontal and vertical lines
+      if (command === 'H') {
+        seglist.replaceItem((element as any).createSVGPathSegLinetoAbs(s.x, prevy), i);
+        const updatedS = seglist.getItem(i);
+        // Update coordinates from new segment
+        prevx = updatedS.x;
+        prevy = updatedS.y;
+      } else if (command === 'V') {
+        seglist.replaceItem((element as any).createSVGPathSegLinetoAbs(prevx, s.y), i);
+        const updatedS = seglist.getItem(i);
+        // Update coordinates from new segment
+        prevx = updatedS.x;
+        prevy = updatedS.y;
+      } else if (command === 'A') {
+        // Handle arc segments with special DXF logic
+        let arcrotate: number;
+        let arcsweep: boolean;
+        
+        if (dxfFlag) {
+          // Fix DXF import error
+          arcrotate = (rotate === 180) ? 0 : rotate;
+          arcsweep = (rotate === 180) ? !s.sweepFlag : s.sweepFlag;
+        } else {
+          arcrotate = s.angle + rotate;
+          arcsweep = s.sweepFlag;
+        }
+
+        seglist.replaceItem(
+          (element as any).createSVGPathSegArcAbs(s.x, s.y, s.r1 * scale, s.r2 * scale, arcrotate, s.largeArcFlag, arcsweep),
+          i
+        );
+        const updatedS = seglist.getItem(i);
+        // Update coordinates from new segment
+        prevx = updatedS.x;
+        prevy = updatedS.y;
+      }
+
+      // Transform coordinate points
+      if ('x' in s && 'y' in s) {
+        const transformed = transform.calc(new Point(s.x, s.y));
+        prevx = s.x;
+        prevy = s.y;
+        s.x = transformed.x;
+        s.y = transformed.y;
+      }
+      if ('x1' in s && 'y1' in s) {
+        const transformed = transform.calc(new Point(s.x1, s.y1));
+        s.x1 = transformed.x;
+        s.y1 = transformed.y;
+      }
+      if ('x2' in s && 'y2' in s) {
+        const transformed = transform.calc(new Point(s.x2, s.y2));
+        s.x2 = transformed.x;
+        s.y2 = transformed.y;
+      }
+    }
+
+    element.removeAttribute('transform');
+  }
+
+  /**
+   * Transforms a line element by transforming its endpoints
+   * @param element - The line element
+   * @param transform - The transformation matrix
+   */
+  private transformLine(element: SVGElement, transform: Matrix): void {
+    const x1 = Number(element.getAttribute('x1') || '0');
+    const x2 = Number(element.getAttribute('x2') || '0');
+    const y1 = Number(element.getAttribute('y1') || '0');
+    const y2 = Number(element.getAttribute('y2') || '0');
+
+    const transformed1 = transform.calc(new Point(x1, y1));
+    const transformed2 = transform.calc(new Point(x2, y2));
+
+    element.setAttribute('x1', transformed1.x.toString());
+    element.setAttribute('y1', transformed1.y.toString());
+    element.setAttribute('x2', transformed2.x.toString());
+    element.setAttribute('y2', transformed2.y.toString());
+
+    element.removeAttribute('transform');
+  }
+
+  /**
+   * Transforms a circle element by converting it to a path
+   * @param element - The circle element
+   * @param transform - The transformation matrix
+   * @param transformString - The original transform string
+   * @param skipClosed - Whether to skip closed shapes
+   * @param rotate - Rotation angle in degrees
+   * @param scale - Scale factor
+   */
+  private transformCircle(
+    element: SVGElement,
+    transform: Matrix,
+    transformString: string,
+    skipClosed: boolean,
+    rotate: number,
+    scale: number
+  ): void {
+    if (skipClosed) {
+      element.setAttribute('transform', transformString);
+      return;
+    }
+
+    // Convert circle to path for better transform handling
+    const path = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const cx = parseFloat(element.getAttribute('cx') || '0');
+    const cy = parseFloat(element.getAttribute('cy') || '0');
+    const r = parseFloat(element.getAttribute('r') || '0');
+
+    // Create circle path using arc commands
+    const d = `M ${cx - r},${cy} A ${r},${r} 0 1,0 ${cx + r},${cy} A ${r},${r} 0 1,0 ${cx - r},${cy} Z`;
+    path.setAttribute('d', d);
+
+    // Copy style attributes
+    const stylesToCopy = ['style', 'fill', 'stroke', 'stroke-width'];
+    stylesToCopy.forEach(attr => {
+      if (element.hasAttribute(attr)) {
+        path.setAttribute(attr, element.getAttribute(attr)!);
+      }
+    });
+
+    // Apply transform
+    if (transformString) {
+      path.setAttribute('transform', transformString);
+    }
+
+    // Replace circle with path
+    element.parentElement!.replaceChild(path, element);
+
+    // Process the path with transform
+    this.transformPath(path, transform, transformString, skipClosed, false, rotate, scale);
+  }
+
+  /**
+   * Transforms a rectangle element by converting it to a polygon
+   * @param element - The rectangle element
+   * @param transform - The transformation matrix
+   * @param transformString - The original transform string
+   * @param skipClosed - Whether to skip closed shapes
+   */
+  private transformRect(element: SVGElement, transform: Matrix, transformString: string, skipClosed: boolean): void {
+    if (skipClosed) {
+      element.setAttribute('transform', transformString);
+      return;
+    }
+
+    // Convert rectangle to polygon
+    const polygon = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    
+    const x = parseFloat(element.getAttribute('x') || '0');
+    const y = parseFloat(element.getAttribute('y') || '0');
+    const width = parseFloat(element.getAttribute('width') || '0');
+    const height = parseFloat(element.getAttribute('height') || '0');
+
+    // Create rectangle points
+    const points = [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height }
+    ];
+
+    // OnShape exports a rectangle at position 0/0, drop it
+    if (x === 0 && y === 0) {
+      // Leave polygon empty
+    } else {
+      // Add points to polygon
+      points.forEach(point => {
+        const svgPoint = (this.svgRoot as any).createSVGPoint();
+        svgPoint.x = point.x;
+        svgPoint.y = point.y;
+        (polygon as any).points.appendItem(svgPoint);
+      });
+    }
+
+    // Copy transform property if it exists
+    const transformProperty = element.getAttribute('transform');
+    if (transformProperty) {
+      polygon.setAttribute('transform', transformProperty);
+    }
+
+    // Replace rectangle with polygon
+    element.parentElement!.replaceChild(polygon, element);
+
+    // Process the polygon with transform
+    this.transformPolygon(polygon, transform, transformString, skipClosed);
+  }
+
+  /**
+   * Transforms a polygon or polyline element by transforming each point
+   * @param element - The polygon or polyline element
+   * @param transform - The transformation matrix
+   * @param transformString - The original transform string
+   * @param skipClosed - Whether to skip closed shapes
+   */
+  private transformPolygon(element: SVGElement, transform: Matrix, transformString: string, skipClosed: boolean): void {
+    if (skipClosed && this.isClosed(element)) {
+      element.setAttribute('transform', transformString);
+      return;
+    }
+
+    const points = (element as any).points;
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      const transformed = transform.calc(new Point(point.x, point.y));
+      point.x = transformed.x;
+      point.y = transformed.y;
+    }
+
+    element.removeAttribute('transform');
+  }
+
+  // Placeholder methods that will be implemented in subsequent steps
+  private isClosed(_element: SVGElement): boolean {
+    // This will be implemented in Step 5: Path Utility Methods
+    return false;
+  }
+
+  private pathToAbsolute(_element: SVGElement): void {
+    // This will be implemented in Step 5: Path Utility Methods
   }
 
   // Remaining methods will be converted in subsequent steps...
