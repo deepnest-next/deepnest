@@ -1,4 +1,5 @@
 import { createSignal, createEffect, onCleanup } from 'solid-js';
+import { createEventListener } from '@/utils/memoryManagement';
 
 export interface ContextMenuItem {
   id: string;
@@ -75,17 +76,10 @@ export const useContextMenu = (options: ContextMenuOptions = {}) => {
   // Setup event listeners
   createEffect(() => {
     if (isOpen()) {
-      document.addEventListener('click', handleDocumentClick);
-      document.addEventListener('scroll', handleScroll);
-      document.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('resize', handleResize);
-      
-      onCleanup(() => {
-        document.removeEventListener('click', handleDocumentClick);
-        document.removeEventListener('scroll', handleScroll);
-        document.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('resize', handleResize);
-      });
+      createEventListener(document, 'click', handleDocumentClick);
+      createEventListener(document, 'scroll', handleScroll);
+      createEventListener(document, 'keydown', handleKeyDown);
+      createEventListener(window, 'resize', handleResize);
     }
   });
 

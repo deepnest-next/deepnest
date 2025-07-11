@@ -1,4 +1,5 @@
 import { createSignal, createMemo, onMount, onCleanup, createEffect } from 'solid-js';
+import { createDebouncedFunction } from '@/utils/memoryManagement';
 
 export interface VirtualScrollOptions<T> {
   items: () => T[];
@@ -26,7 +27,6 @@ export function useVirtualScroll<T>(
   
   const [scrollTop, setScrollTop] = createSignal(0);
   const [isScrolling, setIsScrolling] = createSignal(false);
-  let scrollTimeout: number | undefined;
 
   // Calculate total height
   const totalHeight = createMemo(() => items().length * itemHeight);
@@ -60,19 +60,17 @@ export function useVirtualScroll<T>(
     return visible;
   });
 
+  // Debounced scroll end handler
+  const handleScrollEnd = createDebouncedFunction(() => {
+    setIsScrolling(false);
+  }, 150);
+
   // Handle scroll events
   const handleScroll = (event: Event) => {
     const target = event.target as HTMLElement;
     setScrollTop(target.scrollTop);
     setIsScrolling(true);
-
-    // Debounce scrolling state
-    if (scrollTimeout) {
-      clearTimeout(scrollTimeout);
-    }
-    scrollTimeout = window.setTimeout(() => {
-      setIsScrolling(false);
-    }, 150);
+    handleScrollEnd();
   };
 
   // Scroll to specific index
@@ -108,12 +106,6 @@ export function useVirtualScroll<T>(
     }
   };
 
-  // Cleanup
-  onCleanup(() => {
-    if (scrollTimeout) {
-      clearTimeout(scrollTimeout);
-    }
-  });
 
   return {
     visibleItems,
