@@ -7,6 +7,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import enCommon from '../locales/en/common.json';
 import enMessages from '../locales/en/messages.json';
 import enParts from '../locales/en/parts.json';
+import enNesting from '../locales/en/nesting.json';
 
 export const i18nConfig = {
   fallbackLng: 'en',
@@ -23,7 +24,8 @@ export const i18nConfig = {
     en: {
       common: enCommon,
       messages: enMessages,
-      parts: enParts
+      parts: enParts,
+      nesting: enNesting
     }
   }
 };
