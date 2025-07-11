@@ -1,11 +1,13 @@
 {
   "rolloutStrategy": {
     "version": "1.0.0",
-    "enabled": false,
+    "enabled": true,
     "defaultUI": "legacy",
     "rolloutPercentage": 0,
     "enabledUsers": [],
-    "enabledEnvironments": ["development"],
+    "enabledEnvironments": [
+      "development"
+    ],
     "features": {
       "forceNewUI": false,
       "allowUserSelection": true,
@@ -17,7 +19,10 @@
     "criteria": {
       "environment": "development",
       "userFlag": "deepnest_new_ui",
-      "commandLineArgs": ["--new-ui", "--ui=new"],
+      "commandLineArgs": [
+        "--new-ui",
+        "--ui=new"
+      ],
       "localStorage": "deepnest-ui-preference"
     },
     "fallback": "legacy"
@@ -33,31 +38,45 @@
       {
         "name": "development",
         "percentage": 100,
-        "criteria": ["environment=development"],
+        "criteria": [
+          "environment=development"
+        ],
         "description": "All development environments use new UI"
       },
       {
         "name": "alpha",
         "percentage": 5,
-        "criteria": ["volunteer_testers", "internal_users"],
+        "criteria": [
+          "volunteer_testers",
+          "internal_users"
+        ],
         "description": "Alpha testing with 5% of volunteer users"
       },
       {
         "name": "beta",
         "percentage": 25,
-        "criteria": ["beta_users", "performance_acceptable"],
+        "criteria": [
+          "beta_users",
+          "performance_acceptable"
+        ],
         "description": "Beta testing with 25% of users after performance validation"
       },
       {
         "name": "gradual_rollout",
         "percentage": 50,
-        "criteria": ["no_critical_issues", "feedback_positive"],
+        "criteria": [
+          "no_critical_issues",
+          "feedback_positive"
+        ],
         "description": "Gradual rollout to 50% of users based on feedback"
       },
       {
         "name": "full_rollout",
         "percentage": 100,
-        "criteria": ["user_acceptance", "performance_validated"],
+        "criteria": [
+          "user_acceptance",
+          "performance_validated"
+        ],
         "description": "Full rollout to all users"
       }
     ],
@@ -81,8 +100,8 @@
     }
   },
   "metadata": {
-    "lastUpdated": "2025-07-11T18:52:00.000Z",
-    "updatedBy": "migration-system",
+    "lastUpdated": "2025-07-11T19:07:53.310Z",
+    "updatedBy": "ui-rollout-script",
     "version": "1.0.0"
   }
 }

@@ -1,0 +1,95 @@
+{
+  "timestamp": "2025-07-11T19:09:11.982Z",
+  "rollout": {
+    "enabled": true,
+    "currentPhase": "development",
+    "percentage": 0,
+    "defaultUI": "legacy"
+  },
+  "feedback": {
+    "total": 0,
+    "categories": {},
+    "severities": {},
+    "averageRatings": {
+      "easeOfUse": 0,
+      "performance": 0,
+      "visualAppeal": 0,
+      "functionality": 0,
+      "stability": 0
+    },
+    "recentCount": 0
+  },
+  "performance": {
+    "bundleSize": {
+      "legacy": {
+        "main": 1147333,
+        "css": 36319,
+        "chunks": [],
+        "total": 1183652
+      },
+      "new": {
+        "main": 17884,
+        "css": 60920,
+        "chunks": [
+          {
+            "name": "assets/ImprintPanel.tsx-bgmq-QOM.js",
+            "size": 19185
+          },
+          {
+            "name": "assets/NestingPanel.tsx-Bwtrfqwx.js",
+            "size": 26754
+          },
+          {
+            "name": "assets/PartsPanel.tsx-BIo6h_MN.js",
+            "size": 33415
+          },
+          {
+            "name": "assets/SettingsPanel.tsx-CLZfWavi.js",
+            "size": 57836
+          },
+          {
+            "name": "assets/SheetsPanel.tsx-CyHFQn0Z.js",
+            "size": 19182
+          },
+          {
+            "name": "assets/chunk-BkE0-c49.js",
+            "size": 10746
+          },
+          {
+            "name": "assets/chunk-C5qu5Lxj.js",
+            "size": 7750
+          },
+          {
+            "name": "assets/chunk-CJSr3jq0.js",
+            "size": 41458
+          },
+          {
+            "name": "assets/chunk-CloFZg_W.js",
+            "size": 19281
+          },
+          {
+            "name": "assets/chunk-CxE4G7Dl.js",
+            "size": 42036
+          },
+          {
+            "name": "assets/chunk-DwRD3xX6.js",
+            "size": 3462
+          },
+          {
+            "name": "assets/chunk-u1_vX_6Z.js",
+            "size": 20356
+          }
+        ],
+        "total": 380265
+      }
+    },
+    "overallScore": "128.8/100",
+    "bundleImprovement": "67.9%"
+  },
+  "health": {
+    "criticalIssues": 0,
+    "performanceIssues": 0,
+    "userComplaints": 0,
+    "overallHealth": "good"
+  }
+}
