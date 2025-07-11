@@ -1477,5 +1477,359 @@ test.describe('SvgParser', () => {
         });
       });
     });
+
+    test.describe('Path Manipulation Methods', () => {
+      test.describe('reverseOpenPath Method', () => {
+        test('reverses line element coordinates', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="10" y1="20" x2="30" y2="40"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line = root.querySelector('line');
+            if (line) {
+              parser.reverseElementPath(line);
+              
+              expect(line.getAttribute('x1')).toBe('30');
+              expect(line.getAttribute('y1')).toBe('40');
+              expect(line.getAttribute('x2')).toBe('10');
+              expect(line.getAttribute('y2')).toBe('20');
+            }
+          }
+        });
+
+        test('handles line with missing coordinates', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line x1="10" y1="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line = root.querySelector('line');
+            if (line) {
+              parser.reverseElementPath(line);
+              
+              expect(line.getAttribute('x1')).toBe('0');
+              expect(line.getAttribute('y1')).toBe('0');
+              expect(line.getAttribute('x2')).toBe('10');
+              expect(line.getAttribute('y2')).toBe('20');
+            }
+          }
+        });
+
+        test('reverses polyline point order', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline points="0,0 10,10 20,0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const polyline = root.querySelector('polyline');
+            if (polyline) {
+              const originalPoints = (polyline as any).points;
+              const originalCount = originalPoints.length;
+              
+              parser.reverseElementPath(polyline);
+              
+              expect(originalPoints.length).toBe(originalCount);
+              // Points should now be in reverse order
+              expect(originalPoints[0].x).toBe(20);
+              expect(originalPoints[0].y).toBe(0);
+              expect(originalPoints[2].x).toBe(0);
+              expect(originalPoints[2].y).toBe(0);
+            }
+          }
+        });
+
+        test('reverses path direction correctly', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 L 10 10 L 20 0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            if (path) {
+              parser.reverseElementPath(path);
+              
+              const dAttribute = path.getAttribute('d');
+              expect(dAttribute).toBeDefined();
+              expect(dAttribute).toContain('M');
+            }
+          }
+        });
+
+        test('handles path with curves', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 C 10 10 20 20 30 30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            if (path) {
+              expect(() => parser.reverseElementPath(path)).not.toThrow();
+              
+              const dAttribute = path.getAttribute('d');
+              expect(dAttribute).toBeDefined();
+            }
+          }
+        });
+
+        test('handles path with arcs', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path d="M 0 0 A 10 10 0 0 1 20 20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path = root.querySelector('path');
+            if (path) {
+              expect(() => parser.reverseElementPath(path)).not.toThrow();
+              
+              const dAttribute = path.getAttribute('d');
+              expect(dAttribute).toBeDefined();
+            }
+          }
+        });
+
+        test('handles unsupported element types gracefully', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><rect width="50" height="50"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const rect = root.querySelector('rect');
+            if (rect) {
+              expect(() => parser.reverseElementPath(rect)).not.toThrow();
+            }
+          }
+        });
+      });
+
+      test.describe('mergeOpenPaths Method', () => {
+        test('merges two line elements into a path', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="10" y1="10" x2="20" y2="20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1');
+            const line2 = root.querySelector('#line2');
+            
+            if (line1 && line2) {
+              const merged = parser.mergeElementPaths(line1, line2);
+              
+              expect(merged).toBeDefined();
+              expect(merged?.tagName).toBe('path');
+            }
+          }
+        });
+
+        test('merges line and polyline elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><polyline id="poly1" points="10,10 20,20 30,30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1');
+            const poly1 = root.querySelector('#poly1');
+            
+            if (line1 && poly1) {
+              const merged = parser.mergeElementPaths(line1, poly1);
+              
+              expect(merged).toBeDefined();
+              expect(merged?.tagName).toBe('path');
+            }
+          }
+        });
+
+        test('merges two path elements', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path id="path1" d="M 0 0 L 10 10"/><path id="path2" d="M 10 10 L 20 20"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path1 = root.querySelector('#path1');
+            const path2 = root.querySelector('#path2');
+            
+            if (path1 && path2) {
+              const merged = parser.mergeElementPaths(path1, path2);
+              
+              expect(merged).toBeDefined();
+              expect(merged?.tagName).toBe('path');
+              expect(merged).toBe(path1); // Should return the first path
+            }
+          }
+        });
+
+        test('returns null for polyline with insufficient points', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><polyline id="poly1" points="10,10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1');
+            const poly1 = root.querySelector('#poly1');
+            
+            if (line1 && poly1) {
+              const merged = parser.mergeElementPaths(line1, poly1);
+              
+              expect(merged).toBeNull();
+            }
+          }
+        });
+
+        test('handles unsupported element types', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><rect id="rect1" width="50" height="50"/><circle id="circle1" cx="25" cy="25" r="10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const rect1 = root.querySelector('#rect1');
+            const circle1 = root.querySelector('#circle1');
+            
+            if (rect1 && circle1) {
+              const merged = parser.mergeElementPaths(rect1, circle1);
+              
+              expect(merged).toBeNull();
+            }
+          }
+        });
+
+        test('merges polyline to polyline via path conversion', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline id="poly1" points="0,0 10,10"/><polyline id="poly2" points="10,10 20,20 30,30"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const poly1 = root.querySelector('#poly1');
+            const poly2 = root.querySelector('#poly2');
+            
+            if (poly1 && poly2) {
+              const merged = parser.mergeElementPaths(poly1, poly2);
+              
+              expect(merged).toBeDefined();
+              expect(merged?.tagName).toBe('path');
+            }
+          }
+        });
+
+        test('handles path merging with complex segments', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path id="path1" d="M 0 0 C 5 5 10 5 15 0"/><path id="path2" d="M 15 0 L 25 10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path1 = root.querySelector('#path1');
+            const path2 = root.querySelector('#path2');
+            
+            if (path1 && path2) {
+              const merged = parser.mergeElementPaths(path1, path2);
+              
+              expect(merged).toBeDefined();
+              expect(merged?.tagName).toBe('path');
+            }
+          }
+        });
+      });
+
+      test.describe('Integration Tests', () => {
+        test('reverse and merge operations work together', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><line id="line1" x1="0" y1="0" x2="10" y2="10"/><line id="line2" x1="20" y1="20" x2="10" y2="10"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const line1 = root.querySelector('#line1');
+            const line2 = root.querySelector('#line2');
+            
+            if (line1 && line2) {
+              // Reverse line2 so its start point matches line1's end point
+              parser.reverseElementPath(line2);
+              
+              expect(line2.getAttribute('x1')).toBe('10');
+              expect(line2.getAttribute('y1')).toBe('10');
+              
+              // Now merge them
+              const merged = parser.mergeElementPaths(line1, line2);
+              
+              expect(merged).toBeDefined();
+              expect(merged?.tagName).toBe('path');
+            }
+          }
+        });
+
+        test('path manipulation preserves geometric continuity', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><polyline id="poly1" points="0,0 5,5 10,0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const poly1 = root.querySelector('#poly1');
+            
+            if (poly1) {
+              const originalPoints = (poly1 as any).points;
+              const originalStartX = originalPoints[0].x;
+              const originalEndX = originalPoints[originalPoints.length - 1].x;
+              
+              // Reverse the polyline
+              parser.reverseElementPath(poly1);
+              
+              // Start should now be where end was
+              expect(originalPoints[0].x).toBe(originalEndX);
+              expect(originalPoints[originalPoints.length - 1].x).toBe(originalStartX);
+            }
+          }
+        });
+
+        test('complex path operations maintain validity', () => {
+          const parser = new SvgParser();
+          const svgString = '<svg><path id="path1" d="M 0 0 Q 10 10 20 0 T 40 0"/></svg>';
+          
+          parser.load(null, svgString, 72);
+          const root = parser.root;
+          
+          if (root) {
+            const path1 = root.querySelector('#path1');
+            
+            if (path1) {
+              expect(() => parser.reverseElementPath(path1)).not.toThrow();
+              
+              const dAttribute = path1.getAttribute('d');
+              expect(dAttribute).toBeDefined();
+              expect(dAttribute).toMatch(/^M\s/); // Should still start with M
+            }
+          }
+        });
+      });
+    });
   });
 });

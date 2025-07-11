@@ -255,6 +255,24 @@ export class SvgParser {
   }
 
   /**
+   * Reverses the direction of an open path element (for testing)
+   * @param element - The SVG element to reverse
+   */
+  reverseElementPath(element: SVGElement): void {
+    this.reverseOpenPath(element);
+  }
+
+  /**
+   * Merges two open path elements (for testing)
+   * @param pathA - The first path (destination)
+   * @param pathB - The second path (source)
+   * @returns The merged path element or null if merging fails
+   */
+  mergeElementPaths(pathA: SVGElement, pathB: SVGElement): SVGElement | null {
+    return this.mergeOpenPaths(pathA, pathB);
+  }
+
+  /**
    * Prepares the SVG for CAD/CAM operations by applying all necessary preprocessing steps
    * @param dxfFlag - Special flag for DXF import handling
    * @returns The processed SVG root element
@@ -1048,6 +1066,214 @@ export class SvgParser {
    */
   private almostEqualPoints(a: Point, b: Point, tolerance: number): boolean {
     return this.almostEqual(a.x, b.x, tolerance) && this.almostEqual(a.y, b.y, tolerance);
+  }
+
+  /**
+   * Reverses the direction of an open path (line, polyline, or path)
+   * @param element - The SVG element to reverse
+   */
+  private reverseOpenPath(element: SVGElement): void {
+    if (element.tagName === 'line') {
+      // Swap the start and end points of the line
+      const x1 = element.getAttribute('x1');
+      const x2 = element.getAttribute('x2');
+      const y1 = element.getAttribute('y1');
+      const y2 = element.getAttribute('y2');
+
+      element.setAttribute('x1', x2 || '0');
+      element.setAttribute('y1', y2 || '0');
+      element.setAttribute('x2', x1 || '0');
+      element.setAttribute('y2', y1 || '0');
+    } else if (element.tagName === 'polyline') {
+      // Reverse the order of points
+      const points = (element as any).points;
+      const pointsArray: any[] = [];
+      
+      for (let i = 0; i < points.length; i++) {
+        pointsArray.push(points[i]);
+      }
+
+      const reversedPoints = pointsArray.reverse();
+      points.clear();
+      
+      for (const point of reversedPoints) {
+        points.appendItem(point);
+      }
+    } else if (element.tagName === 'path') {
+      // Convert to absolute coordinates first
+      this.pathToAbsolute(element);
+
+      const seglist = (element as any).pathSegList;
+      const reversed: any[] = [];
+
+      let x = 0, y = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+      let prevx = 0, prevy = 0, prevx1 = 0, prevy1 = 0, prevx2 = 0, prevy2 = 0;
+
+      // Process each path segment and build reversed path
+      for (let i = 0; i < seglist.numberOfItems; i++) {
+        const s = seglist.getItem(i);
+        const command = s.pathSegTypeAsLetter;
+
+        // Store previous coordinates
+        prevx = x;
+        prevy = y;
+        prevx1 = x1;
+        prevy1 = y1;
+        prevx2 = x2;
+        prevy2 = y2;
+
+        // Extract coordinates from current segment
+        if (/[MLHVCSQTA]/.test(command)) {
+          if ('x1' in s) x1 = s.x1;
+          if ('x2' in s) x2 = s.x2;
+          if ('y1' in s) y1 = s.y1;
+          if ('y2' in s) y2 = s.y2;
+          if ('x' in s) x = s.x;
+          if ('y' in s) y = s.y;
+        }
+
+        // Build reversed path data
+        switch (command) {
+          case 'M':
+            reversed.push(y, x);
+            break;
+          case 'L':
+          case 'H':
+          case 'V':
+            reversed.push('L', y, x);
+            break;
+          case 'T':
+            // Implicit control point for smooth quadratic bezier
+            if (i > 0 && /[QqTt]/.test(seglist.getItem(i - 1).pathSegTypeAsLetter)) {
+              x1 = prevx + (prevx - prevx1);
+              y1 = prevy + (prevy - prevy1);
+            } else {
+              x1 = prevx;
+              y1 = prevy;
+            }
+            reversed.push(y1, x1, 'Q', y, x);
+            break;
+          case 'Q':
+            reversed.push(y1, x1, 'Q', y, x);
+            break;
+          case 'S':
+            // Implicit control point for smooth cubic bezier
+            if (i > 0 && /[CcSs]/.test(seglist.getItem(i - 1).pathSegTypeAsLetter)) {
+              x1 = prevx + (prevx - prevx2);
+              y1 = prevy + (prevy - prevy2);
+            } else {
+              x1 = prevx;
+              y1 = prevy;
+            }
+            reversed.push(y1, x1, y2, x2, 'C', y, x);
+            break;
+          case 'C':
+            reversed.push(y1, x1, y2, x2, 'C', y, x);
+            break;
+          case 'A':
+            // Sweep flag needs to be inverted for correct reverse path
+            reversed.push(
+              s.sweepFlag ? '0' : '1',
+              s.largeArcFlag ? '1' : '0',
+              s.angle,
+              s.r2,
+              s.r1,
+              'A',
+              y,
+              x
+            );
+            break;
+          default:
+            console.log('SVG path error: ' + command);
+        }
+      }
+
+      // Create the final reversed path string
+      const newpath = reversed.reverse();
+      const reversedString = 'M ' + newpath.join(' ');
+      element.setAttribute('d', reversedString);
+    }
+  }
+
+  /**
+   * Merges two open paths by connecting their endpoints
+   * @param pathA - The first path (destination)
+   * @param pathB - The second path (source)
+   * @returns The merged path element or null if merging fails
+   */
+  private mergeOpenPaths(pathA: SVGElement, pathB: SVGElement): SVGElement | null {
+    /**
+     * Converts line or polyline elements to path elements
+     * @param element - The element to convert
+     * @returns A path element or null if conversion fails
+     */
+    const toPath = (element: SVGElement): SVGElement | null => {
+      if (element.tagName === 'line') {
+        const path = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const x1 = Number(element.getAttribute('x1') || '0');
+        const y1 = Number(element.getAttribute('y1') || '0');
+        const x2 = Number(element.getAttribute('x2') || '0');
+        const y2 = Number(element.getAttribute('y2') || '0');
+
+        (path as any).pathSegList.appendItem((path as any).createSVGPathSegMovetoAbs(x1, y1));
+        (path as any).pathSegList.appendItem((path as any).createSVGPathSegLinetoAbs(x2, y2));
+
+        return path;
+      }
+
+      if (element.tagName === 'polyline') {
+        const points = (element as any).points;
+        if (points.length < 2) {
+          return null;
+        }
+
+        const path = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'path');
+        (path as any).pathSegList.appendItem((path as any).createSVGPathSegMovetoAbs(points[0].x, points[0].y));
+        
+        for (let i = 1; i < points.length; i++) {
+          (path as any).pathSegList.appendItem((path as any).createSVGPathSegLinetoAbs(points[i].x, points[i].y));
+        }
+
+        return path;
+      }
+
+      return null;
+    };
+
+    // Convert paths to path elements if needed
+    let convertedPathA: SVGElement;
+    if (pathA.tagName === 'path') {
+      convertedPathA = pathA;
+    } else {
+      const converted = toPath(pathA);
+      if (!converted) return null;
+      convertedPathA = converted;
+    }
+
+    let convertedPathB: SVGElement;
+    if (pathB.tagName === 'path') {
+      convertedPathB = pathB;
+    } else {
+      const converted = toPath(pathB);
+      if (!converted) return null;
+      convertedPathB = converted;
+    }
+
+    // Merge the path segments
+    const seglistA = (convertedPathA as any).pathSegList;
+    const seglistB = (convertedPathB as any).pathSegList;
+
+    if (!seglistA || !seglistB || seglistB.numberOfItems === 0) {
+      return null;
+    }
+
+    // Skip the first M command of path B and append the rest to path A
+    for (let i = 1; i < seglistB.numberOfItems; i++) {
+      const segment = seglistB.getItem(i);
+      seglistA.appendItem(segment);
+    }
+
+    return convertedPathA;
   }
 
   // Placeholder for polygonifyPath - will be implemented in Step 9
