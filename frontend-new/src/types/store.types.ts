@@ -1,9 +1,12 @@
 import type { AppConfig, Part, Sheet, NestResult, ImportedFile, Preset } from './app.types';
 
 export interface UIState {
-  activeTab: 'parts' | 'nests' | 'sheets' | 'config';
+  activeTab: 'parts' | 'nests' | 'sheets' | 'settings';
   darkMode: boolean;
   language: string;
+  theme?: string;
+  showTooltips?: boolean;
+  showStatusBar?: boolean;
   modals: {
     presetModal: boolean;
     helpModal: boolean;

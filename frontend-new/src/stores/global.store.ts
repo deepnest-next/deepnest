@@ -1,6 +1,7 @@
 import { createStore } from 'solid-js/store';
 import type { GlobalState, UIState, AppState, ProcessState } from '@/types/store.types';
 import type { AppConfig } from '@/types/app.types';
+import { isDevelopmentMode, createMockGlobalState } from '@/utils/mockData';
 
 // Default configuration
 const defaultConfig: AppConfig = {
@@ -81,16 +82,23 @@ const loadUIStateFromStorage = (): UIState => {
   return defaultUIState;
 };
 
-// Initial global state
-const initialState: GlobalState = {
-  ui: loadUIStateFromStorage(),
-  config: defaultConfig,
-  app: defaultAppState,
-  process: defaultProcessState
-};
+// Initial global state - use mock data in development
+const initialState: GlobalState = isDevelopmentMode() 
+  ? createMockGlobalState()
+  : {
+      ui: loadUIStateFromStorage(),
+      config: defaultConfig,
+      app: defaultAppState,
+      process: defaultProcessState
+    };
 
 // Create the global store
 export const [globalState, setGlobalState] = createStore<GlobalState>(initialState);
+
+// Log initialization in development
+if (isDevelopmentMode()) {
+  console.info('🔧 Development mode: Global store initialized with mock data');
+}
 
 // Store actions
 export const globalActions = {
@@ -185,6 +193,22 @@ export const globalActions = {
     setGlobalState('app', 'presets', presets);
   },
 
+  addPreset: (preset: any) => {
+    setGlobalState('app', 'presets', preset.id, preset);
+  },
+
+  removePreset: (presetId: string) => {
+    setGlobalState('app', 'presets', (prev) => {
+      const newPresets = { ...prev };
+      delete newPresets[presetId];
+      return newPresets;
+    });
+  },
+
+  updatePreset: (presetId: string, updates: any) => {
+    setGlobalState('app', 'presets', presetId, (prev) => ({ ...prev, ...updates }));
+  },
+
   // Process actions
   setNestingStatus: (isNesting: boolean) => {
     setGlobalState('process', 'isNesting', isNesting);
@@ -200,6 +224,30 @@ export const globalActions = {
 
   setError: (error: string | null) => {
     setGlobalState('process', 'lastError', error);
+  },
+
+  setMessage: (message: string | null) => {
+    // For now, just log the message. In a real app, you'd show a toast/notification
+    if (message) {
+      console.info('App Message:', message);
+    }
+  },
+
+  setShowTooltips: (show: boolean) => {
+    setGlobalState('ui', 'showTooltips', show);
+  },
+
+  setShowStatusBar: (show: boolean) => {
+    setGlobalState('ui', 'showStatusBar', show);
+  },
+
+  setTheme: (theme: string) => {
+    setGlobalState('ui', 'theme', theme);
+  },
+
+  resetToDefaults: () => {
+    setGlobalState('config', defaultConfig);
+    setGlobalState('ui', defaultUIState);
   },
 
   // Reset all data

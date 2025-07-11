@@ -45,7 +45,7 @@ const PresetManager: Component = () => {
   };
 
   const handleLoadPreset = async (presetId: string) => {
-    const preset = globalState.presets.find(p => p.id === presetId);
+    const preset = Object.values(globalState.app.presets || {}).find(p => p.id === presetId);
     if (!preset) return;
 
     try {
@@ -61,7 +61,7 @@ const PresetManager: Component = () => {
   };
 
   const handleDeletePreset = async (presetId: string) => {
-    const preset = globalState.presets.find(p => p.id === presetId);
+    const preset = Object.values(globalState.app.presets || {}).find(p => p.id === presetId);
     if (!preset) return;
 
     const confirmed = confirm(t('confirm_delete_preset', { name: preset.name }));
@@ -84,7 +84,7 @@ const PresetManager: Component = () => {
   };
 
   const handleExportPreset = async (presetId: string) => {
-    const preset = globalState.presets.find(p => p.id === presetId);
+    const preset = Object.values(globalState.app.presets || {}).find(p => p.id === presetId);
     if (!preset || !ipcService.isAvailable) return;
 
     try {
@@ -221,7 +221,7 @@ const PresetManager: Component = () => {
 
       <div class="presets-list">
         <Show 
-          when={globalState.presets.length > 0}
+          when={globalState.app.presets && Object.keys(globalState.app.presets).length > 0}
           fallback={
             <div class="empty-state">
               <div class="empty-icon">💾</div>
@@ -231,7 +231,7 @@ const PresetManager: Component = () => {
           }
         >
           <div class="presets-grid">
-            <For each={globalState.presets}>
+            <For each={Object.values(globalState.app.presets || {})}>
               {(preset) => (
                 <div class={`preset-card ${selectedPreset() === preset.id ? 'active' : ''}`}>
                   <div class="preset-header">

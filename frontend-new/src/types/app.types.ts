@@ -13,14 +13,21 @@ export interface Bounds {
 export interface Part {
   id: string;
   name: string;
-  svg: SVGElement;
-  polygon: Point[];
+  filename?: string;
+  svg?: SVGElement;
+  polygon?: Point[];
+  path?: number[][];
   bounds: Bounds;
+  area?: number;
   quantity: number;
+  placed?: number;
   rotation: number;
-  sheet: boolean;
-  selected: boolean;
-  svgelements: SVGElement[];
+  material?: string;
+  thickness?: number;
+  sheet?: boolean;
+  selected?: boolean;
+  isSelected?: boolean;
+  svgelements?: SVGElement[];
 }
 
 export interface Sheet {
@@ -28,7 +35,12 @@ export interface Sheet {
   name: string;
   width: number;
   height: number;
+  thickness?: number;
+  material?: string;
+  margin?: number;
+  isSelected?: boolean;
   bounds: Bounds;
+  utilization?: number;
 }
 
 export interface Placement {
@@ -37,16 +49,22 @@ export interface Placement {
   x: number;
   y: number;
   rotation: number;
-  sheetId: string;
+  sheetId?: string;
+  bounds?: Bounds;
 }
 
 export interface NestResult {
   id: string;
+  sheetId?: string;
   fitness: number;
-  selected: boolean;
-  utilisation: number;
-  mergedLength: number;
-  placements: {
+  selected?: boolean;
+  utilization?: number;
+  utilisation?: number;
+  mergedLength?: number;
+  area?: number;
+  createdAt?: string;
+  isOptimal?: boolean;
+  placements: Placement[] | {
     sheet: number;
     sheetid: string;
     sheetplacements: Placement[];
@@ -62,8 +80,12 @@ export interface ImportedFile {
 }
 
 export interface Preset {
+  id: string;
   name: string;
+  description?: string;
   config: AppConfig;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AppConfig {
