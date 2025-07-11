@@ -1,9 +1,11 @@
 import { Component, createEffect, onMount } from "solid-js";
 import { globalState, globalActions } from "./stores/global.store";
 import { ipcService } from "./services/ipc.service";
+import { useTranslation } from "./utils/i18n";
 import Layout from "./components/layout/Layout";
 
 const App: Component = () => {
+  const [t] = useTranslation('common');
   // Reactive effect to apply dark mode changes
   createEffect(() => {
     const isDark = globalState.ui.darkMode;

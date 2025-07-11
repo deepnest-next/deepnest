@@ -3,23 +3,23 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState } from '@/stores/global.store';
 
 const StatusBar: Component = () => {
-  const [t] = useTranslation('translation');
+  const [t] = useTranslation('common');
 
   const statusText = createMemo(() => {
     const { process } = globalState;
-    
+
     if (process.isNesting) {
       return t('status.nesting_in_progress');
     }
-    
+
     if (process.lastError) {
       return t('status.error_occurred');
     }
-    
+
     if (process.workerStatus.isRunning) {
       return process.workerStatus.currentOperation || t('status.processing');
     }
-    
+
     return t('status.ready');
   });
 
@@ -32,15 +32,15 @@ const StatusBar: Component = () => {
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2">
           <div class={`w-2 h-2 rounded-full ${
-            globalState.process.isNesting 
-              ? 'bg-blue-500 animate-pulse' 
-              : globalState.process.lastError 
-                ? 'bg-red-500' 
+            globalState.process.isNesting
+              ? 'bg-blue-500 animate-pulse'
+              : globalState.process.lastError
+                ? 'bg-red-500'
                 : 'bg-green-500'
           }`} />
           <span class="text-gray-900 dark:text-gray-100 font-medium">{statusText()}</span>
         </div>
-        
+
         <Show when={globalState.process.isNesting}>
           <div class="flex items-center gap-3">
             <div class="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -55,7 +55,7 @@ const StatusBar: Component = () => {
           </div>
         </Show>
       </div>
-      
+
       <div class="flex items-center gap-6 text-gray-600 dark:text-gray-400">
         <Show when={globalState.process.workerStatus.threadsActive > 0}>
           <div class="flex items-center gap-1">
@@ -65,7 +65,7 @@ const StatusBar: Component = () => {
             <span>{globalState.process.workerStatus.threadsActive} threads</span>
           </div>
         </Show>
-        
+
         <Show when={globalState.app.parts.length > 0}>
           <div class="flex items-center gap-1">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -74,7 +74,7 @@ const StatusBar: Component = () => {
             <span>{globalState.app.parts.length} parts</span>
           </div>
         </Show>
-        
+
         <Show when={globalState.app.nests.length > 0}>
           <div class="flex items-center gap-1">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -83,7 +83,7 @@ const StatusBar: Component = () => {
             <span>{globalState.app.nests.length} results</span>
           </div>
         </Show>
-        
+
         <Show when={globalState.process.lastError}>
           <div class="flex items-center gap-1 text-red-500 dark:text-red-400">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

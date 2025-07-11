@@ -3,7 +3,7 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
 
 const Header: Component = () => {
-  const [t, { changeLanguage }] = useTranslation('translation');
+  const [t, { changeLanguage }] = useTranslation('common');
 
   const toggleDarkMode = () => {
     // Toggle between light and dark mode (explicit themes)
@@ -14,10 +14,10 @@ const Header: Component = () => {
   const handleLanguageChange = async (language: string) => {
     console.log(`Header: handleLanguageChange called with ${language}`);
     console.log('Header: current globalState.ui.language:', globalState.ui.language);
-    
+
     globalActions.setLanguage(language);
     console.log('Header: after globalActions.setLanguage, globalState.ui.language:', globalState.ui.language);
-    
+
     await changeLanguage(language);
     console.log('Header: after changeLanguage call completed');
   };
@@ -29,17 +29,15 @@ const Header: Component = () => {
           <div class="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
             <span class="text-white font-bold text-sm">DN</span>
           </div>
-          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{(() => {
-            const translation = t('navigation.page_title');
-            console.log('Header rendering with translation:', translation);
-            return translation;
-          })()}</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            {t('navigation.page_title')}
+          </h1>
         </div>
       </div>
-      
+
       <div class="flex items-center gap-4">
         <div class="relative">
-          <select 
+          <select
             value={globalState.ui.language}
             onChange={(e) => handleLanguageChange(e.currentTarget.value)}
             class="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2 pr-8 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
@@ -53,8 +51,8 @@ const Header: Component = () => {
             </svg>
           </div>
         </div>
-        
-        <button 
+
+        <button
           class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
           onClick={toggleDarkMode}
           title={globalState.ui.darkMode ? "Switch to light mode" : "Switch to dark mode"}
