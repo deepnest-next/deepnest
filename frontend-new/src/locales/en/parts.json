@@ -24,5 +24,8 @@
   "rotation": "Rotation",
   "dimensions": "Dimensions",
   "area": "Area",
-  "preview_error": "Preview Error"
+  "preview_error": "Preview Error",
+  "duplicate": "Duplicate",
+  "items_selected": "items selected",
+  "select": "Select"
 }

@@ -205,7 +205,7 @@ const PartsPanel: Component = () => {
               </div>
               <div>
                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Selected</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{selectedPartsCount()}</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{selection.selectedCount()}</p>
               </div>
             </div>
           </div>
@@ -235,7 +235,7 @@ const PartsPanel: Component = () => {
             <div class="flex items-center gap-2">
               <button 
                 class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleSelectAll}
+                onClick={selection.selectAll}
                 disabled={partsCount() === 0}
               >
                 {t('select_all')}
@@ -243,7 +243,7 @@ const PartsPanel: Component = () => {
               <span class="text-gray-300 dark:text-gray-600">•</span>
               <button 
                 class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleDeselectAll}
+                onClick={selection.deselectAll}
                 disabled={partsCount() === 0}
               >
                 {t('deselect_all')}
@@ -251,13 +251,13 @@ const PartsPanel: Component = () => {
             </div>
           </div>
           
-          <Show when={selectedPartsCount() > 0}>
+          <Show when={selection.selectedCount() > 0}>
             <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span class="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                {selectedPartsCount()} part{selectedPartsCount() === 1 ? '' : 's'} selected
+                {selection.selectedCount()} part{selection.selectedCount() === 1 ? '' : 's'} selected
               </span>
             </div>
           </Show>

@@ -1,6 +1,8 @@
 import { Component, For, createMemo, createSignal } from 'solid-js';
 import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
+import { useContextMenu } from '@/hooks/useContextMenu';
+import ContextMenu from '@/components/common/ContextMenu';
 import type { Part } from '@/types/app.types';
 
 interface PartsListProps {
@@ -10,9 +12,13 @@ interface PartsListProps {
 
 const PartsList: Component<PartsListProps> = (props) => {
   const [t] = useTranslation('parts');
+  const [tCommon] = useTranslation('common');
   const [searchTerm, setSearchTerm] = createSignal('');
   const [sortBy, setSortBy] = createSignal<'name' | 'quantity' | 'size'>('name');
   const [sortOrder, setSortOrder] = createSignal<'asc' | 'desc'>('asc');
+
+  // Context menu functionality
+  const contextMenu = useContextMenu();
 
   const filteredAndSortedParts = createMemo(() => {
     let parts = globalState.app.parts;
@@ -85,6 +91,86 @@ const PartsList: Component<PartsListProps> = (props) => {
   const formatSize = (bounds: Part['bounds']) => {
     return `${bounds.width.toFixed(1)} × ${bounds.height.toFixed(1)}`;
   };
+
+  // Context menu actions
+  const duplicatePart = (part: Part) => {
+    const duplicatedPart = {
+      ...part,
+      id: `${part.id}-copy-${Date.now()}`,
+      name: `${part.name} (Copy)`,
+    };
+    globalActions.setParts([...globalState.app.parts, duplicatedPart]);
+  };
+
+  const deletePart = (partId: string) => {
+    const remainingParts = globalState.app.parts.filter(part => part.id !== partId);
+    globalActions.setParts(remainingParts);
+  };
+
+  const exportPart = (part: Part) => {
+    // Export logic would go here
+    console.log('Exporting part:', part);
+  };
+
+  const handleContextMenu = contextMenu.createContextMenuHandler((event) => {
+    const target = event.currentTarget as HTMLElement;
+    const partId = target.dataset.partId;
+    const part = globalState.app.parts.find(p => p.id === partId);
+    
+    if (!part) return [];
+
+    const isSelected = props.isSelected?.(part.id);
+    const selectedCount = globalState.app.parts.filter(p => props.isSelected?.(p.id)).length;
+
+    return [
+      contextMenu.createMenuItem(
+        'duplicate',
+        t('duplicate'),
+        () => duplicatePart(part),
+        { 
+          icon: 'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z',
+          color: 'primary'
+        }
+      ),
+      contextMenu.createMenuItem(
+        'export',
+        tCommon('actions.export'),
+        () => exportPart(part),
+        { 
+          icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+          color: 'secondary'
+        }
+      ),
+      contextMenu.createSeparator(),
+      contextMenu.createMenuItem(
+        'select',
+        isSelected ? tCommon('actions.deselect') : tCommon('actions.select'),
+        () => props.onItemClick?.(part.id, event),
+        { 
+          icon: isSelected ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+          color: 'primary'
+        }
+      ),
+      ...(selectedCount > 1 ? [
+        contextMenu.createMenuItem(
+          'bulk-actions',
+          `${selectedCount} ${t('items_selected')}`,
+          () => {},
+          { disabled: true }
+        )
+      ] : []),
+      contextMenu.createSeparator(),
+      contextMenu.createMenuItem(
+        'delete',
+        tCommon('actions.delete'),
+        () => deletePart(part.id),
+        { 
+          icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+          color: 'danger'
+        }
+      ),
+    ];
+  });
 
   return (
     <div class="h-full flex flex-col bg-white dark:bg-gray-900">
@@ -205,6 +291,8 @@ const PartsList: Component<PartsListProps> = (props) => {
                     props.isSelected?.(part.id) ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''
                   }`}
                   onClick={(e) => props.onItemClick?.(part.id, e)}
+                  onContextMenu={handleContextMenu}
+                  data-part-id={part.id}
                 >
                   {/* Checkbox */}
                   <div class="col-span-1 flex items-center">
@@ -282,6 +370,15 @@ const PartsList: Component<PartsListProps> = (props) => {
           </div>
         </div>
       </div>
+
+      {/* Context Menu */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen()}
+        position={contextMenu.position()}
+        items={contextMenu.menuItems()}
+        onItemClick={contextMenu.handleItemClick}
+        onClose={contextMenu.closeMenu}
+      />
     </div>
   );
 };
