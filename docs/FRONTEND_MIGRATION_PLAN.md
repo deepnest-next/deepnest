@@ -149,10 +149,10 @@ interface GlobalState {
 - [x] **Sheet Templates**: Predefined sizes and custom dimensions
 
 #### 2.5 Settings & Presets
-- [ ] **Preset Management**: Create, edit, delete, import/export
-- [ ] **Algorithm Settings**: Genetic algorithm parameters
-- [ ] **UI Preferences**: Theme, language, panel layouts
-- [ ] **Advanced Settings**: Performance and debugging options
+- [x] **Preset Management**: Create, edit, delete, import/export
+- [x] **Algorithm Settings**: Genetic algorithm parameters
+- [x] **UI Preferences**: Theme, language, panel layouts
+- [x] **Advanced Settings**: Performance and debugging options
 
 ### Phase 3: Advanced Features (Week 6-7)
 
