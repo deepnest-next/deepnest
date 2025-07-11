@@ -93,6 +93,9 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   const [language, setLanguage] = createSignal(globalState.ui.language || 'en');
   const [ready, setReady] = createSignal(false);
   
+  // Create a signal for the translation function - this is the key!
+  const [translateFn, setTranslateFn] = createSignal<typeof i18next.t | null>(null);
+  
   // Initialize i18next on mount with global state language
   onMount(async () => {
     try {
@@ -102,6 +105,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
         lng: initialLang
       });
       setLanguage(initialLang);
+      setTranslateFn(() => i18next.t); // Set the reactive translation function
       setReady(true);
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
@@ -114,8 +118,9 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     const globalLang = globalState.ui.language;
     if (ready() && globalLang && globalLang !== language()) {
       try {
-        await i18next.changeLanguage(globalLang);
+        const newT = await i18next.changeLanguage(globalLang);
         setLanguage(globalLang);
+        setTranslateFn(() => newT); // Update the reactive translation function!
       } catch (error) {
         console.error('Failed to sync language with global state:', error);
       }
@@ -123,16 +128,18 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   });
   
   const t = (key: string, options?: any) => {
-    if (!ready()) {
+    const tFn = translateFn();
+    if (!ready() || !tFn) {
       return key; // Return key if i18n not ready yet
     }
-    return i18next.t(key, options) || key;
+    return tFn(key, options) || key;
   };
   
   const changeLanguage = async (lng: string) => {
     try {
-      await i18next.changeLanguage(lng);
+      const newT = await i18next.changeLanguage(lng);
       setLanguage(lng);
+      setTranslateFn(() => newT); // Update the reactive translation function!
     } catch (error) {
       console.error('Failed to change language:', error);
     }
