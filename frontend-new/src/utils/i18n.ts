@@ -23,11 +23,14 @@ import deFiles from '../locales/de/files.json';
 export const i18nConfig = {
   fallbackLng: 'en',
   debug: true, // Enable to debug missing translations
+  ns: ['translation', 'common', 'parts', 'settings', 'nesting', 'sheets', 'files', 'messages'],
+  defaultNS: 'translation', // i18next standard default
   interpolation: {
     escapeValue: false
   },
   resources: {
     en: {
+      translation: enCommon, // Use common as default translation namespace
       common: enCommon,
       messages: enMessages,
       parts: enParts,
@@ -37,6 +40,7 @@ export const i18nConfig = {
       files: enFiles
     },
     de: {
+      translation: deCommon, // Use common as default translation namespace
       common: deCommon,
       messages: deMessages,
       parts: deParts,
@@ -64,7 +68,7 @@ const I18nContext = createContext<{
   ready: () => boolean;
 }>(defaultContext);
 
-export const useTranslation = (namespace = 'common') => {
+export const useTranslation = (namespace = 'translation') => {
   const context = useContext(I18nContext);
   
   // If context is null or undefined, return default functions
@@ -80,10 +84,13 @@ export const useTranslation = (namespace = 'common') => {
   
   const t = (key: string, options?: any) => {
     if (!context.ready()) {
+      console.warn(`i18n not ready, returning key: ${key}`);
       return key; // Return key if i18n not ready yet
     }
-    const fullKey = `${namespace}.${key}`;
-    return context.t(fullKey, options);
+    // Use i18next namespace option for proper key resolution
+    const optionsWithNS = { ns: namespace, ...options };
+    console.log(`Translating key: ${key} with namespace: ${namespace}`);
+    return context.t(key, optionsWithNS);
   };
   
   return [t, { changeLanguage: context.changeLanguage, language: context.language }] as const;

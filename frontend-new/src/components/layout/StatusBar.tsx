@@ -3,7 +3,7 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState } from '@/stores/global.store';
 
 const StatusBar: Component = () => {
-  const [t] = useTranslation('common');
+  const [t] = useTranslation('translation');
 
   const statusText = createMemo(() => {
     const { process } = globalState;

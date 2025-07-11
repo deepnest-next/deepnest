@@ -3,7 +3,7 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
 
 const Header: Component = () => {
-  const [t, { changeLanguage }] = useTranslation('common');
+  const [t, { changeLanguage }] = useTranslation('translation');
 
   const toggleDarkMode = () => {
     // Toggle between light and dark mode (explicit themes)

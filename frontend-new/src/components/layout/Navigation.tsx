@@ -10,7 +10,7 @@ interface NavigationTab {
 }
 
 const Navigation: Component = () => {
-  const [t] = useTranslation('common');
+  const [t] = useTranslation('translation');
 
   const tabs: NavigationTab[] = [
     { id: 'parts', labelKey: 'navigation.parts', icon: '📦' },
