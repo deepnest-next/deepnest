@@ -71,10 +71,22 @@ const loadUIStateFromStorage = (): UIState => {
   try {
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem('deepnest-ui-state');
+      let uiState = defaultUIState;
+      
       if (stored) {
         const parsed = JSON.parse(stored);
-        return { ...defaultUIState, ...parsed };
+        uiState = { ...defaultUIState, ...parsed };
       }
+      
+      // Override darkMode with localStorage.theme if it exists (Tailwind standard)
+      if ('theme' in localStorage) {
+        uiState.darkMode = localStorage.theme === 'dark';
+      } else {
+        // Use system preference if no theme is set
+        uiState.darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      
+      return uiState;
     }
   } catch (error) {
     console.warn('Failed to load UI state from localStorage:', error);
@@ -114,12 +126,40 @@ export const globalActions = {
 
   setDarkMode: (enabled: boolean) => {
     setGlobalState('ui', 'darkMode', enabled);
-    // Persist to localStorage
+    
+    // Update localStorage theme using Tailwind standard pattern
     if (typeof localStorage !== 'undefined') {
       try {
+        if (enabled) {
+          localStorage.theme = 'dark';
+        } else {
+          localStorage.theme = 'light';
+        }
+        // Also persist the UI state for other settings
         localStorage.setItem('deepnest-ui-state', JSON.stringify(globalState.ui));
       } catch (error) {
-        console.warn('Failed to save UI state to localStorage:', error);
+        console.warn('Failed to save theme to localStorage:', error);
+      }
+    }
+  },
+
+  setThemePreference: (preference: 'light' | 'dark' | 'system') => {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        if (preference === 'system') {
+          // Remove theme to respect OS preference
+          localStorage.removeItem('theme');
+          const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          setGlobalState('ui', 'darkMode', systemDark);
+        } else {
+          // Set explicit theme
+          localStorage.theme = preference;
+          setGlobalState('ui', 'darkMode', preference === 'dark');
+        }
+        // Also persist the UI state for other settings
+        localStorage.setItem('deepnest-ui-state', JSON.stringify(globalState.ui));
+      } catch (error) {
+        console.warn('Failed to save theme preference to localStorage:', error);
       }
     }
   },

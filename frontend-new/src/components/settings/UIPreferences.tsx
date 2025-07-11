@@ -19,7 +19,7 @@ const UIPreferences: Component = () => {
   ];
 
   const themeOptions = [
-    { value: 'auto', label: t('auto_theme') },
+    { value: 'system', label: t('auto_theme') },
     { value: 'light', label: t('light_theme') },
     { value: 'dark', label: t('dark_theme') }
   ];
@@ -30,13 +30,17 @@ const UIPreferences: Component = () => {
   };
 
   const handleThemeChange = (theme: string) => {
-    if (theme === 'auto') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      globalActions.setDarkMode(prefersDark);
-    } else {
-      globalActions.setDarkMode(theme === 'dark');
+    globalActions.setThemePreference(theme as 'light' | 'dark' | 'system');
+  };
+
+  // Get current theme preference from localStorage
+  const getCurrentTheme = () => {
+    if (typeof localStorage !== 'undefined') {
+      if ('theme' in localStorage) {
+        return localStorage.theme;
+      }
     }
-    globalActions.setTheme(theme as any);
+    return 'system';
   };
 
   const handleUnitsChange = (units: string) => {
@@ -90,7 +94,7 @@ const UIPreferences: Component = () => {
               {t('theme')}
             </label>
             <select
-              value={globalState.ui.theme || 'auto'}
+              value={getCurrentTheme()}
               onChange={(e) => handleThemeChange(e.currentTarget.value)}
               class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
             >

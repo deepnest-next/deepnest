@@ -6,6 +6,16 @@
     <meta name="theme-color" content="#000000" />
     <link rel="shortcut icon" type="image/ico" href="/src/assets/favicon.ico" />
     <title>Deepnest - Industrial Nesting</title>
+    
+    <!-- Dark mode FOUC prevention script -->
+    <script>
+      // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+      document.documentElement.classList.toggle(
+        "dark",
+        localStorage.theme === "dark" ||
+          (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches),
+      );
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
