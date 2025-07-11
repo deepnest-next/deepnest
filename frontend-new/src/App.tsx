@@ -1,10 +1,12 @@
-import { Component, createEffect, onMount, createSignal } from "solid-js";
+import { Component, createEffect, onMount, createSignal, Suspense } from "solid-js";
 import { globalState, globalActions } from "./stores/global.store";
 import { ipcService } from "./services/ipc.service";
 import { useTranslation } from "./utils/i18n";
 import { useKeyboardShortcuts, createShortcut } from "./hooks/useKeyboardShortcuts";
+import { preloadComponent } from "./utils/lazyLoad";
 import Layout from "./components/layout/Layout";
 import KeyboardShortcutsModal from "./components/common/KeyboardShortcutsModal";
+import LoadingSpinner from "./components/common/LoadingSpinner";
 
 const App: Component = () => {
   const [t] = useTranslation('common');
