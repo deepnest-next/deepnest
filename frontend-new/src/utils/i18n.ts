@@ -1,7 +1,7 @@
 import { createSignal, createContext, useContext, onMount, onCleanup, createMemo } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import i18next from 'i18next';
-import { globalState } from '../stores/global.store';
+import { globalState, globalActions } from '../stores/global.store';
 
 // Import translation files
 import enCommon from '../locales/en/common.json';
@@ -161,6 +161,8 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     changeLanguage: async (lng: string) => {
       try {
         await i18next.changeLanguage(lng);
+        // Also update the global store to keep it in sync
+        globalActions.setLanguage(lng);
         // Language change will be handled by the event listener
       } catch (error) {
         console.error('Failed to change language:', error);
