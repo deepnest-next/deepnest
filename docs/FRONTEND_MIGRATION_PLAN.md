@@ -138,10 +138,10 @@ interface GlobalState {
 - [x] **Part Details**: Properties, quantity, rotation settings
 
 #### 2.3 Nesting Results
-- [ ] **Progress Display**: Real-time progress with translated status
-- [ ] **Results Grid**: Thumbnail view of nesting layouts
-- [ ] **Result Viewer**: Detailed view with zoom/pan/export
-- [ ] **Statistics**: Efficiency metrics and part placement info
+- [x] **Progress Display**: Real-time progress with translated status
+- [x] **Results Grid**: Thumbnail view of nesting layouts
+- [x] **Result Viewer**: Detailed view with zoom/pan/export
+- [x] **Statistics**: Efficiency metrics and part placement info
 
 #### 2.4 Sheets Management
 - [ ] **Sheet Configuration**: Size, margins, material settings
