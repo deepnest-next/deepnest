@@ -24,7 +24,7 @@ const Navigation: Component = () => {
   };
 
   return (
-    <nav class="h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col w-64">
+    <nav class="h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col w-full">
       <div class="flex flex-col py-4">
         <div class="px-4 mb-4">
           <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Navigation</h2>
@@ -33,8 +33,8 @@ const Navigation: Component = () => {
           {(tab) => (
             <button
               class={`mx-2 mb-1 flex items-center px-4 py-3 text-left transition-all duration-200 rounded-lg group ${
-                globalState.ui.activeTab === tab.id 
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 shadow-sm border border-blue-200 dark:border-blue-700' 
+                globalState.ui.activeTab === tab.id
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 shadow-sm border border-blue-200 dark:border-blue-700'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
               onClick={() => handleTabClick(tab.id)}
@@ -53,7 +53,7 @@ const Navigation: Component = () => {
           )}
         </For>
       </div>
-      
+
       <div class="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
         <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
           <div>DeepNest Frontend</div>

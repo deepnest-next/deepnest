@@ -9,8 +9,8 @@ const NestingPanel: Component = () => {
   const [t] = useTranslation('nesting');
 
   const canStartNesting = createMemo(() => {
-    return globalState.app.parts.length > 0 && 
-           globalState.app.sheets.length > 0 && 
+    return globalState.app.parts.length > 0 &&
+           globalState.app.sheets.length > 0 &&
            !globalState.process.isNesting;
   });
 
@@ -54,7 +54,7 @@ const NestingPanel: Component = () => {
     globalActions.setNests([]);
   };
 
-  const selectedPartsCount = createMemo(() => 
+  const selectedPartsCount = createMemo(() =>
     globalState.app.parts.filter(p => p.quantity > 0).length
   );
 
@@ -63,7 +63,7 @@ const NestingPanel: Component = () => {
       <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('nesting_title')}</h2>
         <div class="flex gap-2">
-          <button 
+          <button
             class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleStartNesting}
             disabled={!canStartNesting()}
@@ -71,7 +71,7 @@ const NestingPanel: Component = () => {
           >
             ▶️ {t('start_nesting')}
           </button>
-          <button 
+          <button
             class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleStopNesting}
             disabled={!globalState.process.isNesting}
@@ -80,7 +80,7 @@ const NestingPanel: Component = () => {
             ⏹️ {t('stop_nesting')}
           </button>
           <Show when={hasResults() && !globalState.process.isNesting}>
-            <button 
+            <button
               class="btn-secondary"
               onClick={handleClearResults}
               title={t('clear_results')}
@@ -113,7 +113,7 @@ const NestingPanel: Component = () => {
           <NestingProgress />
         </Show>
 
-        <Show 
+        <Show
           when={hasResults()}
           fallback={
             <div class="h-full flex flex-col items-center justify-center text-center gap-4 p-8">

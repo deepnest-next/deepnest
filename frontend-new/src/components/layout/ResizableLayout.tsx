@@ -38,12 +38,12 @@ const ResizableLayout: Component<ResizableLayoutProps> = (props) => {
 
     const containerRect = containerRef.getBoundingClientRect();
     const newWidth = e.clientX - containerRect.left;
-    
+
     const clampedWidth = Math.max(
       minLeftWidth,
       Math.min(maxLeftWidth, newWidth)
     );
-    
+
     setLeftWidth(clampedWidth);
     globalActions.setPanelWidth('partsWidth', clampedWidth);
   };
@@ -71,16 +71,16 @@ const ResizableLayout: Component<ResizableLayoutProps> = (props) => {
   return (
     <div
       ref={containerRef}
-      class={`flex h-full ${isResizing() ? 'select-none' : ''}`}
+      class={`flex h-full w-full ${isResizing() ? 'select-none' : ''}`}
     >
       {/* Left Panel */}
       <div
-        class="flex-shrink-0 h-full"
+        class="flex-shrink-0 h-full w-full"
         style={{ width: `${leftWidth()}px` }}
       >
         {props.left}
       </div>
-      
+
       {/* Resize Handle */}
       <div
         ref={resizerRef}
@@ -92,15 +92,15 @@ const ResizableLayout: Component<ResizableLayoutProps> = (props) => {
       >
         {/* Resize handle visual indicator */}
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-8 bg-gray-400 dark:bg-gray-500 group-hover:bg-blue-300 dark:group-hover:bg-blue-300 rounded-full transition-colors duration-200" />
-        
+
         {/* Hover indicator */}
         <div class="absolute -left-1 -right-1 top-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div class="w-full h-full bg-blue-500/20 dark:bg-blue-400/20" />
         </div>
       </div>
-      
+
       {/* Right Panel */}
-      <div class="flex-1 h-full min-w-0">
+      <div class="flex-1 h-full min-w-0 w-full">
         {props.right}
       </div>
     </div>
