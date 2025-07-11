@@ -9,6 +9,7 @@ import enMessages from '../locales/en/messages.json';
 import enParts from '../locales/en/parts.json';
 import enNesting from '../locales/en/nesting.json';
 import enSheets from '../locales/en/sheets.json';
+import enSettings from '../locales/en/settings.json';
 
 export const i18nConfig = {
   fallbackLng: 'en',
@@ -27,7 +28,8 @@ export const i18nConfig = {
       messages: enMessages,
       parts: enParts,
       nesting: enNesting,
-      sheets: enSheets
+      sheets: enSheets,
+      settings: enSettings
     }
   }
 };
