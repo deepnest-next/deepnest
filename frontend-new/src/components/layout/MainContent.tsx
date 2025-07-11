@@ -7,7 +7,7 @@ import SettingsPanel from '../settings/SettingsPanel';
 
 const MainContent: Component = () => {
   return (
-    <main class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900 w-full">
+    <main class="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900 w-full h-full">
       <Switch>
         <Match when={globalState.ui.activeTab === 'parts'}>
           <PartsPanel />
