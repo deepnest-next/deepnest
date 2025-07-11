@@ -1,4 +1,4 @@
-import type { IPCChannels, IPCEvents, IPCMessage } from '@/types/ipc.types';
+import type { IPCChannels, IPCEvents, IPCMessage, BackgroundWorkerResult, BackgroundWorkerProgress } from '@/types/ipc.types';
 import type { AppConfig, NestResult } from '@/types/app.types';
 import { isDevelopmentMode } from '@/utils/mockData';
 
@@ -26,6 +26,10 @@ declare global {
 
 class IPCService {
   private eventListeners = new Map<string, Set<Function>>();
+  private nestingProgress = 0;
+  private isNesting = false;
+  private activeWorkers = new Set<number>();
+  private nestResults: NestResult[] = [];
 
   get isAvailable(): boolean {
     return isDevelopmentMode() || (typeof window !== 'undefined' && !!window.electronAPI);
@@ -133,6 +137,106 @@ class IPCService {
     }
   }
 
+  // Mock development mode background worker simulation
+  private simulateBackgroundWorker(): void {
+    if (!isDevelopmentMode()) return;
+    
+    console.info('🔧 Simulating background worker progress...');
+    
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 0.1;
+      
+      // Emit progress update
+      this.emitToUIListeners('background-progress', {
+        index: 0,
+        progress: Math.min(progress, 1)
+      });
+      
+      if (progress >= 1) {
+        clearInterval(interval);
+        
+        // Emit completion
+        this.emitToUIListeners('background-progress', {
+          index: 0,
+          progress: -1
+        });
+        
+        // Emit mock result
+        setTimeout(() => {
+          this.emitToUIListeners('background-response', {
+            index: 0,
+            fitness: 0.85,
+            area: 85000,
+            totalarea: 100000,
+            mergedLength: 0,
+            utilisation: 0.85,
+            placements: [
+              {
+                sheet: 0,
+                sheetid: 1,
+                sheetplacements: [
+                  {
+                    id: 1,
+                    source: 0,
+                    x: 10,
+                    y: 10,
+                    rotation: 0
+                  }
+                ]
+              }
+            ]
+          });
+        }, 500);
+      }
+    }, 200);
+  }
+
+  // Enhanced start nesting for development mode
+  async startNesting(config: AppConfig): Promise<void> {
+    this.isNesting = true;
+    this.nestingProgress = 0;
+    this.nestResults = [];
+    this.activeWorkers.clear();
+    
+    // Initialize background worker listeners if not already done
+    if (!this.eventListeners.has('background-progress')) {
+      this.initializeBackgroundWorkerListeners();
+    }
+    
+    // Emit initial status
+    this.emitToUIListeners('nest-status', {
+      isRunning: true,
+      operation: 'Starting nesting...'
+    });
+    
+    // In development mode, simulate the background worker
+    if (isDevelopmentMode()) {
+      setTimeout(() => this.simulateBackgroundWorker(), 1000);
+      return Promise.resolve();
+    }
+    
+    return this.invoke('start-nesting', config);
+  }
+
+  // Enhanced stop nesting for development mode
+  async stopNesting(): Promise<void> {
+    this.isNesting = false;
+    this.activeWorkers.clear();
+    
+    // Emit final status
+    this.emitToUIListeners('nest-status', {
+      isRunning: false,
+      operation: 'Stopped'
+    });
+    
+    if (isDevelopmentMode()) {
+      return Promise.resolve();
+    }
+    
+    return this.invoke('stop-nesting');
+  }
+
   on<K extends keyof IPCEvents>(
     channel: K,
     listener: IPCEvents[K]
@@ -217,20 +321,103 @@ class IPCService {
     return this.invoke('delete-preset', name);
   }
 
-  // Nesting methods
-  async startNesting(config: AppConfig): Promise<void> {
-    return this.invoke('start-nesting', config);
+  // File operation methods
+  async openFileDialog(): Promise<{ canceled: boolean; filePaths: string[] }> {
+    return this.invoke('open-file-dialog');
   }
 
-  async stopNesting(): Promise<void> {
-    return this.invoke('stop-nesting');
+  async saveFileDialog(): Promise<{ canceled: boolean; filePath: string }> {
+    return this.invoke('save-file-dialog');
+  }
+
+  async importParts(filePaths: string[]): Promise<NestResult[]> {
+    return this.invoke('import-parts', filePaths);
   }
 
   stopBackgroundWorker(): void {
     this.send('background-stop');
+    this.isNesting = false;
+    this.activeWorkers.clear();
   }
 
-  // Event listeners with automatic cleanup
+  // Initialize background worker event listeners
+  initializeBackgroundWorkerListeners(): void {
+    // Listen for background worker progress updates
+    this.on('background-progress', (data: BackgroundWorkerProgress) => {
+      this.activeWorkers.add(data.index);
+      
+      // Progress of -1 means this worker is complete
+      if (data.progress === -1) {
+        this.activeWorkers.delete(data.index);
+      }
+      
+      // Update overall progress based on worker progress
+      this.nestingProgress = data.progress === -1 ? 1 : Math.max(this.nestingProgress, data.progress);
+      
+      // Emit high-level progress event
+      this.emitToUIListeners('nest-progress', this.nestingProgress);
+      
+      // Update nesting status
+      this.emitToUIListeners('nest-status', {
+        isRunning: this.isNesting && this.activeWorkers.size > 0,
+        operation: data.progress === -1 ? 'Complete' : 'Calculating placement...'
+      });
+    });
+
+    // Listen for background worker results
+    this.on('background-response', (data: BackgroundWorkerResult) => {
+      this.handleBackgroundWorkerResult(data);
+    });
+
+    // Listen for setPlacements events (legacy event name)
+    this.on('setPlacements', (data: BackgroundWorkerResult) => {
+      this.handleBackgroundWorkerResult(data);
+    });
+  }
+
+  private handleBackgroundWorkerResult(data: BackgroundWorkerResult): void {
+    // Convert background worker result to UI format
+    const nestResult: NestResult = {
+      id: `result-${data.index}`,
+      fitness: data.fitness,
+      area: data.area,
+      totalArea: data.totalarea,
+      utilisation: data.utilisation,
+      sheets: data.placements.map(placement => ({
+        id: placement.sheetid,
+        parts: placement.sheetplacements.map(part => ({
+          id: part.id,
+          x: part.x,
+          y: part.y,
+          rotation: part.rotation
+        }))
+      }))
+    };
+
+    // Update results array
+    this.nestResults.push(nestResult);
+    
+    // If this is the best result so far, emit complete event
+    if (this.nestResults.length === 1 || data.fitness < Math.min(...this.nestResults.map(r => r.fitness))) {
+      this.emitToUIListeners('nest-complete', [...this.nestResults]);
+    }
+  }
+
+  private emitToUIListeners(channel: keyof IPCEvents, data: any): void {
+    const listeners = this.eventListeners.get(channel);
+    if (listeners) {
+      listeners.forEach(listener => {
+        try {
+          (listener as Function)(data);
+        } catch (error) {
+          console.error(`Error in ${channel} listener:`, error);
+        }
+      });
+    }
+  }
+
+
+  // High-level event listeners for UI components
   onNestProgress(callback: (progress: number) => void): () => void {
     return this.on('nest-progress', callback);
   }
@@ -239,16 +426,25 @@ class IPCService {
     return this.on('nest-complete', callback);
   }
 
-  onBackgroundProgress(callback: (data: { progress: number; index: number }) => void): () => void {
-    return this.on('background-progress', callback);
-  }
-
-  onWorkerStatus(callback: (status: { isRunning: boolean; operation: string }) => void): () => void {
-    return this.on('worker-status', callback);
+  onNestStatus(callback: (status: { isRunning: boolean; operation: string }) => void): () => void {
+    return this.on('nest-status', callback);
   }
 
   onNestError(callback: (error: string) => void): () => void {
     return this.on('nest-error', callback);
+  }
+
+  // Low-level background worker event listeners (for advanced use)
+  onBackgroundProgress(callback: (data: BackgroundWorkerProgress) => void): () => void {
+    return this.on('background-progress', callback);
+  }
+
+  onBackgroundResponse(callback: (data: BackgroundWorkerResult) => void): () => void {
+    return this.on('background-response', callback);
+  }
+
+  onSetPlacements(callback: (data: BackgroundWorkerResult) => void): () => void {
+    return this.on('setPlacements', callback);
   }
 
   // Cleanup all listeners
@@ -259,6 +455,12 @@ class IPCService {
       window.electronAPI!.ipcRenderer.removeAllListeners(channel as keyof IPCEvents);
     }
     this.eventListeners.clear();
+    
+    // Reset nesting state
+    this.isNesting = false;
+    this.nestingProgress = 0;
+    this.activeWorkers.clear();
+    this.nestResults = [];
   }
 }
 
