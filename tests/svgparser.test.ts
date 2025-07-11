@@ -2201,4 +2201,467 @@ test.describe('SvgParser', () => {
       });
     });
   });
+
+  test.describe('Path Segmentation Methods (Step 8)', () => {
+    test.describe('performSplitLines Method', () => {
+      test('splits polylines into individual line segments', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polyline points="0,0 10,10 20,20 30,0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const initialPolylineCount = root.querySelectorAll('polyline').length;
+          expect(initialPolylineCount).toBe(1);
+          
+          parser.performSplitLines(root);
+          
+          // Polyline should be removed
+          expect(root.querySelectorAll('polyline').length).toBe(0);
+          
+          // Should have 3 line segments (4 points = 3 segments)
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(3);
+          
+          // Verify first line
+          if (lines.length > 0) {
+            expect(lines[0].getAttribute('x1')).toBe('0');
+            expect(lines[0].getAttribute('y1')).toBe('0');
+            expect(lines[0].getAttribute('x2')).toBe('10');
+            expect(lines[0].getAttribute('y2')).toBe('10');
+          }
+        }
+      });
+
+      test('splits polygons into closed line segments', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polygon points="0,0 10,0 10,10 0,10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.performSplitLines(root);
+          
+          // Polygon should be removed
+          expect(root.querySelectorAll('polygon').length).toBe(0);
+          
+          // Should have 4 line segments (including closing line)
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(4);
+          
+          // Verify closing line (last to first point)
+          if (lines.length >= 4) {
+            const lastLine = lines[lines.length - 1];
+            expect(lastLine.getAttribute('x1')).toBe('0');
+            expect(lastLine.getAttribute('y1')).toBe('10');
+            expect(lastLine.getAttribute('x2')).toBe('0');
+            expect(lastLine.getAttribute('y2')).toBe('0');
+          }
+        }
+      });
+
+      test('splits rectangles into four line segments', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect x="10" y="20" width="30" height="40"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.performSplitLines(root);
+          
+          // Rectangle should be removed
+          expect(root.querySelectorAll('rect').length).toBe(0);
+          
+          // Should have 4 line segments
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(4);
+          
+          // Verify all four edges
+          const lineData = Array.from(lines).map(line => ({
+            x1: parseFloat(line.getAttribute('x1') || '0'),
+            y1: parseFloat(line.getAttribute('y1') || '0'),
+            x2: parseFloat(line.getAttribute('x2') || '0'),
+            y2: parseFloat(line.getAttribute('y2') || '0')
+          }));
+          
+          // Should contain top, right, bottom, left edges
+          expect(lineData).toContainEqual({ x1: 10, y1: 20, x2: 40, y2: 20 }); // Top
+          expect(lineData).toContainEqual({ x1: 40, y1: 20, x2: 40, y2: 60 }); // Right
+          expect(lineData).toContainEqual({ x1: 40, y1: 60, x2: 10, y2: 60 }); // Bottom
+          expect(lineData).toContainEqual({ x1: 10, y1: 60, x2: 10, y2: 20 }); // Left
+        }
+      });
+
+      test('processes paths by calling splitPathSegments', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 10 L 20 20"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path');
+          expect(pathElement).toBeDefined();
+          
+          parser.performSplitLines(root);
+          
+          // Should have created line segments
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBeGreaterThan(0);
+        }
+      });
+
+      test('skips zero-length lines', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polyline points="0,0 0,0 10,10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.performSplitLines(root);
+          
+          // Should only have one line (0,0 to 10,10), skipping zero-length
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(1);
+          
+          if (lines.length > 0) {
+            expect(lines[0].getAttribute('x1')).toBe('0');
+            expect(lines[0].getAttribute('y1')).toBe('0');
+            expect(lines[0].getAttribute('x2')).toBe('10');
+            expect(lines[0].getAttribute('y2')).toBe('10');
+          }
+        }
+      });
+
+      test('handles empty or invalid point lists', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><polyline points="0,0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.performSplitLines(root);
+          
+          // Should remove polyline with insufficient points
+          expect(root.querySelectorAll('polyline').length).toBe(0);
+          expect(root.querySelectorAll('line').length).toBe(0);
+        }
+      });
+    });
+
+    test.describe('performSplitPathSegments Method', () => {
+      test('converts L commands to line elements', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 10 L 20 20"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          expect(pathElement).toBeDefined();
+          
+          if (pathElement) {
+            const lines = parser.performSplitPathSegments(pathElement);
+            
+            // Should create 2 line segments
+            expect(lines.length).toBe(2);
+            
+            // Verify line coordinates
+            expect(lines[0].getAttribute('x1')).toBe('0');
+            expect(lines[0].getAttribute('y1')).toBe('0');
+            expect(lines[0].getAttribute('x2')).toBe('10');
+            expect(lines[0].getAttribute('y2')).toBe('10');
+            
+            expect(lines[1].getAttribute('x1')).toBe('10');
+            expect(lines[1].getAttribute('y1')).toBe('10');
+            expect(lines[1].getAttribute('x2')).toBe('20');
+            expect(lines[1].getAttribute('y2')).toBe('20');
+          }
+        }
+      });
+
+      test('converts H and V commands to line elements', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 H 10 V 10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          
+          if (pathElement) {
+            const lines = parser.performSplitPathSegments(pathElement);
+            
+            // Should create 2 line segments
+            expect(lines.length).toBe(2);
+            
+            // Horizontal line
+            expect(lines[0].getAttribute('x1')).toBe('0');
+            expect(lines[0].getAttribute('y1')).toBe('0');
+            expect(lines[0].getAttribute('x2')).toBe('10');
+            expect(lines[0].getAttribute('y2')).toBe('0');
+            
+            // Vertical line
+            expect(lines[1].getAttribute('x1')).toBe('10');
+            expect(lines[1].getAttribute('y1')).toBe('0');
+            expect(lines[1].getAttribute('x2')).toBe('10');
+            expect(lines[1].getAttribute('y2')).toBe('10');
+          }
+        }
+      });
+
+      test('handles Z command (closepath)', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 0 L 10 10 Z"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          
+          if (pathElement) {
+            const lines = parser.performSplitPathSegments(pathElement);
+            
+            // Should create 3 line segments (including closing line)
+            expect(lines.length).toBe(3);
+            
+            // Closing line (back to start)
+            const closingLine = lines[2];
+            expect(closingLine.getAttribute('x1')).toBe('10');
+            expect(closingLine.getAttribute('y1')).toBe('10');
+            expect(closingLine.getAttribute('x2')).toBe('0');
+            expect(closingLine.getAttribute('y2')).toBe('0');
+          }
+        }
+      });
+
+      test('skips zero-length segments', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 0 0 L 10 10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          
+          if (pathElement) {
+            const lines = parser.performSplitPathSegments(pathElement);
+            
+            // Should only create 1 line segment (skipping zero-length)
+            expect(lines.length).toBe(1);
+            
+            expect(lines[0].getAttribute('x1')).toBe('0');
+            expect(lines[0].getAttribute('y1')).toBe('0');
+            expect(lines[0].getAttribute('x2')).toBe('10');
+            expect(lines[0].getAttribute('y2')).toBe('10');
+          }
+        }
+      });
+
+      test('replaces linear moves with M commands', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 10 L 20 20"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const pathElement = root.querySelector('path') as SVGElement;
+          
+          if (pathElement) {
+            parser.performSplitPathSegments(pathElement);
+            
+            // Path should still exist but modified
+            const pathData = pathElement.getAttribute('d');
+            expect(pathData).toBeDefined();
+            
+            // Should contain only M commands after processing
+            if (pathData) {
+              const commands = pathData.match(/[MLHVCSQTAZ]/gi) || [];
+              const nonMCommands = commands.filter(cmd => cmd.toUpperCase() !== 'M');
+              expect(nonMCommands.length).toBe(0);
+            }
+          }
+        }
+      });
+    });
+
+    test.describe('performMergeOverlap Method', () => {
+      test('merges overlapping collinear lines', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="0"/><line x1="5" y1="0" x2="15" y2="0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const initialLineCount = root.querySelectorAll('line').length;
+          expect(initialLineCount).toBe(2);
+          
+          parser.performMergeOverlap(root, 0.1);
+          
+          // Should merge into one longer line
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(1);
+          
+          // Verify merged line spans from 0 to 15
+          if (lines.length > 0) {
+            const x1 = parseFloat(lines[0].getAttribute('x1') || '0');
+            const x2 = parseFloat(lines[0].getAttribute('x2') || '0');
+            const y1 = parseFloat(lines[0].getAttribute('y1') || '0');
+            const y2 = parseFloat(lines[0].getAttribute('y2') || '0');
+            
+            expect(Math.min(x1, x2)).toBe(0);
+            expect(Math.max(x1, x2)).toBe(15);
+            expect(y1).toBe(0);
+            expect(y2).toBe(0);
+          }
+        }
+      });
+
+      test('removes duplicate lines', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="0"/><line x1="0" y1="0" x2="10" y2="0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          expect(root.querySelectorAll('line').length).toBe(2);
+          
+          parser.performMergeOverlap(root, 0.1);
+          
+          // Should remove duplicate
+          expect(root.querySelectorAll('line').length).toBe(1);
+        }
+      });
+
+      test('removes lines completely inside other lines', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="20" y2="0"/><line x1="5" y1="0" x2="15" y2="0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          expect(root.querySelectorAll('line').length).toBe(2);
+          
+          parser.performMergeOverlap(root, 0.1);
+          
+          // Should keep only the longer line
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(1);
+          
+          if (lines.length > 0) {
+            const x1 = parseFloat(lines[0].getAttribute('x1') || '0');
+            const x2 = parseFloat(lines[0].getAttribute('x2') || '0');
+            expect(Math.min(x1, x2)).toBe(0);
+            expect(Math.max(x1, x2)).toBe(20);
+          }
+        }
+      });
+
+      test('ignores non-collinear lines', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="0"/><line x1="0" y1="5" x2="10" y2="5"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          expect(root.querySelectorAll('line').length).toBe(2);
+          
+          parser.performMergeOverlap(root, 0.1);
+          
+          // Should keep both lines (not collinear)
+          expect(root.querySelectorAll('line').length).toBe(2);
+        }
+      });
+
+      test('ignores very short lines', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="0.001" y2="0"/><line x1="5" y1="0" x2="15" y2="0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.performMergeOverlap(root, 0.1);
+          
+          // Should keep both lines (first too short to process)
+          expect(root.querySelectorAll('line').length).toBe(2);
+        }
+      });
+
+      test('uses custom tolerance parameter', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="0"/><line x1="5" y1="0.05" x2="15" y2="0.05"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const rootClone = root.cloneNode(true) as SVGElement;
+          
+          // With loose tolerance, should merge
+          parser.performMergeOverlap(root, 0.1);
+          expect(root.querySelectorAll('line').length).toBe(1);
+          
+          // With strict tolerance, should not merge
+          parser.performMergeOverlap(rootClone, 0.01);
+          expect(rootClone.querySelectorAll('line').length).toBe(2);
+        }
+      });
+
+      test('uses default tolerance from config when not specified', () => {
+        const parser = new SvgParser();
+        parser.config({ tolerance: 0.5 });
+        
+        const svgString = '<svg><line x1="0" y1="0" x2="10" y2="0"/><line x1="5" y1="0.3" x2="15" y2="0.3"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          // Should use config tolerance (0.5)
+          parser.performMergeOverlap(root);
+          expect(root.querySelectorAll('line').length).toBe(1);
+        }
+      });
+
+      test('handles multiple merge iterations', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><line x1="0" y1="0" x2="5" y2="0"/><line x1="3" y1="0" x2="8" y2="0"/><line x1="6" y1="0" x2="12" y2="0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          expect(root.querySelectorAll('line').length).toBe(3);
+          
+          parser.performMergeOverlap(root, 0.1);
+          
+          // Should merge all overlapping lines into one
+          const lines = root.querySelectorAll('line');
+          expect(lines.length).toBe(1);
+          
+          if (lines.length > 0) {
+            const x1 = parseFloat(lines[0].getAttribute('x1') || '0');
+            const x2 = parseFloat(lines[0].getAttribute('x2') || '0');
+            expect(Math.min(x1, x2)).toBe(0);
+            expect(Math.max(x1, x2)).toBe(12);
+          }
+        }
+      });
+    });
+  });
 });

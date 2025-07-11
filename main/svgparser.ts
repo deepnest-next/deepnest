@@ -1443,10 +1443,363 @@ export class SvgParser {
     return convertedPathA;
   }
 
+  /**
+   * Splits paths and polylines into separate line elements
+   * @param root - The SVG root element containing paths to split
+   */
+  private splitLines(root: SVGElement): void {
+    const paths = Array.from(root.children) as SVGElement[];
+
+    /**
+     * Helper function to add a line element to the root
+     * @param x1 - Start x coordinate
+     * @param y1 - Start y coordinate  
+     * @param x2 - End x coordinate
+     * @param y2 - End y coordinate
+     */
+    const addLine = (x1: number, y1: number, x2: number, y2: number): void => {
+      // Skip zero-length lines
+      if (x1 === x2 && y1 === y2) {
+        return;
+      }
+      
+      const line = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1.toString());
+      line.setAttribute('x2', x2.toString());
+      line.setAttribute('y1', y1.toString());
+      line.setAttribute('y2', y2.toString());
+      root.appendChild(line);
+    };
+
+    for (const path of paths) {
+      if (path.tagName === 'polyline' || path.tagName === 'polygon') {
+        const points = (path as any).points;
+        
+        if (points.length < 2) {
+          continue;
+        }
+
+        // Add lines between consecutive points
+        for (let j = 0; j < points.length - 1; j++) {
+          const p1 = points[j];
+          const p2 = points[j + 1];
+          addLine(p1.x, p1.y, p2.x, p2.y);
+        }
+
+        // For polygons, add closing line from last to first point
+        if (path.tagName === 'polygon') {
+          const p1 = points[points.length - 1];
+          const p2 = points[0];
+          addLine(p1.x, p1.y, p2.x, p2.y);
+        }
+
+        root.removeChild(path);
+      } else if (path.tagName === 'rect') {
+        // Convert rectangle to four lines
+        const x = parseFloat(path.getAttribute('x') || '0');
+        const y = parseFloat(path.getAttribute('y') || '0');
+        const w = parseFloat(path.getAttribute('width') || '0');
+        const h = parseFloat(path.getAttribute('height') || '0');
+
+        addLine(x, y, x + w, y);           // Top edge
+        addLine(x + w, y, x + w, y + h);   // Right edge
+        addLine(x + w, y + h, x, y + h);   // Bottom edge
+        addLine(x, y + h, x, y);           // Left edge
+
+        root.removeChild(path);
+      } else if (path.tagName === 'path') {
+        // Split path into individual line segments
+        this.pathToAbsolute(path);
+        const split = this.splitPathSegments(path);
+        
+        for (const element of split) {
+          root.appendChild(element);
+        }
+      }
+    }
+  }
+
+  /**
+   * Splits a single path into individual line segments
+   * @param path - The path element to split
+   * @returns Array of line elements representing the path segments
+   */
+  private splitPathSegments(path: SVGElement): SVGElement[] {
+    // Assumes splitPath has already been run and path has only one M/m command
+    const seglist = (path as any).pathSegList;
+    const split: SVGElement[] = [];
+
+    /**
+     * Helper function to add a line segment
+     * @param x1 - Start x coordinate
+     * @param y1 - Start y coordinate  
+     * @param x2 - End x coordinate
+     * @param y2 - End y coordinate
+     */
+    const addLine = (x1: number, y1: number, x2: number, y2: number): void => {
+      // Skip zero-length lines
+      if (x1 === x2 && y1 === y2) {
+        return;
+      }
+      
+      const line = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1.toString());
+      line.setAttribute('x2', x2.toString());
+      line.setAttribute('y1', y1.toString());
+      line.setAttribute('y2', y2.toString());
+      split.push(line);
+    };
+
+    let x = 0, y = 0, x0 = 0, y0 = 0;
+    let prevx = 0, prevy = 0;
+
+    for (let i = 0; i < seglist.numberOfItems; i++) {
+      const command = seglist.getItem(i).pathSegTypeAsLetter;
+      const s = seglist.getItem(i);
+
+      prevx = x;
+      prevy = y;
+
+      if ('x' in s) x = s.x;
+      if ('y' in s) y = s.y;
+
+      // Replace linear moves with M commands and extract line segments
+      switch (command) {
+        case 'L':
+          addLine(prevx, prevy, x, y);
+          seglist.replaceItem((path as any).createSVGPathSegMovetoAbs(x, y), i);
+          break;
+        case 'H':
+          addLine(prevx, prevy, x, y);
+          seglist.replaceItem((path as any).createSVGPathSegMovetoAbs(x, y), i);
+          break;
+        case 'V':
+          addLine(prevx, prevy, x, y);
+          seglist.replaceItem((path as any).createSVGPathSegMovetoAbs(x, y), i);
+          break;
+        case 'z':
+        case 'Z':
+          addLine(x, y, x0, y0);
+          seglist.removeItem(i);
+          break;
+      }
+
+      // Record the start of a subpath
+      if (command === 'M' || command === 'm') {
+        x0 = x;
+        y0 = y;
+      }
+    }
+
+    // Split path into individual segments by calling splitPath
+    this.splitPath(path);
+
+    return split;
+  }
+
+  /**
+   * Merges overlapping line segments into longer continuous lines
+   * @param root - The SVG root element containing lines to merge
+   * @param tolerance - Tolerance for overlap detection
+   */
+  private mergeOverlap(root: SVGElement, tolerance: number): void {
+    const minLength2 = 0.001; // Minimum line length squared
+
+    let paths = Array.from(root.children) as SVGElement[];
+
+    // Filter to get only line elements
+    let linelist = paths.filter(p => p.tagName === 'line');
+
+    /**
+     * Merges overlapping lines in the list
+     * @param lines - Array of line elements to process
+     * @returns Number of merges performed
+     */
+    const merge = (lines: SVGElement[]): number => {
+      let count = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        const lineA = lines[i];
+        
+        const A1 = {
+          x: parseFloat(lineA.getAttribute('x1') || '0'),
+          y: parseFloat(lineA.getAttribute('y1') || '0')
+        };
+
+        const A2 = {
+          x: parseFloat(lineA.getAttribute('x2') || '0'),
+          y: parseFloat(lineA.getAttribute('y2') || '0')
+        };
+
+        const Ax2 = (A2.x - A1.x) * (A2.x - A1.x);
+        const Ay2 = (A2.y - A1.y) * (A2.y - A1.y);
+
+        // Skip very short lines
+        if (Ax2 + Ay2 < minLength2) {
+          continue;
+        }
+
+        const angle = Math.atan2(A2.y - A1.y, A2.x - A1.x);
+        const c = Math.cos(-angle);
+        const s = Math.sin(-angle);
+        const c2 = Math.cos(angle);
+        const s2 = Math.sin(angle);
+
+        const relA2 = { x: A2.x - A1.x, y: A2.y - A1.y };
+        const rotA2x = relA2.x * c - relA2.y * s;
+
+        for (let j = i + 1; j < lines.length; j++) {
+          const lineB = lines[j];
+          
+          const B1 = {
+            x: parseFloat(lineB.getAttribute('x1') || '0'),
+            y: parseFloat(lineB.getAttribute('y1') || '0')
+          };
+
+          const B2 = {
+            x: parseFloat(lineB.getAttribute('x2') || '0'),
+            y: parseFloat(lineB.getAttribute('y2') || '0')
+          };
+
+          const Bx2 = (B2.x - B1.x) * (B2.x - B1.x);
+          const By2 = (B2.y - B1.y) * (B2.y - B1.y);
+
+          // Skip very short lines
+          if (Bx2 + By2 < minLength2) {
+            continue;
+          }
+
+          // B relative to A1 (our point of rotation)
+          const relB1 = { x: B1.x - A1.x, y: B1.y - A1.y };
+          const relB2 = { x: B2.x - A1.x, y: B2.y - A1.y };
+
+          // Rotate such that A1 and A2 are horizontal
+          const rotB1 = { x: relB1.x * c - relB1.y * s, y: relB1.x * s + relB1.y * c };
+          const rotB2 = { x: relB2.x * c - relB2.y * s, y: relB2.x * s + relB2.y * c };
+
+          // Check if lines are collinear (both B points have y ≈ 0 after rotation)
+          if (!this.almostEqual(rotB1.y, 0, tolerance) || !this.almostEqual(rotB2.y, 0, tolerance)) {
+            continue;
+          }
+
+          const min1 = Math.min(0, rotA2x);
+          const max1 = Math.max(0, rotA2x);
+          const min2 = Math.min(rotB1.x, rotB2.x);
+          const max2 = Math.max(rotB1.x, rotB2.x);
+
+          // Check if lines don't overlap
+          if (min2 > max1 || max2 < min1) {
+            continue;
+          }
+
+          // A equals B - remove duplicate
+          if (this.almostEqual(min1, min2, tolerance) && this.almostEqual(max1, max2, tolerance)) {
+            lines.splice(j, 1);
+            j--;
+            count++;
+            continue;
+          }
+          // A inside B - remove A
+          else if (min1 > min2 && max1 < max2) {
+            lines.splice(i, 1);
+            i--;
+            count++;
+            break;
+          }
+          // B inside A - remove B
+          else if (min2 > min1 && max2 < max1) {
+            lines.splice(j, 1);
+            j--;
+            count++;
+            break;
+          }
+
+          // Partial overlap - merge into longer line
+          const len = Math.max(0, Math.min(max1, max2) - Math.max(min1, min2));
+          const relC1x = Math.max(max1, max2);
+          const relC2x = Math.min(min1, min2);
+
+          if (len * len > minLength2) {
+            const relC1 = { x: relC1x * c2, y: relC1x * s2 };
+            const relC2 = { x: relC2x * c2, y: relC2x * s2 };
+
+            const C1 = { x: relC1.x + A1.x, y: relC1.y + A1.y };
+            const C2 = { x: relC2.x + A1.x, y: relC2.y + A1.y };
+
+            // Remove both lines
+            lines.splice(j, 1);
+            lines.splice(i, 1);
+
+            // Create merged line
+            const line = this.svg!.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', C1.x.toString());
+            line.setAttribute('y1', C1.y.toString());
+            line.setAttribute('x2', C2.x.toString());
+            line.setAttribute('y2', C2.y.toString());
+
+            lines.push(line);
+
+            i--;
+            count++;
+            break;
+          }
+        }
+      }
+
+      return count;
+    };
+
+    // Keep merging until no more merges are possible
+    let mergeCount = merge(linelist);
+    while (mergeCount > 0) {
+      mergeCount = merge(linelist);
+    }
+
+    // Remove all old line elements
+    paths = Array.from(root.children) as SVGElement[];
+    for (const path of paths) {
+      if (path.tagName === 'line') {
+        root.removeChild(path);
+      }
+    }
+
+    // Add the merged lines back to the root
+    for (const line of linelist) {
+      root.appendChild(line);
+    }
+  }
+
   // Placeholder for polygonifyPath - will be implemented in Step 9
   private polygonifyPath(_element: SVGElement): Point[] | null {
     // This will be implemented in Step 9: Shape Conversion Methods
     return null;
+  }
+
+  /**
+   * Public API method to split paths and polylines into line segments
+   * @param root - The SVG root element containing paths to split
+   */
+  public performSplitLines(root: SVGElement): void {
+    this.splitLines(root);
+  }
+
+  /**
+   * Public API method to split a path into individual line segments
+   * @param path - The path element to split
+   * @returns Array of line elements representing the path segments
+   */
+  public performSplitPathSegments(path: SVGElement): SVGElement[] {
+    return this.splitPathSegments(path);
+  }
+
+  /**
+   * Public API method to merge overlapping line segments
+   * @param root - The SVG root element containing lines to merge
+   * @param tolerance - Tolerance for overlap detection (default: uses config tolerance)
+   */
+  public performMergeOverlap(root: SVGElement, tolerance?: number): void {
+    const actualTolerance = tolerance !== undefined ? tolerance : this.conf.tolerance;
+    this.mergeOverlap(root, actualTolerance);
   }
 
   // Remaining methods will be converted in subsequent steps...
