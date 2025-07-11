@@ -1,7 +1,7 @@
-import { createSignal, createContext, useContext, onMount } from 'solid-js';
+import { createSignal, createContext, useContext, onMount, createEffect } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import i18next from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import { globalState } from '../stores/global.store';
 
 // Import translation files
 import enCommon from '../locales/en/common.json';
@@ -23,11 +23,6 @@ import deFiles from '../locales/de/files.json';
 export const i18nConfig = {
   fallbackLng: 'en',
   debug: false,
-  detection: {
-    order: ['localStorage', 'navigator'],
-    caches: ['localStorage'],
-    lookupLocalStorage: 'deepnest-language'
-  },
   interpolation: {
     escapeValue: false
   },
@@ -95,18 +90,36 @@ export const useTranslation = (namespace = 'common') => {
 };
 
 export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
-  const [language, setLanguage] = createSignal('en');
+  const [language, setLanguage] = createSignal(globalState.ui.language || 'en');
   const [ready, setReady] = createSignal(false);
   
-  // Initialize i18next on mount
+  // Initialize i18next on mount with global state language
   onMount(async () => {
     try {
-      await i18next.use(LanguageDetector).init(i18nConfig);
-      setLanguage(i18next.language || 'en');
+      // Initialize with global state language
+      const initialLang = globalState.ui.language || 'en';
+      await i18next.init({
+        ...i18nConfig,
+        lng: initialLang
+      });
+      setLanguage(initialLang);
       setReady(true);
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
       setReady(true); // Set ready even on error to prevent blocking
+    }
+  });
+
+  // Sync global state language changes with i18next
+  createEffect(async () => {
+    const globalLang = globalState.ui.language;
+    if (ready() && globalLang && globalLang !== language()) {
+      try {
+        await i18next.changeLanguage(globalLang);
+        setLanguage(globalLang);
+      } catch (error) {
+        console.error('Failed to sync language with global state:', error);
+      }
     }
   });
   
