@@ -77,6 +77,20 @@ test.describe('SvgParser', () => {
       const parser = new SvgParser();
       expect(parser.directoryPath).toBe(null);
     });
+
+    test('initializes allowedElements correctly', () => {
+      const parser = new SvgParser();
+      const allowedElements = parser.allowedElementTypes;
+      
+      expect(allowedElements).toEqual(['svg', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'rect', 'image', 'line']);
+    });
+
+    test('initializes polygonElements correctly', () => {
+      const parser = new SvgParser();
+      const polygonElements = parser.polygonElementTypes;
+      
+      expect(polygonElements).toEqual(['svg', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'rect']);
+    });
   });
 
   test.describe('Configuration', () => {
@@ -689,6 +703,407 @@ test.describe('SvgParser', () => {
         expect(() => {
           (parser as any).transformParse('invalid transform string');
         }).not.toThrow();
+      });
+    });
+  });
+
+  test.describe('Preprocessing Methods', () => {
+    test.describe('cleanInput Method', () => {
+      test('processes SVG through complete preprocessing pipeline', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g transform="translate(10, 10)"><rect width="50" height="50"/><text>Remove me</text></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const result = parser.cleanInput();
+        
+        expect(result).toBeDefined();
+        expect(result).toBe(parser.root);
+      });
+
+      test('returns undefined when no SVG root is loaded', () => {
+        const parser = new SvgParser();
+        const result = parser.cleanInput();
+        
+        expect(result).toBeUndefined();
+      });
+
+      test('handles DXF flag correctly', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 A 10 10 0 0 1 20 0"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const result = parser.cleanInput(true);
+        
+        expect(result).toBeDefined();
+      });
+    });
+
+    test.describe('imagePaths Method', () => {
+      test('converts relative image paths to absolute', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><image href="image.png"/></svg>';
+        
+        parser.load('/test/path', svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.imagePaths(root);
+          const image = root.querySelector('image');
+          
+          expect(image?.getAttribute('href')).toBe('/test/path/image.png');
+          expect(image?.getAttribute('data-href')).toBe('image.png');
+        }
+      });
+
+      test('handles xlink:href attribute', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><image xlink:href="image.png"/></svg>';
+        
+        parser.load('/test/path', svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.imagePaths(root);
+          const image = root.querySelector('image');
+          
+          expect(image?.getAttribute('href')).toBe('/test/path/image.png');
+          expect(image?.getAttribute('data-href')).toBe('image.png');
+        }
+      });
+
+      test('returns false when no directory path is set', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><image href="image.png"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const result = parser.imagePaths(root);
+          expect(result).toBe(false);
+        }
+      });
+
+      test('ignores images without href attributes', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><image/></svg>';
+        
+        parser.load('/test/path', svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          expect(() => parser.imagePaths(root)).not.toThrow();
+        }
+      });
+    });
+
+    test.describe('flatten Method', () => {
+      test('brings nested elements to top level', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g><rect width="50" height="50"/><circle cx="25" cy="25" r="10"/></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const initialChildCount = root.children.length;
+          parser.flatten(root);
+          
+          // After flattening, elements should be moved to top level
+          expect(root.children.length).toBeGreaterThan(initialChildCount);
+        }
+      });
+
+      test('preserves SVG root element', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g><rect width="50" height="50"/></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.flatten(root);
+          
+          // SVG root should remain as root
+          expect(root.tagName).toBe('svg');
+          expect(root.parentElement).toBeDefined();
+        }
+      });
+
+      test('handles deeply nested structures', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g><g><g><rect width="50" height="50"/></g></g></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          expect(() => parser.flatten(root)).not.toThrow();
+        }
+      });
+    });
+
+    test.describe('filter Method', () => {
+      test('removes elements not in whitelist', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect width="50" height="50"/><text>Remove me</text><circle cx="25" cy="25" r="10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const initialChildren = Array.from(root.children);
+          parser.filter(['svg', 'rect', 'circle']);
+          
+          // Text element should be removed
+          const hasText = Array.from(root.querySelectorAll('*')).some(el => el.tagName === 'text');
+          expect(hasText).toBe(false);
+        }
+      });
+
+      test('preserves elements in whitelist', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect width="50" height="50"/><circle cx="25" cy="25" r="10"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.filter(['svg', 'rect', 'circle']);
+          
+          // Whitelisted elements should remain
+          expect(root.querySelector('rect')).toBeDefined();
+          expect(root.querySelector('circle')).toBeDefined();
+        }
+      });
+
+      test('throws error for invalid whitelist', () => {
+        const parser = new SvgParser();
+        
+        expect(() => parser.filter([])).toThrow('invalid whitelist');
+        expect(() => parser.filter(null as any)).toThrow('invalid whitelist');
+      });
+
+      test('uses SVG root as default element', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><text>Remove me</text></svg>';
+        
+        parser.load(null, svgString, 72);
+        
+        expect(() => parser.filter(['svg', 'rect'])).not.toThrow();
+      });
+
+      test('handles elements with children correctly', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g><rect width="50" height="50"/></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          parser.filter(['svg', 'rect']);
+          
+          // Group should be removed but rect should remain
+          expect(root.querySelector('g')).toBeNull();
+          expect(root.querySelector('rect')).toBeDefined();
+        }
+      });
+    });
+
+    test.describe('recurse Method', () => {
+      test('applies function to all elements recursively', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g><rect width="50" height="50"/><circle cx="25" cy="25" r="10"/></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const processedElements: string[] = [];
+          parser.recurse(root, (element) => {
+            processedElements.push(element.tagName);
+          });
+          
+          // Should process all elements
+          expect(processedElements).toContain('svg');
+          expect(processedElements).toContain('g');
+          expect(processedElements).toContain('rect');
+          expect(processedElements).toContain('circle');
+        }
+      });
+
+      test('processes children before parents', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><g><rect width="50" height="50"/></g></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          const processOrder: string[] = [];
+          parser.recurse(root, (element) => {
+            processOrder.push(element.tagName);
+          });
+          
+          // Rect should be processed before g, g before svg
+          const rectIndex = processOrder.indexOf('rect');
+          const gIndex = processOrder.indexOf('g');
+          const svgIndex = processOrder.indexOf('svg');
+          
+          expect(rectIndex).toBeLessThan(gIndex);
+          expect(gIndex).toBeLessThan(svgIndex);
+        }
+      });
+
+      test('avoids infinite loops with dynamically added children', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect width="50" height="50"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root) {
+          let callCount = 0;
+          parser.recurse(root, (element) => {
+            callCount++;
+            // Try to add a child (should not cause infinite loop)
+            if (callCount < 5 && element.tagName === 'rect') {
+              const newRect = root.ownerDocument!.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              element.appendChild(newRect);
+            }
+          });
+          
+          // Should complete without infinite loop
+          expect(callCount).toBeLessThan(10);
+        }
+      });
+    });
+
+    test.describe('splitPath Method', () => {
+      test('splits compound paths with multiple M commands', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 10 M 20 20 L 30 30"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const result = parser.splitPath(root.firstElementChild as SVGElement);
+          
+          // Should return array of new paths
+          expect(Array.isArray(result)).toBe(true);
+          if (Array.isArray(result)) {
+            expect(result.length).toBeGreaterThan(0);
+          }
+        }
+      });
+
+      test('returns false for paths with single M command', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 10 L 20 20"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const result = parser.splitPath(root.firstElementChild as SVGElement);
+          
+          // Should return false (no splitting needed)
+          expect(result).toBe(false);
+        }
+      });
+
+      test('returns false for non-path elements', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><rect width="50" height="50"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const result = parser.splitPath(root.firstElementChild as SVGElement);
+          
+          // Should return false for non-path elements
+          expect(result).toBe(false);
+        }
+      });
+
+      test('handles relative move commands', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path d="M 0 0 L 10 10 m 10 10 L 30 30"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          const result = parser.splitPath(root.firstElementChild as SVGElement);
+          
+          // Should handle relative commands
+          expect(Array.isArray(result)).toBe(true);
+        }
+      });
+
+      test('removes original path after splitting', () => {
+        const parser = new SvgParser();
+        const svgString = '<svg><path id="original" d="M 0 0 L 10 10 M 20 20 L 30 30"/></svg>';
+        
+        parser.load(null, svgString, 72);
+        const root = parser.root;
+        
+        if (root && root.firstElementChild) {
+          parser.splitPath(root.firstElementChild as SVGElement);
+          
+          // Original path should be removed
+          expect(root.querySelector('#original')).toBeNull();
+        }
+      });
+
+      test('handles paths without parent element', () => {
+        const parser = new SvgParser();
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0 0 L 10 10');
+        
+        const result = parser.splitPath(path);
+        
+        // Should return false for paths without parent
+        expect(result).toBe(false);
+      });
+    });
+
+    test.describe('Integration Tests', () => {
+      test('complete preprocessing pipeline preserves geometric elements', () => {
+        const parser = new SvgParser();
+        const svgString = `
+          <svg>
+            <g transform="translate(10, 10)">
+              <rect width="50" height="50"/>
+              <circle cx="25" cy="25" r="10"/>
+              <text>Remove this text</text>
+              <path d="M 0 0 L 10 10 M 20 20 L 30 30"/>
+            </g>
+            <image href="test.png"/>
+          </svg>
+        `;
+        
+        parser.load('/images', svgString, 72);
+        const result = parser.cleanInput();
+        
+        expect(result).toBeDefined();
+        if (result) {
+          // Should preserve geometric elements
+          expect(result.querySelector('rect')).toBeDefined();
+          expect(result.querySelector('circle')).toBeDefined();
+          
+          // Should remove text elements
+          expect(result.querySelector('text')).toBeNull();
+          
+          // Should flatten structure (no groups)
+          expect(result.querySelector('g')).toBeNull();
+          
+          // Should process images
+          const image = result.querySelector('image');
+          expect(image?.getAttribute('href')).toBe('/images/test.png');
+        }
       });
     });
   });

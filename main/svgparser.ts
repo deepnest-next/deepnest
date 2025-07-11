@@ -43,6 +43,12 @@ export class SvgParser {
   /** The top level SVG element of the SVG document */
   private svgRoot: SVGElement | undefined;
   
+  /** Elements that can be imported */
+  private readonly allowedElements: string[];
+  
+  /** Elements that can be polygonified */
+  private readonly polygonElements: string[];
+  
   /** Configuration settings */
   private conf: SvgParserConfig;
   
@@ -56,6 +62,12 @@ export class SvgParser {
     this.svg = undefined;
     this.svgRoot = undefined;
     this.dirPath = null;
+    
+    // Elements that can be imported
+    this.allowedElements = ['svg', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'rect', 'image', 'line'];
+    
+    // Elements that can be polygonified
+    this.polygonElements = ['svg', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'rect'];
     
     this.conf = {
       tolerance: 2, // max bound for bezier->line segment conversion, in native SVG units
@@ -215,6 +227,240 @@ export class SvgParser {
    */
   get directoryPath(): string | null {
     return this.dirPath;
+  }
+
+  /**
+   * Gets the list of allowed SVG element types
+   * @returns Array of allowed element tag names
+   */
+  get allowedElementTypes(): string[] {
+    return this.allowedElements;
+  }
+
+  /**
+   * Gets the list of SVG element types that can be converted to polygons
+   * @returns Array of polygonifiable element tag names
+   */
+  get polygonElementTypes(): string[] {
+    return this.polygonElements;
+  }
+
+  /**
+   * Prepares the SVG for CAD/CAM operations by applying all necessary preprocessing steps
+   * @param dxfFlag - Special flag for DXF import handling
+   * @returns The processed SVG root element
+   */
+  cleanInput(dxfFlag: boolean = false): SVGElement | undefined {
+    if (!this.svgRoot) {
+      return undefined;
+    }
+
+    // Apply any transformations, so that all path positions etc will be in the same coordinate space
+    this.applyTransform(this.svgRoot, '', false, dxfFlag);
+
+    // Remove any g elements and bring all elements to the top level
+    this.flatten(this.svgRoot);
+
+    // Remove any non-geometric elements like text
+    this.filter(this.allowedElements);
+
+    // Update image paths to absolute paths
+    this.imagePaths(this.svgRoot);
+
+    // Split any compound paths into individual path elements
+    this.recurse(this.svgRoot, (element) => this.splitPath(element));
+
+    // Merge open paths into closed paths for numerically accurate exports
+    this.mergeLines(this.svgRoot, this.conf.toleranceSvg);
+
+    console.log('this is the scale ', this.conf.scale * 0.02, this.conf.endpointTolerance);
+
+    // For exports with wide gaps, roughly 0.005 inch
+    this.mergeLines(this.svgRoot, this.conf.endpointTolerance);
+    
+    // Finally close any open paths with a really wide margin
+    this.mergeLines(this.svgRoot, 3 * this.conf.endpointTolerance);
+
+    return this.svgRoot;
+  }
+
+  /**
+   * Converts relative image paths to absolute paths
+   * @param svg - The SVG element to process
+   * @returns False if no directory path is set, undefined otherwise
+   */
+  imagePaths(svg: SVGElement): boolean | undefined {
+    if (!this.dirPath) {
+      return false;
+    }
+
+    for (let i = 0; i < svg.children.length; i++) {
+      const element = svg.children[i];
+      if (element.tagName === 'image') {
+        let relpath = element.getAttribute('href');
+        if (!relpath) {
+          relpath = element.getAttribute('xlink:href');
+        }
+        
+        if (relpath) {
+          const abspath = this.dirPath + '/' + relpath;
+          element.setAttribute('href', abspath);
+          element.setAttribute('data-href', relpath);
+        }
+      }
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Flattens the SVG structure by bringing all child elements to the top level
+   * @param element - The element to flatten
+   */
+  flatten(element: SVGElement): void {
+    // Recursively flatten children first
+    for (let i = 0; i < element.children.length; i++) {
+      this.flatten(element.children[i] as SVGElement);
+    }
+
+    // Move all children to parent level (except for SVG root)
+    if (element.tagName !== 'svg' && element.parentElement) {
+      while (element.children.length > 0) {
+        element.parentElement.appendChild(element.children[0]);
+      }
+    }
+  }
+
+  /**
+   * Removes all elements with tag names not in the whitelist
+   * @param whitelist - Array of allowed element tag names
+   * @param element - The element to filter (defaults to SVG root)
+   * @throws Error if whitelist is invalid
+   */
+  filter(whitelist: string[], element?: SVGElement): void {
+    if (!whitelist || whitelist.length === 0) {
+      throw new Error('invalid whitelist');
+    }
+
+    const targetElement = element || this.svgRoot;
+    if (!targetElement) {
+      return;
+    }
+
+    // Recursively filter children first
+    for (let i = 0; i < targetElement.children.length; i++) {
+      this.filter(whitelist, targetElement.children[i] as SVGElement);
+    }
+
+    // Remove element if it's not in whitelist and has no children
+    if (targetElement.children.length === 0 && whitelist.indexOf(targetElement.tagName) < 0) {
+      targetElement.parentElement?.removeChild(targetElement);
+    }
+  }
+
+  /**
+   * Recursively applies a function to an element and all its children
+   * @param element - The element to process
+   * @param func - The function to apply to each element
+   */
+  recurse(element: SVGElement, func: (element: SVGElement) => void): void {
+    // Only operate on original DOM tree, ignore any children that are added to avoid infinite loops
+    const children = Array.from(element.children) as SVGElement[];
+    
+    for (const child of children) {
+      this.recurse(child, func);
+    }
+
+    func(element);
+  }
+
+  /**
+   * Splits a compound path (paths with multiple M/m commands) into individual path elements
+   * @param path - The path element to split
+   * @returns Array of new path elements or false if no splitting needed
+   */
+  splitPath(path: SVGElement): SVGElement[] | false {
+    if (!path || path.tagName !== 'path' || !path.parentElement) {
+      return false;
+    }
+
+    const seglist = (path as any).pathSegList;
+    let x = 0, y = 0, x0 = 0, y0 = 0;
+    const paths: SVGElement[] = [];
+    let currentPath: SVGElement;
+
+    // Find the last M command to determine if splitting is needed
+    let lastM = 0;
+    for (let i = seglist.numberOfItems - 1; i >= 0; i--) {
+      const command = seglist.getItem(i).pathSegTypeAsLetter;
+      if (i > 0 && (command === 'M' || command === 'm')) {
+        lastM = i;
+        break;
+      }
+    }
+
+    if (lastM === 0) {
+      return false; // Only 1 M command, no need to split
+    }
+
+    // Process each segment and create new paths
+    for (let i = 0; i < seglist.numberOfItems; i++) {
+      const s = seglist.getItem(i);
+      const command = s.pathSegTypeAsLetter;
+
+      // Create new path for each M/m command
+      if (command === 'M' || command === 'm') {
+        currentPath = path.cloneNode(false) as SVGElement;
+        (currentPath as any).setAttribute('d', '');
+        paths.push(currentPath);
+      }
+
+      // Process coordinates based on command type
+      if (/[MLHVCSQTA]/.test(command)) {
+        if ('x' in s) x = s.x;
+        if ('y' in s) y = s.y;
+        (currentPath! as any).pathSegList.appendItem(s);
+      } else {
+        if ('x' in s) x += s.x;
+        if ('y' in s) y += s.y;
+        
+        if (command === 'm') {
+          (currentPath! as any).pathSegList.appendItem((path as any).createSVGPathSegMovetoAbs(x, y));
+        } else {
+          if (command === 'Z' || command === 'z') {
+            x = x0;
+            y = y0;
+          }
+          (currentPath! as any).pathSegList.appendItem(s);
+        }
+      }
+
+      // Record the start of a subpath
+      if (command === 'M' || command === 'm') {
+        x0 = x;
+        y0 = y;
+      }
+    }
+
+    // Add new paths to the document
+    const addedPaths: SVGElement[] = [];
+    for (const newPath of paths) {
+      // Don't add trivial paths from sequential M commands
+      if ((newPath as any).pathSegList.numberOfItems > 1) {
+        path.parentElement.insertBefore(newPath, path);
+        addedPaths.push(newPath);
+      }
+    }
+
+    // Remove the original path
+    path.remove();
+
+    return addedPaths;
+  }
+
+  // Placeholder methods that will be implemented in subsequent steps
+  private mergeLines(_root: SVGElement, _tolerance: number): void {
+    // This will be implemented in Step 7: Path Merging Logic
   }
 
   /**
