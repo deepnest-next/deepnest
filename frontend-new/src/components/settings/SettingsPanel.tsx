@@ -83,26 +83,26 @@ const SettingsPanel: Component = () => {
   ];
 
   return (
-    <div class="settings-panel">
-      <div class="panel-header">
-        <h2>{t('settings_title')}</h2>
-        <div class="panel-actions">
+    <div class="h-full flex flex-col">
+      <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings_title')}</h2>
+        <div class="flex gap-2">
           <button 
-            class="button secondary"
+            class="btn-secondary"
             onClick={handleImportConfig}
             title={t('import_configuration')}
           >
             📁 {t('import')}
           </button>
           <button 
-            class="button secondary"
+            class="btn-secondary"
             onClick={handleExportConfig}
             title={t('export_configuration')}
           >
             📤 {t('export')}
           </button>
           <button 
-            class="button secondary"
+            class="btn-secondary"
             onClick={handleResetDefaults}
             title={t('reset_to_defaults')}
           >
@@ -111,24 +111,28 @@ const SettingsPanel: Component = () => {
         </div>
       </div>
 
-      <div class="settings-layout">
-        <div class="settings-sidebar">
-          <div class="settings-nav">
+      <div class="flex-1 flex overflow-hidden">
+        <div class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+          <div class="p-4">
             <For each={settingsSections}>
               {(section) => (
                 <button
-                  class={`settings-nav-item ${activeSection() === section.id ? 'active' : ''}`}
+                  class={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    activeSection() === section.id 
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100' 
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
                   onClick={() => setActiveSection(section.id)}
                 >
-                  <span class="nav-icon">{section.icon}</span>
-                  <span class="nav-label">{section.label}</span>
+                  <span class="text-lg">{section.icon}</span>
+                  <span class="font-medium">{section.label}</span>
                 </button>
               )}
             </For>
           </div>
         </div>
 
-        <div class="settings-content">
+        <div class="flex-1 overflow-y-auto">
           <Show when={activeSection() === 'presets'}>
             <PresetManager />
           </Show>

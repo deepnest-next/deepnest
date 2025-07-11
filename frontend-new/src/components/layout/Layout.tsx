@@ -7,9 +7,9 @@ import ResizableLayout from './ResizableLayout';
 
 const Layout: Component = () => {
   return (
-    <div class="layout">
+    <div class="h-screen flex flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <Header />
-      <div class="layout-body">
+      <div class="flex-1 flex overflow-hidden">
         <ResizableLayout
           left={<Navigation />}
           right={<MainContent />}

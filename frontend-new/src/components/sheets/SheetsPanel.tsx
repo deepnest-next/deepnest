@@ -74,12 +74,12 @@ const SheetsPanel: Component = () => {
   };
 
   return (
-    <div class="sheets-panel">
-      <div class="panel-header">
-        <h2>{t('sheets_title')}</h2>
-        <div class="panel-actions">
+    <div class="h-full flex flex-col">
+      <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('sheets_title')}</h2>
+        <div class="flex gap-2">
           <button 
-            class="button primary"
+            class="btn-primary"
             onClick={handleAddSheet}
             title={t('add_sheet')}
           >
@@ -88,23 +88,25 @@ const SheetsPanel: Component = () => {
         </div>
       </div>
 
-      <div class="sheets-summary">
-        <div class="summary-item">
-          <span class="summary-label">{t('total_sheets')}:</span>
-          <span class="summary-value">{sheetsCount()}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">{t('total_area')}:</span>
-          <span class="summary-value">{totalArea().toFixed(0)} mm²</span>
+      <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('total_sheets')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{sheetsCount()}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('total_area')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{totalArea().toFixed(0)} mm²</span>
+          </div>
         </div>
       </div>
 
       <Show when={showAddSheet()}>
-        <div class="sheet-config-overlay">
-          <div class="sheet-config-modal">
+        <div class="modal-overlay">
+          <div class="modal-content">
             <div class="modal-header">
-              <h3>{editingSheet() ? t('edit_sheet') : t('add_new_sheet')}</h3>
-              <button class="close-button" onClick={handleCancel}>×</button>
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{editingSheet() ? t('edit_sheet') : t('add_new_sheet')}</h3>
+              <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none" onClick={handleCancel}>×</button>
             </div>
             <SheetConfig
               sheet={editingSheet()}
@@ -115,27 +117,29 @@ const SheetsPanel: Component = () => {
         </div>
       </Show>
 
-      <div class="panel-content">
+      <div class="flex-1 overflow-hidden">
         <Show 
           when={sheetsCount() > 0}
           fallback={
-            <div class="empty-state">
-              <div class="empty-icon">📄</div>
-              <h3>{t('no_sheets_loaded')}</h3>
-              <p>{t('add_sheets_to_get_started')}</p>
+            <div class="h-full flex flex-col items-center justify-center text-center gap-6 p-8">
+              <div class="text-6xl opacity-30">📄</div>
+              <div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('no_sheets_loaded')}</h3>
+                <p class="text-gray-600 dark:text-gray-400">{t('add_sheets_to_get_started')}</p>
+              </div>
               
-              <div class="template-section">
-                <h4>{t('quick_templates')}</h4>
-                <div class="template-grid">
+              <div class="w-full max-w-2xl">
+                <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('quick_templates')}</h4>
+                <div class="grid grid-cols-3 gap-3">
                   <For each={sheetTemplates}>
                     {(template) => (
                       <button 
-                        class="template-button"
+                        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center"
                         onClick={() => handleAddTemplate(template)}
                         title={`${template.width} × ${template.height} ${template.units}`}
                       >
-                        <div class="template-name">{template.name}</div>
-                        <div class="template-size">
+                        <div class="font-medium text-gray-900 dark:text-gray-100 mb-1">{template.name}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
                           {template.width} × {template.height}
                         </div>
                       </button>
@@ -146,65 +150,67 @@ const SheetsPanel: Component = () => {
             </div>
           }
         >
-          <div class="sheets-list">
-            <div class="list-header">
-              <h3>{t('configured_sheets')}</h3>
+          <div class="h-full flex flex-col">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('configured_sheets')}</h3>
             </div>
             
-            <div class="sheets-grid">
+            <div class="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <For each={globalState.app.sheets}>
                 {(sheet, index) => (
-                  <div class="sheet-card">
-                    <div class="sheet-preview">
-                      <div class="sheet-visual">
+                  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                    <div class="h-32 bg-gray-50 dark:bg-gray-700 flex items-center justify-center p-4">
+                      <div class="relative">
                         <div 
-                          class="sheet-rectangle"
+                          class="bg-white dark:bg-gray-600 border-2 border-gray-300 dark:border-gray-500 rounded shadow-sm"
                           style={{
                             'aspect-ratio': `${sheet.width} / ${sheet.height}`,
-                            'max-width': '120px',
-                            'max-height': '120px'
+                            'max-width': '80px',
+                            'max-height': '80px',
+                            'min-width': '40px',
+                            'min-height': '40px'
                           }}
                         >
-                          <div class="sheet-margin" style={{ margin: '8px' }} />
+                          <div class="absolute inset-1 border border-dashed border-gray-400 dark:border-gray-400 rounded-sm" />
                         </div>
                       </div>
                     </div>
 
-                    <div class="sheet-info">
-                      <div class="sheet-title">
+                    <div class="p-4">
+                      <div class="font-medium text-gray-900 dark:text-gray-100 mb-3">
                         {sheet.name || `${t('sheet')} ${index() + 1}`}
                       </div>
                       
-                      <div class="sheet-details">
-                        <div class="detail-item">
-                          <span class="detail-label">{t('dimensions')}:</span>
-                          <span class="detail-value">{formatDimensions(sheet)}</span>
+                      <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                          <span class="text-gray-600 dark:text-gray-400">{t('dimensions')}:</span>
+                          <span class="font-medium text-gray-900 dark:text-gray-100">{formatDimensions(sheet)}</span>
                         </div>
-                        <div class="detail-item">
-                          <span class="detail-label">{t('quantity')}:</span>
-                          <span class="detail-value">{sheet.quantity}</span>
+                        <div class="flex justify-between text-sm">
+                          <span class="text-gray-600 dark:text-gray-400">{t('quantity')}:</span>
+                          <span class="font-medium text-gray-900 dark:text-gray-100">{sheet.quantity}</span>
                         </div>
-                        <div class="detail-item">
-                          <span class="detail-label">{t('material')}:</span>
-                          <span class="detail-value">{sheet.material || 'Generic'}</span>
+                        <div class="flex justify-between text-sm">
+                          <span class="text-gray-600 dark:text-gray-400">{t('material')}:</span>
+                          <span class="font-medium text-gray-900 dark:text-gray-100">{sheet.material || 'Generic'}</span>
                         </div>
                         <Show when={sheet.margin}>
-                          <div class="detail-item">
-                            <span class="detail-label">{t('margin')}:</span>
-                            <span class="detail-value">{sheet.margin} mm</span>
+                          <div class="flex justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">{t('margin')}:</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{sheet.margin} mm</span>
                           </div>
                         </Show>
                       </div>
 
-                      <div class="sheet-actions">
+                      <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
                         <button 
-                          class="button-link"
+                          class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                           onClick={() => handleEditSheet(sheet)}
                         >
                           {t('edit')}
                         </button>
                         <button 
-                          class="button-link danger"
+                          class="text-red-600 dark:text-red-400 hover:underline text-sm"
                           onClick={() => handleDeleteSheet(sheet.id)}
                         >
                           {t('delete')}

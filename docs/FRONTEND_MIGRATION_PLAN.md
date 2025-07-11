@@ -35,7 +35,7 @@ This document outlines the complete migration strategy for transitioning the Dee
 - **Framework**: SolidJS 1.8+
 - **Build Tool**: Vite with TypeScript
 - **State Management**: SolidJS stores with Immer
-- **Styling**: CSS modules with custom properties
+- **Styling**: Tailwind CSS v4 with utility-first approach
 - **Interactions**: solid-resizable-panels or custom resizable hook
 - **IPC**: Type-safe wrapper service
 - **i18n**: i18next with solid-i18next
@@ -50,7 +50,9 @@ This document outlines the complete migration strategy for transitioning the Dee
   "i18next-browser-languagedetector": "^7.2.0",
   "solid-resizable-panels": "^1.0.0",
   "immer": "^10.0.0",
-  "vite": "^5.0.0",
+  "tailwindcss": "^4.1.11",
+  "@tailwindcss/vite": "^4.1.11",
+  "vite": "^7.0.0",
   "typescript": "^5.0.0",
   "vite-plugin-solid": "^2.8.0"
 }
@@ -180,7 +182,35 @@ interface GlobalState {
 - [ ] **Memory Management**: Cleanup and garbage collection
 - [ ] **Bundle Optimization**: Code splitting and tree shaking
 
-### Phase 4: Testing & Migration (Week 8-9)
+### Phase 4: Tailwind CSS v4 Migration (Week 8)
+
+#### 4.1 Styling Framework Migration
+- [x] **Tailwind CSS v4 Installation**: Install tailwindcss and @tailwindcss/vite plugin
+- [x] **Build Configuration**: Update vite.config.ts to use Tailwind Vite plugin
+- [x] **Theme Configuration**: Migrate custom CSS variables to Tailwind theme config
+- [x] **Component Migration**: Convert all components from vanilla CSS to Tailwind utility classes
+
+#### 4.2 Component-by-Component Migration
+- [x] **Layout Components**: Header, Navigation, StatusBar, MainContent, ResizableLayout
+- [x] **Parts Components**: PartsPanel, PartsList with Tailwind responsive design
+- [x] **Nesting Components**: NestingPanel, NestingProgress, ResultsGrid, ResultViewer
+- [x] **Sheets Components**: SheetsPanel, SheetConfig with form styling
+- [x] **Settings Components**: SettingsPanel with sidebar navigation
+- [x] **Files Components**: DragDropZone, ExportDialog, RecentFiles, FilesPanel
+
+#### 4.3 Design System Standardization
+- [x] **Utility Classes**: Create reusable component styles using @layer components
+- [x] **Dark Mode**: Implement consistent dark mode using Tailwind's dark: prefix
+- [x] **Responsive Design**: Apply responsive grid layouts and breakpoints
+- [x] **Color Palette**: Standardize colors to Tailwind's default palette
+- [x] **Spacing**: Migrate to Tailwind's spacing scale for consistency
+
+#### 4.4 Build Optimization
+- [x] **CSS Bundle**: Optimize Tailwind output for production builds
+- [x] **PurgeCSS**: Automatic unused CSS removal via Tailwind
+- [x] **Performance**: Maintain build performance with new styling approach
+
+### Phase 5: Testing & Migration (Week 9)
 
 #### 4.1 Testing Strategy
 - [ ] **Unit Tests**: Component and utility function testing
@@ -360,9 +390,7 @@ frontend-new/
 │   │   ├── fr/
 │   │   └── es/
 │   ├── styles/
-│   │   ├── globals.css
-│   │   ├── themes.css
-│   │   └── components.css
+│   │   └── globals.css         # Tailwind imports and custom components
 │   ├── App.tsx
 │   ├── index.tsx
 │   └── i18n.config.ts
@@ -371,6 +399,7 @@ frontend-new/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
+├── tailwind.config.js
 └── README.md
 ```
 

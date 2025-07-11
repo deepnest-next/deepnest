@@ -59,12 +59,12 @@ const NestingPanel: Component = () => {
   );
 
   return (
-    <div class="nesting-panel">
-      <div class="panel-header">
-        <h2>{t('nesting_title')}</h2>
-        <div class="panel-actions">
+    <div class="h-full flex flex-col">
+      <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('nesting_title')}</h2>
+        <div class="flex gap-2">
           <button 
-            class="button primary"
+            class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleStartNesting}
             disabled={!canStartNesting()}
             title={!canStartNesting() ? t('cannot_start_nesting') : t('start_nesting')}
@@ -72,7 +72,7 @@ const NestingPanel: Component = () => {
             ▶️ {t('start_nesting')}
           </button>
           <button 
-            class="button secondary"
+            class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleStopNesting}
             disabled={!globalState.process.isNesting}
             title={t('stop_nesting')}
@@ -81,7 +81,7 @@ const NestingPanel: Component = () => {
           </button>
           <Show when={hasResults() && !globalState.process.isNesting}>
             <button 
-              class="button secondary"
+              class="btn-secondary"
               onClick={handleClearResults}
               title={t('clear_results')}
             >
@@ -91,22 +91,24 @@ const NestingPanel: Component = () => {
         </div>
       </div>
 
-      <div class="nesting-summary">
-        <div class="summary-item">
-          <span class="summary-label">{t('parts_to_nest')}:</span>
-          <span class="summary-value">{selectedPartsCount()}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">{t('available_sheets')}:</span>
-          <span class="summary-value">{globalState.app.sheets.length}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">{t('results_count')}:</span>
-          <span class="summary-value">{globalState.app.nests.length}</span>
+      <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('parts_to_nest')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedPartsCount()}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('available_sheets')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{globalState.app.sheets.length}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('results_count')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{globalState.app.nests.length}</span>
+          </div>
         </div>
       </div>
 
-      <div class="panel-content">
+      <div class="flex-1 overflow-hidden">
         <Show when={globalState.process.isNesting}>
           <NestingProgress />
         </Show>
@@ -114,12 +116,12 @@ const NestingPanel: Component = () => {
         <Show 
           when={hasResults()}
           fallback={
-            <div class="empty-state">
-              <div class="empty-icon">🎯</div>
-              <h3>{t('no_nesting_results')}</h3>
-              <p>{t('start_nesting_to_see_results')}</p>
+            <div class="h-full flex flex-col items-center justify-center text-center gap-4 p-8">
+              <div class="text-6xl opacity-30">🎯</div>
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('no_nesting_results')}</h3>
+              <p class="text-gray-600 dark:text-gray-400">{t('start_nesting_to_see_results')}</p>
               <Show when={!canStartNesting()}>
-                <p class="warning-text">{t('add_parts_and_sheets_first')}</p>
+                <p class="text-amber-600 dark:text-amber-400">{t('add_parts_and_sheets_first')}</p>
               </Show>
             </div>
           }

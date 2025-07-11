@@ -26,65 +26,65 @@ const NestingProgress: Component = () => {
   });
 
   return (
-    <div class="nesting-progress">
-      <div class="progress-header">
-        <h3>{t('nesting_in_progress')}</h3>
-        <div class="progress-percentage">
+    <div class="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 m-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('nesting_in_progress')}</h3>
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
           {progressPercentage().toFixed(1)}%
         </div>
       </div>
 
-      <div class="progress-bar-container">
-        <div class="progress-bar large">
+      <div class="mb-6">
+        <div class="progress-bar mb-2">
           <div
-            class="progress-fill"
+            class="progress-fill progress-fill-primary"
             style={{ width: `${progressPercentage()}%` }}
           />
         </div>
         <Show when={estimatedTimeRemaining()}>
-          <div class="time-remaining">
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center">
             {t('estimated_time_remaining')}: {estimatedTimeRemaining()}
           </div>
         </Show>
       </div>
 
-      <div class="progress-details">
+      <div class="space-y-4">
         <Show when={globalState.process.workerStatus.currentOperation}>
-          <div class="current-operation">
-            <span class="operation-label">{t('current_operation')}:</span>
-            <span class="operation-text">{globalState.process.workerStatus.currentOperation}</span>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{t('current_operation')}:</span>
+            <span class="ml-2 text-sm text-gray-900 dark:text-gray-100">{globalState.process.workerStatus.currentOperation}</span>
           </div>
         </Show>
 
-        <div class="worker-info">
-          <div class="info-item">
-            <span class="info-label">{t('threads_active')}:</span>
-            <span class="info-value">{globalState.process.workerStatus.threadsActive}</span>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('threads_active')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{globalState.process.workerStatus.threadsActive}</span>
           </div>
-          <div class="info-item">
-            <span class="info-label">{t('worker_status')}:</span>
-            <span class={`info-value ${globalState.process.workerStatus.isRunning ? 'running' : 'stopped'}`}>
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('worker_status')}:</span>
+            <span class={`text-sm font-medium ${globalState.process.workerStatus.isRunning ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {globalState.process.workerStatus.isRunning ? t('running') : t('stopped')}
             </span>
           </div>
         </div>
 
         <Show when={globalState.process.currentNest}>
-          <div class="current-nest-info">
-            <div class="info-item">
-              <span class="info-label">{t('current_generation')}:</span>
-              <span class="info-value">{globalState.process.currentNest?.generation || 0}</span>
+          <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">{t('current_generation')}:</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{globalState.process.currentNest?.generation || 0}</span>
             </div>
-            <div class="info-item">
-              <span class="info-label">{t('best_fitness')}:</span>
-              <span class="info-value">{globalState.process.currentNest?.fitness?.toFixed(2) || 'N/A'}</span>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">{t('best_fitness')}:</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{globalState.process.currentNest?.fitness?.toFixed(2) || 'N/A'}</span>
             </div>
           </div>
         </Show>
       </div>
 
-      <div class="progress-actions">
-        <button class="button-link" onClick={() => window.location.reload()}>
+      <div class="flex justify-center pt-4 border-t border-gray-200 dark:border-gray-600">
+        <button class="text-blue-600 dark:text-blue-400 hover:underline text-sm" onClick={() => window.location.reload()}>
           {t('refresh_status')}
         </button>
       </div>

@@ -134,30 +134,31 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
   };
 
   return (
-    <div class="sheet-config">
-      <div class="config-form">
-        <div class="form-section">
-          <h4>{t('basic_information')}</h4>
+    <>
+      <div class="modal-body">
+      <div class="space-y-6">
+        <div class="form-group">
+          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('basic_information')}</h4>
           
           <div class="form-group">
-            <label for="sheet-name">{t('sheet_name')}:</label>
+            <label class="form-label" for="sheet-name">{t('sheet_name')}:</label>
             <input
               id="sheet-name"
               type="text"
               value={name()}
               onInput={(e) => setName(e.currentTarget.value)}
               placeholder={t('enter_sheet_name')}
-              class="form-input"
+              class="input-base"
             />
           </div>
 
           <div class="form-group">
-            <label for="material">{t('material')}:</label>
+            <label class="form-label" for="material">{t('material')}:</label>
             <select
               id="material"
               value={material()}
               onChange={(e) => setMaterial(e.currentTarget.value)}
-              class="form-select"
+              class="input-select"
             >
               <For each={materialOptions}>
                 {(mat) => <option value={mat}>{mat}</option>}
@@ -166,15 +167,15 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
           </div>
         </div>
 
-        <div class="form-section">
-          <h4>{t('dimensions')}</h4>
+        <div class="form-group">
+          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('dimensions')}</h4>
           
-          <div class="preset-buttons">
+          <div class="grid grid-cols-3 gap-2 mb-4">
             <For each={commonSizes}>
               {(preset) => (
                 <button
                   type="button"
-                  class="preset-button"
+                  class="btn-secondary btn-small text-xs"
                   onClick={() => handlePresetSize(preset)}
                   title={`${preset.width} × ${preset.height} mm`}
                 >
@@ -184,9 +185,9 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
             </For>
           </div>
 
-          <div class="dimensions-row">
-            <div class="form-group">
-              <label for="width">{t('width')} (mm):</label>
+          <div class="flex items-end gap-2">
+            <div class="flex-1">
+              <label class="form-label" for="width">{t('width')} (mm):</label>
               <input
                 id="width"
                 type="number"
@@ -194,24 +195,24 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setWidth(parseFloat(e.currentTarget.value) || 0)}
                 min="1"
                 step="0.1"
-                class={`form-input ${errors().width ? 'error' : ''}`}
+                class={`input-number ${errors().width ? 'border-red-500' : ''}`}
               />
               <Show when={errors().width}>
-                <span class="error-message">{errors().width}</span>
+                <span class="text-red-500 text-xs mt-1 block">{errors().width}</span>
               </Show>
             </div>
 
             <button
               type="button"
-              class="swap-button"
+              class="btn-secondary mb-1"
               onClick={swapDimensions}
               title={t('swap_dimensions')}
             >
               ⇄
             </button>
 
-            <div class="form-group">
-              <label for="height">{t('height')} (mm):</label>
+            <div class="flex-1">
+              <label class="form-label" for="height">{t('height')} (mm):</label>
               <input
                 id="height"
                 type="number"
@@ -219,25 +220,25 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setHeight(parseFloat(e.currentTarget.value) || 0)}
                 min="1"
                 step="0.1"
-                class={`form-input ${errors().height ? 'error' : ''}`}
+                class={`input-number ${errors().height ? 'border-red-500' : ''}`}
               />
               <Show when={errors().height}>
-                <span class="error-message">{errors().height}</span>
+                <span class="text-red-500 text-xs mt-1 block">{errors().height}</span>
               </Show>
             </div>
           </div>
 
-          <div class="area-display">
+          <div class="text-sm text-gray-600 dark:text-gray-400 mt-2">
             {t('area')}: {calculateArea()} mm²
           </div>
         </div>
 
-        <div class="form-section">
-          <h4>{t('properties')}</h4>
+        <div class="form-group">
+          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('properties')}</h4>
           
-          <div class="properties-row">
-            <div class="form-group">
-              <label for="thickness">{t('thickness')} (mm):</label>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="form-label" for="thickness">{t('thickness')} (mm):</label>
               <input
                 id="thickness"
                 type="number"
@@ -245,30 +246,30 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setThickness(parseFloat(e.currentTarget.value) || 0)}
                 min="0.1"
                 step="0.1"
-                class={`form-input ${errors().thickness ? 'error' : ''}`}
+                class={`input-number ${errors().thickness ? 'border-red-500' : ''}`}
               />
               <Show when={errors().thickness}>
-                <span class="error-message">{errors().thickness}</span>
+                <span class="text-red-500 text-xs mt-1 block">{errors().thickness}</span>
               </Show>
             </div>
 
-            <div class="form-group">
-              <label for="quantity">{t('quantity')}:</label>
+            <div>
+              <label class="form-label" for="quantity">{t('quantity')}:</label>
               <input
                 id="quantity"
                 type="number"
                 value={quantity()}
                 onInput={(e) => setQuantity(parseInt(e.currentTarget.value) || 0)}
                 min="1"
-                class={`form-input ${errors().quantity ? 'error' : ''}`}
+                class={`input-number ${errors().quantity ? 'border-red-500' : ''}`}
               />
               <Show when={errors().quantity}>
-                <span class="error-message">{errors().quantity}</span>
+                <span class="text-red-500 text-xs mt-1 block">{errors().quantity}</span>
               </Show>
             </div>
 
-            <div class="form-group">
-              <label for="margin">{t('margin')} (mm):</label>
+            <div>
+              <label class="form-label" for="margin">{t('margin')} (mm):</label>
               <input
                 id="margin"
                 type="number"
@@ -276,42 +277,47 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
                 onInput={(e) => setMargin(parseFloat(e.currentTarget.value) || 0)}
                 min="0"
                 step="0.1"
-                class={`form-input ${errors().margin ? 'error' : ''}`}
+                class={`input-number ${errors().margin ? 'border-red-500' : ''}`}
               />
               <Show when={errors().margin}>
-                <span class="error-message">{errors().margin}</span>
+                <span class="text-red-500 text-xs mt-1 block">{errors().margin}</span>
               </Show>
             </div>
           </div>
         </div>
 
-        <div class="sheet-preview-section">
-          <h4>{t('preview')}</h4>
-          <div class="sheet-preview-container">
-            <div 
-              class="sheet-preview-visual"
-              style={{
-                'aspect-ratio': `${width()} / ${height()}`,
-                'max-width': '200px',
-                'max-height': '200px'
-              }}
-            >
+        <div class="form-group">
+          <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">{t('preview')}</h4>
+          <div class="flex items-center gap-6">
+            <div class="flex-shrink-0">
               <div 
-                class="sheet-preview-margin" 
-                style={{ 
-                  margin: `${Math.max(margin() / Math.max(width(), height()) * 100, 2)}%` 
-                }} 
-              />
+                class="bg-white dark:bg-gray-600 border-2 border-gray-300 dark:border-gray-500 rounded shadow-sm relative"
+                style={{
+                  'aspect-ratio': `${width()} / ${height()}`,
+                  'width': '120px',
+                  'max-height': '120px'
+                }}
+              >
+                <div 
+                  class="absolute border border-dashed border-gray-400 dark:border-gray-400 rounded-sm" 
+                  style={{ 
+                    top: `${Math.max(margin() / Math.max(width(), height()) * 100, 2)}%`,
+                    left: `${Math.max(margin() / Math.max(width(), height()) * 100, 2)}%`,
+                    right: `${Math.max(margin() / Math.max(width(), height()) * 100, 2)}%`,
+                    bottom: `${Math.max(margin() / Math.max(width(), height()) * 100, 2)}%`
+                  }} 
+                />
+              </div>
             </div>
-            <div class="preview-info">
-              <div class="preview-detail">
+            <div class="space-y-2">
+              <div class="text-sm text-gray-900 dark:text-gray-100">
                 {width()} × {height()} mm
               </div>
-              <div class="preview-detail">
+              <div class="text-sm text-gray-600 dark:text-gray-400">
                 {t('area')}: {calculateArea()} mm²
               </div>
               <Show when={margin() > 0}>
-                <div class="preview-detail">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
                   {t('margin')}: {margin()} mm
                 </div>
               </Show>
@@ -320,23 +326,24 @@ const SheetConfig: Component<SheetConfigProps> = (props) => {
         </div>
       </div>
 
-      <div class="form-actions">
+      </div>
+      <div class="modal-footer">
         <button 
           type="button"
-          class="button secondary"
+          class="btn-secondary"
           onClick={props.onCancel}
         >
           {t('cancel')}
         </button>
         <button 
           type="button"
-          class="button primary"
+          class="btn-primary"
           onClick={handleSave}
         >
           {props.sheet ? t('update_sheet') : t('add_sheet')}
         </button>
       </div>
-    </div>
+    </>
   );
 };
 

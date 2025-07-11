@@ -69,24 +69,24 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
   });
 
   return (
-    <div class="result-viewer">
-      <div class="viewer-controls">
-        <div class="zoom-controls">
-          <button class="control-button" onClick={handleZoomOut} title={t('zoom_out')}>
+    <div class="h-full flex flex-col">
+      <div class="flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div class="flex items-center gap-4">
+          <button class="btn-secondary btn-small" onClick={handleZoomOut} title={t('zoom_out')}>
             🔍−
           </button>
-          <span class="zoom-level">{Math.round(zoomLevel() * 100)}%</span>
-          <button class="control-button" onClick={handleZoomIn} title={t('zoom_in')}>
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-16 text-center">{Math.round(zoomLevel() * 100)}%</span>
+          <button class="btn-secondary btn-small" onClick={handleZoomIn} title={t('zoom_in')}>
             🔍+
           </button>
-          <button class="control-button" onClick={handleResetView} title={t('reset_view')}>
+          <button class="btn-secondary btn-small" onClick={handleResetView} title={t('reset_view')}>
             🎯
           </button>
         </div>
       </div>
 
-      <div class="viewer-content">
-        <div class="svg-viewer-container">
+      <div class="flex-1 flex">
+        <div class="flex-1 bg-white dark:bg-gray-900">
           <svg
             class="result-svg"
             width="100%"
@@ -117,14 +117,14 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
                       width={sheet.width}
                       height={sheet.height}
                       fill="rgba(200, 200, 200, 0.3)"
-                      stroke="var(--border-color)"
+                      stroke="#e5e7eb"
                       stroke-width="2"
                     />
                     <text
                       x={(sheet.x || 0) + 10}
                       y={(sheet.y || 0) + 25}
                       font-size="12"
-                      fill="var(--text-secondary)"
+                      fill="#6b7280"
                     >
                       {t('sheet')} {index() + 1}
                     </text>
@@ -141,8 +141,8 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
                       y={placement.y}
                       width={placement.width || 50}
                       height={placement.height || 50}
-                      fill="rgba(36, 199, 237, 0.7)"
-                      stroke="var(--button-primary)"
+                      fill="rgba(59, 130, 246, 0.7)"
+                      stroke="#3b82f6"
                       stroke-width="1"
                       transform={`rotate(${placement.rotation || 0} ${placement.x + (placement.width || 50) / 2} ${placement.y + (placement.height || 50) / 2})`}
                     />
@@ -153,60 +153,62 @@ const ResultViewer: Component<ResultViewerProps> = (props) => {
           </svg>
         </div>
 
-        <div class="result-statistics">
-          <h4>{t('statistics')}</h4>
+        <div class="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto">
+          <div class="p-4">
+            <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('statistics')}</h4>
           
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value efficiency">
-                {props.result.efficiency ? `${(props.result.efficiency * 100).toFixed(1)}%` : 'N/A'}
+            <div class="grid grid-cols-2 gap-3 mb-6">
+              <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded text-center">
+                <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {props.result.efficiency ? `${(props.result.efficiency * 100).toFixed(1)}%` : 'N/A'}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('material_efficiency')}</div>
               </div>
-              <div class="stat-label">{t('material_efficiency')}</div>
+
+              <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded text-center">
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {props.result.fitness?.toFixed(2) || 'N/A'}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('fitness_score')}</div>
+              </div>
+
+              <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded text-center">
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {props.result.sheets?.length || 0}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('sheets_used')}</div>
+              </div>
+
+              <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded text-center">
+                <div class="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {wastePercentage().toFixed(1)}%
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">{t('material_waste')}</div>
+              </div>
             </div>
 
-            <div class="stat-card">
-              <div class="stat-value">
-                {props.result.fitness?.toFixed(2) || 'N/A'}
+            <div class="space-y-3">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600 dark:text-gray-400">{t('total_parts_placed')}:</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">{props.result.placedParts || 0}</span>
               </div>
-              <div class="stat-label">{t('fitness_score')}</div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-value">
-                {props.result.sheets?.length || 0}
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600 dark:text-gray-400">{t('total_material_used')}:</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">{totalMaterialUsed().toFixed(2)}</span>
               </div>
-              <div class="stat-label">{t('sheets_used')}</div>
+              <Show when={props.result.generationTime}>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">{t('generation_time')}:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{props.result.generationTime}ms</span>
+                </div>
+              </Show>
+              <Show when={props.result.generation}>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">{t('generation_number')}:</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{props.result.generation}</span>
+                </div>
+              </Show>
             </div>
-
-            <div class="stat-card">
-              <div class="stat-value">
-                {wastePercentage().toFixed(1)}%
-              </div>
-              <div class="stat-label">{t('material_waste')}</div>
-            </div>
-          </div>
-
-          <div class="detailed-stats">
-            <div class="stat-row">
-              <span class="stat-title">{t('total_parts_placed')}:</span>
-              <span class="stat-data">{props.result.placedParts || 0}</span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-title">{t('total_material_used')}:</span>
-              <span class="stat-data">{totalMaterialUsed().toFixed(2)}</span>
-            </div>
-            <Show when={props.result.generationTime}>
-              <div class="stat-row">
-                <span class="stat-title">{t('generation_time')}:</span>
-                <span class="stat-data">{props.result.generationTime}ms</span>
-              </div>
-            </Show>
-            <Show when={props.result.generation}>
-              <div class="stat-row">
-                <span class="stat-title">{t('generation_number')}:</span>
-                <span class="stat-data">{props.result.generation}</span>
-              </div>
-            </Show>
           </div>
         </div>
       </div>

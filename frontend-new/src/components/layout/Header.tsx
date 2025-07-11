@@ -15,16 +15,17 @@ const Header: Component = () => {
   };
 
   return (
-    <header class="header">
-      <div class="header-left">
-        <h1 class="app-title">{t('page_title')}</h1>
+    <header class="h-15 bg-deepnest-bg-secondary dark:bg-deepnest-dark-bg-secondary border-b border-deepnest-border dark:border-deepnest-dark-border flex items-center justify-between px-5">
+      <div class="flex items-center">
+        <h1 class="text-xl font-normal text-deepnest-text-secondary dark:text-deepnest-dark-text-secondary">{t('page_title')}</h1>
       </div>
       
-      <div class="header-right">
+      <div class="flex items-center gap-4">
         <div class="language-selector">
           <select 
             value={globalState.ui.language}
             onChange={(e) => handleLanguageChange(e.currentTarget.value)}
+            class="input-select"
           >
             <option value="en">English</option>
             <option value="de">Deutsch</option>
@@ -34,7 +35,7 @@ const Header: Component = () => {
         </div>
         
         <button 
-          class="dark-mode-toggle"
+          class="btn-secondary btn-small"
           onClick={toggleDarkMode}
           title="Toggle dark mode"
         >

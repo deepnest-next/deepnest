@@ -24,17 +24,19 @@ const Navigation: Component = () => {
   };
 
   return (
-    <nav class="navigation">
-      <div class="nav-tabs">
+    <nav class="nav-base w-nav flex flex-col">
+      <div class="flex flex-col">
         <For each={tabs}>
           {(tab) => (
             <button
-              class={`nav-tab ${globalState.ui.activeTab === tab.id ? 'active' : ''}`}
+              class={`nav-item flex items-center p-4 text-left transition-colors duration-200 ${
+                globalState.ui.activeTab === tab.id ? 'nav-item-active' : ''
+              }`}
               onClick={() => handleTabClick(tab.id)}
               title={t(tab.labelKey)}
             >
-              <span class="nav-tab-icon">{tab.icon}</span>
-              <span class="nav-tab-label">{t(tab.labelKey)}</span>
+              <span class="text-lg mr-3">{tab.icon}</span>
+              <span class="text-sm font-medium">{t(tab.labelKey)}</span>
             </button>
           )}
         </For>

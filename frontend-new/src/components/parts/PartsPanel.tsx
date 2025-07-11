@@ -95,19 +95,19 @@ const PartsPanel: Component = () => {
   };
 
   return (
-    <div class="parts-panel">
-      <div class="panel-header">
-        <h2>{t('parts_title')}</h2>
-        <div class="panel-actions">
+    <div class="h-full flex flex-col">
+      <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('parts_title')}</h2>
+        <div class="flex gap-2">
           <button 
-            class="button secondary"
+            class="btn-secondary"
             onClick={handleImportParts}
             title={t('import_parts')}
           >
             📁 {t('import')}
           </button>
           <button 
-            class="button secondary"
+            class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleExportSelected}
             title={t('export_selected')}
             disabled={globalState.app.parts.filter(p => p.selected).length === 0}
@@ -115,7 +115,7 @@ const PartsPanel: Component = () => {
             📤 {t('export')}
           </button>
           <button 
-            class="button secondary"
+            class="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleDeleteSelected}
             title={t('delete_selected')}
             disabled={globalState.app.parts.filter(p => p.selected).length === 0}
@@ -125,26 +125,28 @@ const PartsPanel: Component = () => {
         </div>
       </div>
 
-      <div class="parts-summary">
-        <div class="summary-item">
-          <span class="summary-label">{t('total_parts')}:</span>
-          <span class="summary-value">{partsCount()}</span>
+      <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('total_parts')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{partsCount()}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t('total_quantity')}:</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{totalQuantity()}</span>
+          </div>
         </div>
-        <div class="summary-item">
-          <span class="summary-label">{t('total_quantity')}:</span>
-          <span class="summary-value">{totalQuantity()}</span>
-        </div>
-        <div class="summary-actions">
+        <div class="flex items-center gap-2 text-sm">
           <button 
-            class="button-link"
+            class="text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleSelectAll}
             disabled={partsCount() === 0}
           >
             {t('select_all')}
           </button>
-          <span class="separator">|</span>
+          <span class="text-gray-600 dark:text-gray-400">|</span>
           <button 
-            class="button-link"
+            class="text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleDeselectAll}
             disabled={partsCount() === 0}
           >
@@ -153,16 +155,16 @@ const PartsPanel: Component = () => {
         </div>
       </div>
 
-      <div class="panel-content">
+      <div class="flex-1 overflow-hidden">
         <Show 
           when={partsCount() > 0}
           fallback={
-            <div class="empty-state">
-              <div class="empty-icon">📦</div>
-              <h3>{t('no_parts_loaded')}</h3>
-              <p>{t('import_parts_to_get_started')}</p>
+            <div class="h-full flex flex-col items-center justify-center text-center gap-4 p-8">
+              <div class="text-6xl opacity-30">📦</div>
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{t('no_parts_loaded')}</h3>
+              <p class="text-gray-600 dark:text-gray-400">{t('import_parts_to_get_started')}</p>
               <button 
-                class="button primary"
+                class="btn-primary"
                 onClick={handleImportParts}
               >
                 {t('import_parts')}

@@ -28,24 +28,24 @@ const StatusBar: Component = () => {
   });
 
   return (
-    <footer class="status-bar">
-      <div class="status-left">
-        <span class="status-text">{statusText()}</span>
+    <footer class="h-8 bg-deepnest-bg-secondary dark:bg-deepnest-dark-bg-secondary border-t border-deepnest-border dark:border-deepnest-dark-border flex items-center justify-between px-4 text-xs">
+      <div class="flex items-center gap-4">
+        <span class="text-deepnest-text-primary dark:text-deepnest-dark-text-primary">{statusText()}</span>
         
         <Show when={globalState.process.isNesting}>
-          <div class="progress-container">
-            <div class="progress-bar">
+          <div class="flex items-center gap-2">
+            <div class="progress-bar w-24">
               <div
-                class="progress-fill"
+                class="progress-fill progress-fill-primary"
                 style={{ width: `${progressPercentage()}%` }}
               />
             </div>
-            <span class="progress-text">{progressPercentage().toFixed(1)}%</span>
+            <span class="text-deepnest-text-secondary dark:text-deepnest-dark-text-secondary min-w-12 text-right">{progressPercentage().toFixed(1)}%</span>
           </div>
         </Show>
       </div>
       
-      <div class="status-right">
+      <div class="flex items-center gap-4 text-deepnest-text-secondary dark:text-deepnest-dark-text-secondary">
         <Show when={globalState.process.workerStatus.threadsActive > 0}>
           <span class="thread-count">
             {t('status.threads_active', { count: globalState.process.workerStatus.threadsActive })}
@@ -65,9 +65,9 @@ const StatusBar: Component = () => {
         </Show>
         
         <Show when={globalState.process.lastError}>
-          <div class="error-status">
+          <div class="flex items-center gap-1 text-red-500">
             <span class="error-icon">⚠️</span>
-            <span class="error-text">{globalState.process.lastError}</span>
+            <span class="error-text max-w-64 text-truncate">{globalState.process.lastError}</span>
           </div>
         </Show>
       </div>

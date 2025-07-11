@@ -10,6 +10,8 @@ Key technologies:
 - **Electron** with Node.js backend
 - **TypeScript** for type safety (compiled to JavaScript)
 - **JavaScript** mix out for typescript compiled JavaScript and non typescript written javascript
+- **SolidJS** for reactive frontend UI (frontend-new)
+- **Tailwind CSS v4** for modern utility-first styling
 - **Custom nesting engine** with C/C++ components via native modules
 - **Web-based UI** with SVG rendering
 - **Genetic algorithm** for optimization
@@ -33,6 +35,24 @@ npm run clean
 
 # Full clean including node_modules
 npm run clean-all
+```
+
+### Frontend Development (frontend-new)
+```bash
+# Navigate to frontend directory
+cd frontend-new
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
 ### Testing
@@ -137,6 +157,7 @@ npm run dist-all
 - **Background worker**: `main/background.js`
 - **TypeScript source**: `main/util/*.ts`
 - **JavaScript source**: `main/*.js`
+- **New Frontend**: `frontend-new/` (SolidJS + Tailwind CSS v4)
 - **Tests**: `tests/`
 - **Build output**: `build/`
 
@@ -146,6 +167,37 @@ npm run dist-all
 - Polygon simplification reduces complexity for better performance
 - Genetic algorithm parameters can be tuned via configuration
 - Native modules handle computationally intensive operations
+
+## Frontend Development (frontend-new)
+
+### Technology Stack
+- **SolidJS** - Reactive JavaScript framework
+- **TypeScript** - Type-safe development
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **Vite** - Fast build tool and development server
+
+### Tailwind CSS v4 Configuration
+- Uses `@tailwindcss/vite` plugin for optimal integration
+- Configuration file: `frontend-new/tailwind.config.js`
+- Custom component styles defined in `frontend-new/src/styles/globals.css`
+- All components migrated to use Tailwind utility classes
+- Supports dark mode with `dark:` prefix classes
+- Custom color palette matching DeepNest brand
+
+### Component Structure
+- **Layout components**: `src/components/layout/`
+- **Parts management**: `src/components/parts/`
+- **Nesting operations**: `src/components/nesting/`
+- **Sheet configuration**: `src/components/sheets/`
+- **Settings panels**: `src/components/settings/`
+- **File operations**: `src/components/files/`
+
+### Development Guidelines
+- All components use Tailwind utility classes
+- Custom CSS should be added to `globals.css` using `@layer components`
+- Follow responsive design patterns with Tailwind breakpoints
+- Use consistent spacing scale (Tailwind's default scale)
+- Maintain dark mode compatibility for all new components
 
 ## Debugging
 
