@@ -20,11 +20,10 @@ export class Polygon {
   public children?: Polygon[];
 
   /** Cached values for expensive computations */
-  // These will be added in Phase 1.2
-  // private _area?: number;
-  // private _bounds?: BoundingBox;
-  // private _perimeter?: number;
-  // private _centroid?: Point;
+  private _area?: number;
+  private _bounds?: BoundingBox;
+  private _perimeter?: number;
+  private _centroid?: Point;
 
   /**
    * Creates a new Polygon from an array of Points
@@ -114,13 +113,129 @@ export class Polygon {
    * Clears all cached computed values
    * Should be called when the polygon is modified
    */
-  // This will be implemented in Phase 1.2 when cache properties are added
-  // private clearCache(): void {
-  //   this._area = undefined;
-  //   this._bounds = undefined;
-  //   this._perimeter = undefined;
-  //   this._centroid = undefined;
-  // }
+  private clearCache(): void {
+    this._area = undefined;
+    this._bounds = undefined;
+    this._perimeter = undefined;
+    this._centroid = undefined;
+  }
+
+  /**
+   * Calculates the signed area of the polygon
+   * Positive area indicates counter-clockwise winding, negative indicates clockwise
+   * @returns The signed area of the polygon
+   */
+  area(): number {
+    if (this._area !== undefined) {
+      return this._area;
+    }
+
+    let area = 0;
+    const n = this.points.length;
+    
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      area += (this.points[j].x + this.points[i].x) * (this.points[j].y - this.points[i].y);
+    }
+    
+    this._area = area / 2;
+    return this._area;
+  }
+
+  /**
+   * Calculates the bounding box of the polygon
+   * @returns BoundingBox containing x, y, width, height
+   */
+  bounds(): BoundingBox {
+    if (this._bounds !== undefined) {
+      return this._bounds;
+    }
+
+    if (this.points.length === 0) {
+      this._bounds = { x: 0, y: 0, width: 0, height: 0 };
+      return this._bounds;
+    }
+
+    let xmin = this.points[0].x;
+    let xmax = this.points[0].x;
+    let ymin = this.points[0].y;
+    let ymax = this.points[0].y;
+
+    for (let i = 1; i < this.points.length; i++) {
+      const point = this.points[i];
+      if (point.x > xmax) {
+        xmax = point.x;
+      } else if (point.x < xmin) {
+        xmin = point.x;
+      }
+
+      if (point.y > ymax) {
+        ymax = point.y;
+      } else if (point.y < ymin) {
+        ymin = point.y;
+      }
+    }
+
+    this._bounds = {
+      x: xmin,
+      y: ymin,
+      width: xmax - xmin,
+      height: ymax - ymin,
+    };
+    
+    return this._bounds;
+  }
+
+  /**
+   * Calculates the centroid (center of mass) of the polygon
+   * @returns Point representing the centroid
+   */
+  centroid(): Point {
+    if (this._centroid !== undefined) {
+      return this._centroid;
+    }
+
+    let x = 0;
+    let y = 0;
+    let k = 0;
+    const n = this.points.length;
+
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const a = this.points[j];
+      const b = this.points[i];
+      const c = a.x * b.y - b.x * a.y;
+      k += c;
+      x += (a.x + b.x) * c;
+      y += (a.y + b.y) * c;
+    }
+
+    k *= 3;
+    this._centroid = new Point(x / k, y / k);
+    return this._centroid;
+  }
+
+  /**
+   * Calculates the perimeter (total edge length) of the polygon
+   * @returns The perimeter length
+   */
+  perimeter(): number {
+    if (this._perimeter !== undefined) {
+      return this._perimeter;
+    }
+
+    let perimeter = 0;
+    const n = this.points.length;
+
+    for (let i = 0; i < n; i++) {
+      const current = this.points[i];
+      const next = this.points[(i + 1) % n];
+      const dx = next.x - current.x;
+      const dy = next.y - current.y;
+      perimeter += Math.hypot(dx, dy);
+    }
+
+    this._perimeter = perimeter;
+    return this._perimeter;
+  }
 
   /**
    * String representation of the polygon

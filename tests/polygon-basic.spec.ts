@@ -140,4 +140,104 @@ test.describe("Polygon - Basic Functionality", () => {
       expect(str).toContain("2.5, 5.0");
     });
   });
+
+  test.describe("Geometric Properties", () => {
+    test("area calculates correct area for square", () => {
+      const square = new Polygon(squarePoints);
+      const area = square.area();
+      
+      expect(Math.abs(area)).toBe(100); // 10x10 square, absolute area
+      expect(area).toBe(-100); // Clockwise winding gives negative area
+    });
+
+    test("area calculates correct area for triangle", () => {
+      const triangle = new Polygon(trianglePoints);
+      const area = triangle.area();
+      
+      expect(Math.abs(area)).toBe(12.5); // base=5, height=5, area=12.5
+      expect(area).toBe(-12.5); // Clockwise winding gives negative area
+    });
+
+    test("area returns cached value on subsequent calls", () => {
+      const square = new Polygon(squarePoints);
+      const area1 = square.area();
+      const area2 = square.area();
+      
+      expect(area1).toBe(area2);
+      expect(area1).toBe(-100); // Clockwise winding
+    });
+
+    test("bounds calculates correct bounding box for square", () => {
+      const square = new Polygon(squarePoints);
+      const bounds = square.bounds();
+      
+      expect(bounds.x).toBe(0);
+      expect(bounds.y).toBe(0);
+      expect(bounds.width).toBe(10);
+      expect(bounds.height).toBe(10);
+    });
+
+    test("bounds calculates correct bounding box for triangle", () => {
+      const triangle = new Polygon(trianglePoints);
+      const bounds = triangle.bounds();
+      
+      expect(bounds.x).toBe(0);
+      expect(bounds.y).toBe(0);
+      expect(bounds.width).toBe(5);
+      expect(bounds.height).toBe(5);
+    });
+
+    test("bounds returns cached value on subsequent calls", () => {
+      const square = new Polygon(squarePoints);
+      const bounds1 = square.bounds();
+      const bounds2 = square.bounds();
+      
+      expect(bounds1).toBe(bounds2); // Same object reference (cached)
+      expect(bounds1.width).toBe(10);
+    });
+
+    test("centroid calculates correct center for square", () => {
+      const square = new Polygon(squarePoints);
+      const centroid = square.centroid();
+      
+      expect(centroid.x).toBeCloseTo(5, 5);
+      expect(centroid.y).toBeCloseTo(5, 5);
+    });
+
+    test("centroid calculates correct center for triangle", () => {
+      const triangle = new Polygon(trianglePoints);
+      const centroid = triangle.centroid();
+      
+      // Triangle centroid should be at (2.5, 5/3)
+      expect(centroid.x).toBeCloseTo(2.5, 5);
+      expect(centroid.y).toBeCloseTo(5/3, 5);
+    });
+
+    test("perimeter calculates correct perimeter for square", () => {
+      const square = new Polygon(squarePoints);
+      const perimeter = square.perimeter();
+      
+      expect(perimeter).toBe(40); // 4 sides of 10 each
+    });
+
+    test("perimeter calculates correct perimeter for triangle", () => {
+      const triangle = new Polygon(trianglePoints);
+      const perimeter = triangle.perimeter();
+      
+      // Base=5, two sides of length sqrt((2.5^2 + 5^2)) = sqrt(31.25) ≈ 5.59
+      const sideLength = Math.sqrt(2.5 * 2.5 + 5 * 5);
+      const expectedPerimeter = 5 + 2 * sideLength;
+      
+      expect(perimeter).toBeCloseTo(expectedPerimeter, 5);
+    });
+
+    test("perimeter returns cached value on subsequent calls", () => {
+      const square = new Polygon(squarePoints);
+      const perimeter1 = square.perimeter();
+      const perimeter2 = square.perimeter();
+      
+      expect(perimeter1).toBe(perimeter2);
+      expect(perimeter1).toBe(40);
+    });
+  });
 });
