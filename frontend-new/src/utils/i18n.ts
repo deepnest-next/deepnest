@@ -22,7 +22,7 @@ import deFiles from '../locales/de/files.json';
 
 export const i18nConfig = {
   fallbackLng: 'en',
-  debug: false,
+  debug: true, // Enable to debug missing translations
   interpolation: {
     escapeValue: false
   },
@@ -96,7 +96,6 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   // Initialize i18next on mount with global state language
   onMount(async () => {
     try {
-      // Initialize with global state language
       const initialLang = globalState.ui.language || 'en';
       await i18next.init({
         ...i18nConfig,
