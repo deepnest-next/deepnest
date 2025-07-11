@@ -5,6 +5,7 @@ import { ipcService } from '@/services/ipc.service';
 import { useSelection } from '@/hooks/useSelection';
 import SelectionToolbar from '@/components/common/SelectionToolbar';
 import PartsList from './PartsList';
+import VirtualPartsList from './VirtualPartsList';
 
 const PartsPanel: Component = () => {
   const [t] = useTranslation('parts');
@@ -311,10 +312,20 @@ const PartsPanel: Component = () => {
             </div>
           }
         >
-          <PartsList 
-            onItemClick={selection.handleItemClick}
-            isSelected={selection.isSelected}
-          />
+          <Show
+            when={partsCount() > 50}
+            fallback={
+              <PartsList 
+                onItemClick={selection.handleItemClick}
+                isSelected={selection.isSelected}
+              />
+            }
+          >
+            <VirtualPartsList 
+              onItemClick={selection.handleItemClick}
+              isSelected={selection.isSelected}
+            />
+          </Show>
         </Show>
       </div>
     </div>
