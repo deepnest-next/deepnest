@@ -200,10 +200,25 @@ interface GlobalState {
 - Version utility integration for dynamic version display throughout app
 
 #### 3.3 Advanced Interactions
-- [ ] **Zoom/Pan**: Viewport controls for large visualizations
-- [ ] **Selection Tools**: Multi-select with keyboard shortcuts
-- [ ] **Context Menus**: Right-click actions for parts and results
-- [ ] **Keyboard Shortcuts**: Power user navigation and actions
+- [x] **Zoom/Pan**: Viewport controls for large visualizations
+- [x] **Selection Tools**: Multi-select with keyboard shortcuts
+- [x] **Context Menus**: Right-click actions for parts and results
+- [x] **Keyboard Shortcuts**: Power user navigation and actions
+
+**Implementation Summary:**
+- Created comprehensive useViewport hook with zoom/pan functionality, constraints, and keyboard shortcuts
+- Built ViewportControls component with zoom percentage display and control buttons
+- Implemented useSelection hook with multi-select, range selection, and keyboard shortcuts (Ctrl+A, Escape, arrow keys)
+- Added SelectionToolbar component with bulk actions (duplicate, export, delete) and selection statistics
+- Created useContextMenu hook with position calculation, event handling, and menu item management
+- Built ContextMenu component with keyboard navigation, styling, and portal rendering
+- Integrated context menus into PartsList with part-specific actions (duplicate, export, select/deselect, delete)
+- Added useKeyboardShortcuts hook for global shortcuts with modifier support and input field detection
+- Created KeyboardShortcutsModal component with help documentation and organized shortcut categories
+- Implemented global shortcuts for navigation (Ctrl+1-5), actions (Ctrl+N, Ctrl+S, Ctrl+I, Ctrl+E), and viewport (Ctrl+R, Ctrl+F)
+- Added shortcut for toggling dark mode (Ctrl+Shift+D) and showing help modal (?)
+- Enhanced translations with context menu items and keyboard shortcut descriptions
+- Integrated all systems into existing components maintaining backward compatibility
 
 #### 3.4 Performance Optimization
 - [ ] **Virtual Scrolling**: Large lists (parts, results)
