@@ -230,6 +230,10 @@ export const globalActions = {
     setGlobalState('app', 'nests', (prev) => [...prev, nest]);
   },
 
+  setCurrentNest: (nest: AppState['nests'][0] | null) => {
+    setGlobalState('process', 'currentNest', nest);
+  },
+
   setPresets: (presets: AppState['presets']) => {
     setGlobalState('app', 'presets', presets);
   },

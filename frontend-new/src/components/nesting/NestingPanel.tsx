@@ -1,8 +1,9 @@
 import { Component, Show, createMemo } from 'solid-js';
 import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
-import { ipcService } from '@/services/ipc.service';
+import { nestingService } from '@/services/nesting.service';
 import NestingProgress from './NestingProgress';
+import LiveResultViewer from './LiveResultViewer';
 import ResultsGrid from './ResultsGrid';
 
 const NestingPanel: Component = () => {
@@ -20,21 +21,10 @@ const NestingPanel: Component = () => {
     if (!canStartNesting()) return;
 
     try {
-      globalActions.setNestingStatus(true);
-      globalActions.setNestingProgress(0);
-      globalActions.setError(null);
-
-      const nestingConfig = {
-        parts: globalState.app.parts.filter(p => p.quantity > 0),
-        sheets: globalState.app.sheets,
-        config: globalState.config
-      };
-
-      await ipcService.startNesting(nestingConfig);
+      await nestingService.startNesting();
     } catch (error) {
       console.error('Failed to start nesting:', error);
-      globalActions.setError(t('start_nesting_failed'));
-      globalActions.setNestingStatus(false);
+      // Error handling is already done in nestingService
     }
   };
 
@@ -42,11 +32,10 @@ const NestingPanel: Component = () => {
     if (!globalState.process.isNesting) return;
 
     try {
-      await ipcService.stopNesting();
-      globalActions.setNestingStatus(false);
+      await nestingService.stopNesting();
     } catch (error) {
       console.error('Failed to stop nesting:', error);
-      globalActions.setError(t('stop_nesting_failed'));
+      // Error handling is already done in nestingService
     }
   };
 
@@ -110,7 +99,10 @@ const NestingPanel: Component = () => {
 
       <div class="flex-1 overflow-hidden">
         <Show when={globalState.process.isNesting}>
-          <NestingProgress />
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+            <NestingProgress />
+            <LiveResultViewer />
+          </div>
         </Show>
 
         <Show
