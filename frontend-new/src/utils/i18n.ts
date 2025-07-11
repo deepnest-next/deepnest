@@ -52,17 +52,23 @@ export const i18nConfig = {
   }
 };
 
+// Types for i18n options
+interface TranslationOptions {
+  ns?: string;
+  [key: string]: unknown;
+}
+
 // Default context value
 const defaultContext = {
   t: (key: string) => key,
-  changeLanguage: async (lng: string) => {},
+  changeLanguage: async (_lng: string) => {},
   language: () => 'en',
   ready: () => false
 };
 
 // Create i18n context with default value
 const I18nContext = createContext<{
-  t: (key: string, options?: any) => string;
+  t: (key: string, options?: TranslationOptions) => string;
   changeLanguage: (lng: string) => Promise<void>;
   language: () => string;
   ready: () => boolean;
@@ -77,13 +83,13 @@ export const useTranslation = (namespace = 'translation') => {
     return [
       (key: string) => key,
       { 
-        changeLanguage: async (lng: string) => {},
+        changeLanguage: async (_lng: string) => {},
         language: () => 'en'
       }
     ] as const;
   }
   
-  const t = (key: string, options?: any) => {
+  const t = (key: string, options?: TranslationOptions) => {
     // Make this function reactive to the ready state
     const isReady = context.ready();
     const tFn = context.t;
@@ -144,7 +150,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     }
   });
   
-  const t = (key: string, options?: any) => {
+  const t = (key: string, options?: TranslationOptions) => {
     const tFn = translateFn();
     if (!ready() || !tFn) {
       return key; // Return key if i18n not ready yet
@@ -173,5 +179,5 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     };
   });
   
-  return I18nContext.Provider({ value: value(), children: props.children });
+  return I18nContext.Provider({ value: value, children: props.children });
 };

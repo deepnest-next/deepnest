@@ -21,8 +21,8 @@ const PartsList: Component = () => {
       );
     }
 
-    // Sort parts
-    parts = parts.sort((a, b) => {
+    // Sort parts (create a new array to avoid mutating the store)
+    parts = [...parts].sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 
