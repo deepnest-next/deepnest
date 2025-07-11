@@ -3,7 +3,12 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
 import type { Part } from '@/types/app.types';
 
-const PartsList: Component = () => {
+interface PartsListProps {
+  onItemClick?: (itemId: string, event: MouseEvent) => void;
+  isSelected?: (itemId: string) => boolean;
+}
+
+const PartsList: Component<PartsListProps> = (props) => {
   const [t] = useTranslation('parts');
   const [searchTerm, setSearchTerm] = createSignal('');
   const [sortBy, setSortBy] = createSignal<'name' | 'quantity' | 'size'>('name');
@@ -58,9 +63,6 @@ const PartsList: Component = () => {
     return parts;
   });
 
-  const handlePartClick = (part: Part) => {
-    globalActions.updatePart(part.id, { selected: !part.selected });
-  };
 
   const handleQuantityChange = (partId: string, quantity: number) => {
     if (quantity < 1) quantity = 1;
@@ -141,18 +143,9 @@ const PartsList: Component = () => {
           <div class="sticky top-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
             <div class="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               <div class="col-span-1 flex items-center">
-                <input
-                  type="checkbox"
-                  checked={globalState.app.parts.every(part => part.selected)}
-                  indeterminate={globalState.app.parts.some(part => part.selected) && !globalState.app.parts.every(part => part.selected)}
-                  onChange={(e) => {
-                    const shouldSelect = e.currentTarget.checked;
-                    globalState.app.parts.forEach(part => {
-                      globalActions.updatePart(part.id, { selected: shouldSelect });
-                    });
-                  }}
-                  class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
-                />
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {t('select')}
+                </span>
               </div>
               <button 
                 class={`col-span-4 flex items-center gap-2 text-left hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200 ${sortBy() === 'name' ? 'text-blue-600 dark:text-blue-400' : ''}`}
@@ -207,15 +200,21 @@ const PartsList: Component = () => {
           <div class="bg-white dark:bg-gray-900">
             <For each={filteredAndSortedParts()}>
               {(part) => (
-                <div class={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 ${
-                  part.selected ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''
-                }`}>
+                <div 
+                  class={`grid grid-cols-12 gap-4 px-4 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer ${
+                    props.isSelected?.(part.id) ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''
+                  }`}
+                  onClick={(e) => props.onItemClick?.(part.id, e)}
+                >
                   {/* Checkbox */}
                   <div class="col-span-1 flex items-center">
                     <input
                       type="checkbox"
-                      checked={part.selected}
-                      onChange={() => handlePartClick(part)}
+                      checked={props.isSelected?.(part.id) || false}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        props.onItemClick?.(part.id, e);
+                      }}
                       class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
                     />
                   </div>

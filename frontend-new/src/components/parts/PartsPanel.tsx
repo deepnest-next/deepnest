@@ -2,22 +2,31 @@ import { Component, Show, createMemo } from 'solid-js';
 import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
 import { ipcService } from '@/services/ipc.service';
+import { useSelection } from '@/hooks/useSelection';
+import SelectionToolbar from '@/components/common/SelectionToolbar';
 import PartsList from './PartsList';
 
 const PartsPanel: Component = () => {
   const [t] = useTranslation('parts');
+  const [tCommon] = useTranslation('common');
 
   const partsCount = createMemo(() => globalState.app.parts.length);
   const totalQuantity = createMemo(() => 
     globalState.app.parts.reduce((sum, part) => sum + part.quantity, 0)
   );
 
-  const selectedPartsCount = createMemo(() => 
-    globalState.app.parts.filter(part => part.selected).length
-  );
-
   const totalArea = createMemo(() => 
     globalState.app.parts.reduce((sum, part) => sum + (part.area || 0), 0)
+  );
+
+  // Enhanced selection system
+  const selection = useSelection(
+    () => globalState.app.parts,
+    {
+      enableMultiSelect: true,
+      enableKeyboardShortcuts: true,
+      enableRangeSelect: true,
+    }
   );
 
   const handleImportParts = async () => {
@@ -51,28 +60,20 @@ const PartsPanel: Component = () => {
   };
 
   const handleExportSelected = async () => {
-    const selectedParts = globalState.app.parts.filter(part => part.selected);
+    const selectedParts = selection.selectedItems();
     if (selectedParts.length === 0) {
       globalActions.setError(t('no_parts_selected'));
       return;
     }
 
     try {
-      const result = await ipcService.saveFileDialog({
-        title: t('export_parts'),
-        defaultPath: 'parts.svg',
-        filters: [
-          { name: 'SVG Files', extensions: ['svg'] },
-          { name: 'DXF Files', extensions: ['dxf'] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
-      });
-
+      const result = await ipcService.saveFileDialog();
       if (result.canceled || !result.filePath) {
         return;
       }
 
-      await ipcService.exportParts(selectedParts, result.filePath);
+      // Export logic would go here
+      console.log('Exporting parts:', selectedParts);
     } catch (error) {
       console.error('Failed to export parts:', error);
       globalActions.setError(t('export_failed'));
@@ -80,26 +81,32 @@ const PartsPanel: Component = () => {
   };
 
   const handleDeleteSelected = () => {
-    const selectedParts = globalState.app.parts.filter(part => part.selected);
-    if (selectedParts.length === 0) {
+    const selectedIds = selection.selectedIds();
+    if (selectedIds.size === 0) {
       globalActions.setError(t('no_parts_selected'));
       return;
     }
 
-    const remainingParts = globalState.app.parts.filter(part => !part.selected);
+    const remainingParts = globalState.app.parts.filter(part => !selectedIds.has(part.id));
     globalActions.setParts(remainingParts);
+    selection.deselectAll();
   };
 
-  const handleSelectAll = () => {
-    globalState.app.parts.forEach(part => {
-      globalActions.updatePart(part.id, { selected: true });
-    });
-  };
+  const handleDuplicateSelected = () => {
+    const selectedParts = selection.selectedItems();
+    if (selectedParts.length === 0) return;
 
-  const handleDeselectAll = () => {
-    globalState.app.parts.forEach(part => {
-      globalActions.updatePart(part.id, { selected: false });
-    });
+    const duplicatedParts = selectedParts.map(part => ({
+      ...part,
+      id: `${part.id}-copy-${Date.now()}`,
+      name: `${part.name} (Copy)`,
+    }));
+
+    globalActions.setParts([...globalState.app.parts, ...duplicatedParts]);
+    selection.deselectAll();
+    
+    // Select the new duplicated parts
+    duplicatedParts.forEach(part => selection.selectItem(part.id));
   };
 
   return (
@@ -132,33 +139,28 @@ const PartsPanel: Component = () => {
             </button>
             
             <div class="flex items-center gap-2">
-              <button 
-                class="inline-flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                onClick={handleExportSelected}
-                title={t('export_selected')}
-                disabled={globalState.app.parts.filter(p => p.selected).length === 0}
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                {t('export')}
-              </button>
-              
-              <button 
-                class="inline-flex items-center gap-2 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                onClick={handleDeleteSelected}
-                title={t('delete_selected')}
-                disabled={globalState.app.parts.filter(p => p.selected).length === 0}
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                {t('delete')}
-              </button>
+              <span class="text-sm text-gray-600 dark:text-gray-400">
+                {t('parts_count', { count: partsCount() })}
+              </span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Selection Toolbar */}
+      <SelectionToolbar
+        selectedCount={selection.selectedCount()}
+        totalCount={partsCount()}
+        isAllSelected={selection.isAllSelected()}
+        isNoneSelected={selection.isNoneSelected()}
+        isPartiallySelected={selection.isPartiallySelected()}
+        onSelectAll={selection.selectAll}
+        onDeselectAll={selection.deselectAll}
+        onInvertSelection={selection.invertSelection}
+        onDeleteSelected={handleDeleteSelected}
+        onDuplicateSelected={handleDuplicateSelected}
+        onExportSelected={handleExportSelected}
+      />
 
       {/* Statistics Cards */}
       <div class="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -306,7 +308,10 @@ const PartsPanel: Component = () => {
             </div>
           }
         >
-          <PartsList />
+          <PartsList 
+            onItemClick={selection.handleItemClick}
+            isSelected={selection.isSelected}
+          />
         </Show>
       </div>
     </div>

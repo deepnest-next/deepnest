@@ -95,5 +95,17 @@
     "pan": "pan",
     "reset": "reset",
     "shortcuts": "Shortcuts"
+  },
+  "selection": {
+    "select_all": "Select All",
+    "deselect_all": "Deselect All",
+    "invert_selection": "Invert Selection",
+    "selected_count": "{{count}} of {{total}} selected",
+    "no_selection": "No items selected",
+    "duplicate_selected": "Duplicate Selected",
+    "export_selected": "Export Selected",
+    "delete_selected": "Delete Selected",
+    "duplicate": "Duplicate",
+    "navigate": "navigate"
   }
 }
