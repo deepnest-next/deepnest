@@ -3,7 +3,7 @@ import { useTranslation } from '@/utils/i18n';
 import { globalState, globalActions } from '@/stores/global.store';
 
 const Header: Component = () => {
-  const [t, { changeLanguage }] = useTranslation('navigation');
+  const [t, { changeLanguage }] = useTranslation('common');
 
   const toggleDarkMode = () => {
     // Toggle between light and dark mode (explicit themes)
@@ -23,7 +23,7 @@ const Header: Component = () => {
           <div class="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
             <span class="text-white font-bold text-sm">DN</span>
           </div>
-          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('page_title')}</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('navigation.page_title')}</h1>
         </div>
       </div>
       

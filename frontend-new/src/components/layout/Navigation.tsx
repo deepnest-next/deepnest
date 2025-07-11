@@ -10,13 +10,13 @@ interface NavigationTab {
 }
 
 const Navigation: Component = () => {
-  const [t] = useTranslation('navigation');
+  const [t] = useTranslation('common');
 
   const tabs: NavigationTab[] = [
-    { id: 'parts', labelKey: 'parts', icon: '📦' },
-    { id: 'nests', labelKey: 'nests', icon: '🔧' },
-    { id: 'sheets', labelKey: 'sheets', icon: '📄' },
-    { id: 'settings', labelKey: 'settings', icon: '⚙️' }
+    { id: 'parts', labelKey: 'navigation.parts', icon: '📦' },
+    { id: 'nests', labelKey: 'navigation.nests', icon: '🔧' },
+    { id: 'sheets', labelKey: 'navigation.sheets', icon: '📄' },
+    { id: 'settings', labelKey: 'navigation.settings', icon: '⚙️' }
   ];
 
   const handleTabClick = (tabId: UIState['activeTab']) => {
