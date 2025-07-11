@@ -6,6 +6,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import translation files
 import enCommon from '../locales/en/common.json';
 import enMessages from '../locales/en/messages.json';
+import enParts from '../locales/en/parts.json';
 
 export const i18nConfig = {
   fallbackLng: 'en',
@@ -21,7 +22,8 @@ export const i18nConfig = {
   resources: {
     en: {
       common: enCommon,
-      messages: enMessages
+      messages: enMessages,
+      parts: enParts
     }
   }
 };

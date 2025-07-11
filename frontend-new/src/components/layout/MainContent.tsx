@@ -18,7 +18,7 @@ const MainContent: Component = () => {
         <Match when={globalState.ui.activeTab === 'sheets'}>
           <SheetsPanel />
         </Match>
-        <Match when={globalState.ui.activeTab === 'config'}>
+        <Match when={globalState.ui.activeTab === 'settings'}>
           <SettingsPanel />
         </Match>
       </Switch>
