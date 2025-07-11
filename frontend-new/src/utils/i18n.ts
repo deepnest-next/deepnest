@@ -110,6 +110,24 @@ export const useTranslation = (namespace = 'translation') => {
 export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   console.log('I18nProvider: initializing');
   
+  // Define event handlers outside async context
+  const onLoaded = () => {
+    console.log('I18nProvider: resources loaded, updating translation function');
+    setTranslate(() => i18next.t);
+  };
+  
+  const onLanguageChanged = (lng: string) => {
+    console.log(`I18nProvider: language changed to ${lng}, updating translation function`);
+    setTranslate(() => i18next.t);
+    setCurrentLanguage(lng);
+  };
+  
+  // Register cleanup in proper reactive context
+  onCleanup(() => {
+    i18next.off('loaded', onLoaded);
+    i18next.off('languageChanged', onLanguageChanged);
+  });
+  
   // Initialize i18next on mount
   onMount(async () => {
     try {
@@ -127,27 +145,9 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
       setTranslate(() => i18next.t);
       setCurrentLanguage(initialLang);
       
-      // Listen to i18next events for reactive updates - this is what we were missing!
-      const onLoaded = () => {
-        console.log('I18nProvider: resources loaded, updating translation function');
-        setTranslate(() => i18next.t);
-      };
-      
-      const onLanguageChanged = (lng: string) => {
-        console.log(`I18nProvider: language changed to ${lng}, updating translation function`);
-        setTranslate(() => i18next.t);
-        setCurrentLanguage(lng);
-      };
-      
       // Event listeners - this is the solid-i18next pattern we were missing
       i18next.on('loaded', onLoaded);
       i18next.on('languageChanged', onLanguageChanged);
-      
-      // Cleanup listeners
-      onCleanup(() => {
-        i18next.off('loaded', onLoaded);
-        i18next.off('languageChanged', onLanguageChanged);
-      });
       
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
