@@ -63,7 +63,7 @@ const fallbackT = (key: string) => key;
 
 // Context type
 interface I18nContextType {
-  t: () => typeof i18next.t;
+  t: typeof i18next.t;
   changeLanguage: (lng: string) => Promise<void>;
   getLanguage: () => string;
   getInstance: () => typeof i18next;
@@ -75,7 +75,7 @@ const [currentLanguage, setCurrentLanguage] = createSignal('en');
 
 // Default context value
 const defaultContext: I18nContextType = {
-  t: translate,
+  t: fallbackT,
   changeLanguage: async (_lng: string) => {},
   getLanguage: () => 'en',
   getInstance: () => i18next
@@ -93,17 +93,17 @@ export const useTranslation = (namespace = 'translation') => {
     return [fallbackT, { changeLanguage: async (_lng: string) => {}, language: () => 'en' }] as const;
   }
   
-  // Create a namespaced translation function that's reactive to context changes
+  // Create a namespaced translation function that's reactive to the signal
   const t = (key: string, options?: TranslationOptions) => {
-    const tFn = context().t();
+    const tFn = translate(); // Use the signal directly for reactivity
     const optionsWithNS = { ns: namespace, ...options };
     return tFn(key, optionsWithNS) || key;
   };
   
   return [t, { 
-    changeLanguage: context().changeLanguage, 
-    language: context().getLanguage,
-    i18n: context().getInstance
+    changeLanguage: context.changeLanguage, 
+    language: context.getLanguage,
+    i18n: context.getInstance
   }] as const;
 };
 
@@ -155,9 +155,9 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     }
   });
   
-  // Create reactive context value that updates when translate signal changes
-  const contextValue = createMemo(() => ({
-    t: translate,
+  // Create context value with reactive functions
+  const contextValue: I18nContextType = {
+    t: translate(), // This will be reactive through the signal in useTranslation
     changeLanguage: async (lng: string) => {
       try {
         await i18next.changeLanguage(lng);
@@ -168,7 +168,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     },
     getLanguage: currentLanguage,
     getInstance: () => i18next
-  }));
+  };
   
   return I18nContext.Provider({ value: contextValue, children: props.children });
 };
