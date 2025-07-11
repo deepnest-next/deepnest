@@ -157,10 +157,10 @@ interface GlobalState {
 ### Phase 3: Advanced Features (Week 6-7)
 
 #### 3.1 File Operations
-- [ ] **Drag-and-drop**: Multi-file import with progress indication
-- [ ] **Export Options**: Multiple formats (SVG, DXF, PDF)
-- [ ] **File Validation**: Error handling and user feedback
-- [ ] **Recent Files**: Quick access to previously used files
+- [x] **Drag-and-drop**: Multi-file import with progress indication
+- [x] **Export Options**: Multiple formats (SVG, DXF, PDF)
+- [x] **File Validation**: Error handling and user feedback
+- [x] **Recent Files**: Quick access to previously used files
 
 #### 3.2 Real-time Updates
 - [ ] **IPC Event Handling**: Progress updates, status changes
