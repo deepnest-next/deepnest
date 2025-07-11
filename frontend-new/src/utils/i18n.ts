@@ -11,6 +11,7 @@ import enNesting from '../locales/en/nesting.json';
 import enSheets from '../locales/en/sheets.json';
 import enSettings from '../locales/en/settings.json';
 import enFiles from '../locales/en/files.json';
+import enImprint from '../locales/en/imprint.json';
 
 import deCommon from '../locales/de/common.json';
 import deMessages from '../locales/de/messages.json';
@@ -19,12 +20,14 @@ import deNesting from '../locales/de/nesting.json';
 import deSheets from '../locales/de/sheets.json';
 import deSettings from '../locales/de/settings.json';
 import deFiles from '../locales/de/files.json';
+// TODO: Add German translations for imprint
+// import deImprint from '../locales/de/imprint.json';
 
 // i18next configuration
 export const i18nConfig = {
   fallbackLng: 'en',
   debug: true,
-  ns: ['translation', 'common', 'parts', 'settings', 'nesting', 'sheets', 'files', 'messages'],
+  ns: ['translation', 'common', 'parts', 'settings', 'nesting', 'sheets', 'files', 'messages', 'imprint'],
   defaultNS: 'translation',
   languages: ['en', 'de'],
   interpolation: {
@@ -39,7 +42,8 @@ export const i18nConfig = {
       nesting: enNesting,
       sheets: enSheets,
       settings: enSettings,
-      files: enFiles
+      files: enFiles,
+      imprint: enImprint
     },
     de: {
       translation: deCommon,
@@ -49,7 +53,8 @@ export const i18nConfig = {
       nesting: deNesting,
       sheets: deSheets,
       settings: deSettings,
-      files: deFiles
+      files: deFiles,
+      imprint: enImprint // TODO: Replace with deImprint when German translations are available
     }
   }
 };

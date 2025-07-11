@@ -4,6 +4,7 @@ import PartsPanel from '../parts/PartsPanel';
 import NestingPanel from '../nesting/NestingPanel';
 import SheetsPanel from '../sheets/SheetsPanel';
 import SettingsPanel from '../settings/SettingsPanel';
+import ImprintPanel from '../imprint/ImprintPanel';
 
 const MainContent: Component = () => {
   return (
@@ -20,6 +21,9 @@ const MainContent: Component = () => {
         </Match>
         <Match when={globalState.ui.activeTab === 'settings'}>
           <SettingsPanel />
+        </Match>
+        <Match when={globalState.ui.activeTab === 'imprint'}>
+          <ImprintPanel />
         </Match>
       </Switch>
     </main>

@@ -1,7 +1,7 @@
 import type { AppConfig, Part, Sheet, NestResult, ImportedFile, Preset } from './app.types';
 
 export interface UIState {
-  activeTab: 'parts' | 'nests' | 'sheets' | 'settings';
+  activeTab: 'parts' | 'nests' | 'sheets' | 'settings' | 'imprint';
   darkMode: boolean;
   language: string;
   theme?: string;

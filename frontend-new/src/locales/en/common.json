@@ -4,7 +4,8 @@
     "parts": "Parts",
     "nests": "Nests", 
     "sheets": "Sheets",
-    "settings": "Settings"
+    "settings": "Settings",
+    "imprint": "Imprint"
   },
   "actions": {
     "stop_nest": "Stop nest",
