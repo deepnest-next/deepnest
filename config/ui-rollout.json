@@ -1,0 +1,88 @@
+{
+  "rolloutStrategy": {
+    "version": "1.0.0",
+    "enabled": false,
+    "defaultUI": "legacy",
+    "rolloutPercentage": 0,
+    "enabledUsers": [],
+    "enabledEnvironments": ["development"],
+    "features": {
+      "forceNewUI": false,
+      "allowUserSelection": true,
+      "collectFeedback": true,
+      "performanceMonitoring": true
+    }
+  },
+  "uiSelection": {
+    "criteria": {
+      "environment": "development",
+      "userFlag": "deepnest_new_ui",
+      "commandLineArgs": ["--new-ui", "--ui=new"],
+      "localStorage": "deepnest-ui-preference"
+    },
+    "fallback": "legacy"
+  },
+  "monitoring": {
+    "trackUsage": true,
+    "collectPerformanceMetrics": true,
+    "feedbackCollection": true,
+    "errorReporting": true
+  },
+  "deployment": {
+    "phases": [
+      {
+        "name": "development",
+        "percentage": 100,
+        "criteria": ["environment=development"],
+        "description": "All development environments use new UI"
+      },
+      {
+        "name": "alpha",
+        "percentage": 5,
+        "criteria": ["volunteer_testers", "internal_users"],
+        "description": "Alpha testing with 5% of volunteer users"
+      },
+      {
+        "name": "beta",
+        "percentage": 25,
+        "criteria": ["beta_users", "performance_acceptable"],
+        "description": "Beta testing with 25% of users after performance validation"
+      },
+      {
+        "name": "gradual_rollout",
+        "percentage": 50,
+        "criteria": ["no_critical_issues", "feedback_positive"],
+        "description": "Gradual rollout to 50% of users based on feedback"
+      },
+      {
+        "name": "full_rollout",
+        "percentage": 100,
+        "criteria": ["user_acceptance", "performance_validated"],
+        "description": "Full rollout to all users"
+      }
+    ],
+    "currentPhase": "development"
+  },
+  "rollback": {
+    "enabled": true,
+    "triggers": [
+      "critical_bugs",
+      "performance_degradation",
+      "user_complaints_high",
+      "manual_override"
+    ],
+    "automaticRollback": {
+      "enabled": true,
+      "thresholds": {
+        "errorRate": 5,
+        "performanceDegradation": 20,
+        "userComplaintPercentage": 10
+      }
+    }
+  },
+  "metadata": {
+    "lastUpdated": "2025-07-11T18:52:00.000Z",
+    "updatedBy": "migration-system",
+    "version": "1.0.0"
+  }
+}
