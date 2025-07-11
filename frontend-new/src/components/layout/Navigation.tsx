@@ -24,22 +24,41 @@ const Navigation: Component = () => {
   };
 
   return (
-    <nav class="nav-base w-nav flex flex-col">
-      <div class="flex flex-col">
+    <nav class="h-full bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col w-64">
+      <div class="flex flex-col py-4">
+        <div class="px-4 mb-4">
+          <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Navigation</h2>
+        </div>
         <For each={tabs}>
           {(tab) => (
             <button
-              class={`nav-item flex items-center p-4 text-left transition-colors duration-200 ${
-                globalState.ui.activeTab === tab.id ? 'nav-item-active' : ''
+              class={`mx-2 mb-1 flex items-center px-4 py-3 text-left transition-all duration-200 rounded-lg group ${
+                globalState.ui.activeTab === tab.id 
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 shadow-sm border border-blue-200 dark:border-blue-700' 
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
               onClick={() => handleTabClick(tab.id)}
               title={t(tab.labelKey)}
             >
-              <span class="text-lg mr-3">{tab.icon}</span>
-              <span class="text-sm font-medium">{t(tab.labelKey)}</span>
+              <span class={`text-xl mr-4 transition-transform duration-200 ${
+                globalState.ui.activeTab === tab.id ? 'scale-110' : 'group-hover:scale-105'
+              }`}>
+                {tab.icon}
+              </span>
+              <span class="font-medium">{t(tab.labelKey)}</span>
+              {globalState.ui.activeTab === tab.id && (
+                <div class="ml-auto w-1 h-6 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+              )}
             </button>
           )}
         </For>
+      </div>
+      
+      <div class="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
+          <div>DeepNest Frontend</div>
+          <div class="mt-1 opacity-75">v2.0.0</div>
+        </div>
       </div>
     </nav>
   );

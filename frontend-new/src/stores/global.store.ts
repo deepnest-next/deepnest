@@ -95,6 +95,11 @@ const initialState: GlobalState = isDevelopmentMode()
 // Create the global store
 export const [globalState, setGlobalState] = createStore<GlobalState>(initialState);
 
+// Initialize dark mode on app startup
+if (typeof document !== 'undefined' && initialState.ui.darkMode) {
+  document.documentElement.classList.add('dark');
+}
+
 // Log initialization in development
 if (isDevelopmentMode()) {
   console.info('🔧 Development mode: Global store initialized with mock data');
@@ -109,9 +114,9 @@ export const globalActions = {
 
   setDarkMode: (enabled: boolean) => {
     setGlobalState('ui', 'darkMode', enabled);
-    // Apply dark mode class to body
+    // Apply dark mode class to document root for Tailwind
     if (typeof document !== 'undefined') {
-      document.body.classList.toggle('dark-mode', enabled);
+      document.documentElement.classList.toggle('dark', enabled);
     }
     // Persist to localStorage
     if (typeof localStorage !== 'undefined') {

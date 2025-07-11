@@ -2,36 +2,39 @@
 
 /* Custom component classes */
 @layer components {
+  /* Button Components */
   .btn-primary {
-    @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200;
+    @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 px-4 py-2 rounded transition-colors duration-200;
+    @apply bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
   .btn-small {
-    @apply px-2 py-1 text-sm;
+    @apply px-3 py-1.5 text-sm;
   }
   
   .btn-large {
-    @apply px-6 py-3 text-lg;
+    @apply px-6 py-3 text-base;
   }
 
+  /* Form Components */
   .input-base {
-    @apply bg-gray-100 border border-gray-300 text-gray-900 px-3 py-2 rounded focus:outline-none focus:border-blue-500 transition-colors duration-200;
+    @apply bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
   }
   
   .input-number {
-    @apply bg-gray-100 border border-gray-300 text-gray-900 px-3 py-2 rounded focus:outline-none focus:border-blue-500 transition-colors duration-200 w-full max-w-xs;
+    @apply bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 w-full max-w-xs;
   }
   
   .input-select {
-    @apply bg-gray-100 border border-gray-300 text-gray-900 px-3 py-2 rounded focus:outline-none focus:border-blue-500 transition-colors duration-200 w-full max-w-xs;
+    @apply bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 w-full max-w-xs appearance-none;
   }
 
+  /* Progress Components */
   .progress-bar {
-    @apply w-full h-1.5 bg-gray-200 rounded-full overflow-hidden;
+    @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden;
   }
   
   .progress-fill {
@@ -39,95 +42,83 @@
   }
   
   .progress-fill-primary {
-    @apply bg-blue-500;
+    @apply bg-blue-500 dark:bg-blue-400;
   }
   
   .progress-fill-success {
-    @apply bg-green-500;
+    @apply bg-green-500 dark:bg-green-400;
   }
   
   .progress-fill-error {
-    @apply bg-red-500;
+    @apply bg-red-500 dark:bg-red-400;
   }
 
-  .nav-base {
-    @apply bg-gray-800 text-white;
-  }
-  
-  .nav-item {
-    @apply hover:bg-gray-700 transition-colors duration-200 cursor-pointer;
-  }
-  
-  .nav-item-active {
-    @apply bg-blue-600 text-white;
-  }
-
+  /* Modal Components */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4;
   }
   
   .modal-content {
-    @apply bg-white rounded-lg shadow-xl max-w-2xl max-h-screen w-11/12 flex flex-col;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl max-h-screen w-full flex flex-col;
   }
   
   .modal-header {
-    @apply flex justify-between items-center p-5 border-b border-gray-200;
+    @apply flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700;
   }
   
   .modal-body {
-    @apply flex-1 p-5 overflow-y-auto;
+    @apply flex-1 p-6 overflow-y-auto;
   }
   
   .modal-footer {
-    @apply flex justify-end gap-2.5 p-5 border-t border-gray-200;
+    @apply flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700;
   }
 
+  /* Table Components */
   .table-base {
-    @apply w-full bg-white;
+    @apply w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm;
   }
   
   .table-header {
-    @apply bg-gray-50 border-b-2 border-gray-200 text-gray-600 font-medium text-xs p-2.5;
+    @apply bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider p-3;
   }
   
   .table-row {
-    @apply border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200;
+    @apply border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200;
   }
   
   .table-row-selected {
-    @apply bg-blue-100 text-blue-900;
+    @apply bg-blue-50 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100;
   }
   
   .table-cell {
-    @apply p-2 overflow-hidden text-ellipsis whitespace-nowrap;
+    @apply p-3 text-sm text-gray-900 dark:text-gray-100;
   }
 
+  /* Tab Components */
   .tab-navigation {
-    @apply flex border-b border-gray-200 mt-2.5;
+    @apply flex border-b border-gray-200 dark:border-gray-700;
   }
   
   .tab-button {
-    @apply px-4 py-2.5 border-b-2 border-transparent cursor-pointer transition-all duration-200 text-gray-600 text-sm;
-  }
-  
-  .tab-button:hover {
-    @apply text-gray-900 bg-gray-50;
+    @apply px-6 py-3 border-b-2 border-transparent cursor-pointer transition-all duration-200 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600;
   }
   
   .tab-button.active {
-    @apply text-blue-600 border-blue-600;
+    @apply text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400;
   }
 
+  /* Form Components */
   .form-group {
-    @apply mb-5;
+    @apply mb-6;
   }
   
   .form-label {
-    @apply block mb-2 text-gray-900 font-medium;
+    @apply block mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100;
   }
   
   .form-description {
-    @apply mt-1 text-xs text-gray-600 leading-relaxed;
+    @apply mt-1 text-xs text-gray-600 dark:text-gray-400 leading-relaxed;
   }
 
   .checkbox-setting {
@@ -135,93 +126,30 @@
   }
 }
 
-/* Dark mode overrides */
+/* Dark mode specific overrides for secondary buttons */
 @layer components {
   .dark .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-gray-100 border-gray-600;
-  }
-  
-  .dark .input-base {
-    @apply bg-gray-800 border-gray-600 text-gray-100 focus:border-blue-400;
-  }
-  
-  .dark .progress-bar {
-    @apply bg-gray-700;
-  }
-  
-  .dark .progress-fill-primary {
-    @apply bg-blue-400;
-  }
-
-  .dark .nav-base {
-    @apply bg-gray-900;
-  }
-  
-  .dark .nav-item {
-    @apply hover:bg-gray-800;
-  }
-  
-  .dark .nav-item-active {
-    @apply bg-blue-600;
-  }
-
-  .dark .modal-content {
-    @apply bg-gray-800;
-  }
-  
-  .dark .modal-header,
-  .dark .modal-footer {
-    @apply border-gray-700;
-  }
-
-  .dark .table-base {
-    @apply bg-gray-800;
-  }
-  
-  .dark .table-header {
-    @apply bg-gray-900 border-gray-700 text-gray-400;
-  }
-  
-  .dark .table-row {
-    @apply border-gray-700 hover:bg-gray-700;
-  }
-  
-  .dark .table-row-selected {
-    @apply bg-blue-900 text-blue-100;
-  }
-
-  .dark .tab-navigation {
-    @apply border-gray-700;
-  }
-  
-  .dark .tab-button {
-    @apply text-gray-400;
-  }
-  
-  .dark .tab-button:hover {
-    @apply text-gray-100 bg-gray-700;
-  }
-  
-  .dark .tab-button.active {
-    @apply text-blue-400 border-blue-400;
-  }
-
-  .dark .form-label {
-    @apply text-gray-100;
-  }
-  
-  .dark .form-description {
-    @apply text-gray-400;
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-100 border-gray-600 focus:ring-gray-400;
   }
 }
 
 /* Global base styles */
 @layer base {
-  body {
-    @apply font-sans text-sm leading-snug bg-gray-50 text-gray-900 overflow-hidden select-none;
+  html {
+    @apply font-sans antialiased;
   }
   
-  body.dark-mode {
-    @apply bg-gray-900 text-gray-100;
+  body {
+    @apply text-sm leading-relaxed bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden;
+  }
+  
+  /* Smooth scrolling */
+  * {
+    @apply scroll-smooth;
+  }
+  
+  /* Better focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
   }
 }

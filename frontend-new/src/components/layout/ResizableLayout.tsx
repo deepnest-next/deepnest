@@ -71,25 +71,36 @@ const ResizableLayout: Component<ResizableLayoutProps> = (props) => {
   return (
     <div
       ref={containerRef}
-      class={`resizable-layout ${isResizing() ? 'resizing' : ''}`}
+      class={`flex h-full ${isResizing() ? 'select-none' : ''}`}
     >
+      {/* Left Panel */}
       <div
-        class="resizable-left"
+        class="flex-shrink-0 h-full"
         style={{ width: `${leftWidth()}px` }}
       >
         {props.left}
       </div>
       
+      {/* Resize Handle */}
       <div
         ref={resizerRef}
-        class="resizable-handle"
+        class={`w-1 bg-gray-200 dark:bg-gray-700 hover:bg-blue-500 dark:hover:bg-blue-400 cursor-col-resize transition-colors duration-200 relative group ${
+          isResizing() ? 'bg-blue-500 dark:bg-blue-400' : ''
+        }`}
         onMouseDown={handleMouseDown}
-        title="Drag to resize"
+        title="Drag to resize panels"
       >
-        <div class="resizable-handle-line" />
+        {/* Resize handle visual indicator */}
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-8 bg-gray-400 dark:bg-gray-500 group-hover:bg-blue-300 dark:group-hover:bg-blue-300 rounded-full transition-colors duration-200" />
+        
+        {/* Hover indicator */}
+        <div class="absolute -left-1 -right-1 top-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div class="w-full h-full bg-blue-500/20 dark:bg-blue-400/20" />
+        </div>
       </div>
       
-      <div class="resizable-right">
+      {/* Right Panel */}
+      <div class="flex-1 h-full min-w-0">
         {props.right}
       </div>
     </div>
