@@ -1,4 +1,4 @@
-import { createSignal, createContext, useContext, onMount, onCleanup } from 'solid-js';
+import { createSignal, createContext, useContext, onMount, onCleanup, createMemo } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import i18next from 'i18next';
 import { globalState } from '../stores/global.store';
@@ -93,17 +93,17 @@ export const useTranslation = (namespace = 'translation') => {
     return [fallbackT, { changeLanguage: async (_lng: string) => {}, language: () => 'en' }] as const;
   }
   
-  // Create a namespaced translation function
+  // Create a namespaced translation function that's reactive to context changes
   const t = (key: string, options?: TranslationOptions) => {
-    const tFn = context.t();
+    const tFn = context().t();
     const optionsWithNS = { ns: namespace, ...options };
     return tFn(key, optionsWithNS) || key;
   };
   
   return [t, { 
-    changeLanguage: context.changeLanguage, 
-    language: context.getLanguage,
-    i18n: context.getInstance
+    changeLanguage: context().changeLanguage, 
+    language: context().getLanguage,
+    i18n: context().getInstance
   }] as const;
 };
 
@@ -155,8 +155,8 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     }
   });
   
-  // Simple context value - no complex memo needed
-  const contextValue: I18nContextType = {
+  // Create reactive context value that updates when translate signal changes
+  const contextValue = createMemo(() => ({
     t: translate,
     changeLanguage: async (lng: string) => {
       try {
@@ -168,7 +168,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     },
     getLanguage: currentLanguage,
     getInstance: () => i18next
-  };
+  }));
   
   return I18nContext.Provider({ value: contextValue, children: props.children });
 };
