@@ -97,7 +97,13 @@ export const useTranslation = (namespace = 'translation') => {
   const t = (key: string, options?: TranslationOptions) => {
     const tFn = translate(); // Use the signal directly for reactivity
     const optionsWithNS = { ns: namespace, ...options };
-    return tFn(key, optionsWithNS) || key;
+    const result = tFn(key, optionsWithNS) || key;
+    // Only log first few calls to avoid spam
+    if (Math.random() < 0.01) { // 1% chance to log
+      console.log(`useTranslation: translating "${key}" in namespace "${namespace}" -> "${result}"`);
+      console.log('useTranslation: current language signal:', currentLanguage());
+    }
+    return result;
   };
   
   return [t, { 
@@ -113,13 +119,17 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   // Define event handlers outside async context
   const onLoaded = () => {
     console.log('I18nProvider: resources loaded, updating translation function');
+    console.log('I18nProvider: current i18next language:', i18next.language);
     setTranslate(() => i18next.t);
   };
   
   const onLanguageChanged = (lng: string) => {
-    console.log(`I18nProvider: language changed to ${lng}, updating translation function`);
+    console.log(`I18nProvider: language changed event fired for ${lng}`);
+    console.log('I18nProvider: i18next.language is now:', i18next.language);
+    console.log('I18nProvider: currentLanguage signal before update:', currentLanguage());
     setTranslate(() => i18next.t);
     setCurrentLanguage(lng);
+    console.log('I18nProvider: currentLanguage signal after update:', currentLanguage());
   };
   
   // Register cleanup in proper reactive context
@@ -132,6 +142,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
   onMount(async () => {
     try {
       const initialLang = globalState.ui.language || 'en';
+      console.log('I18nProvider: initializing with language:', initialLang);
       
       // Initialize i18next with resources
       await i18next.init({
@@ -139,7 +150,9 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
         lng: initialLang
       });
       
-      console.log('I18nProvider: i18next initialized');
+      console.log('I18nProvider: i18next initialized with language:', i18next.language);
+      console.log('I18nProvider: i18next available languages:', i18next.languages);
+      console.log('I18nProvider: i18next resources:', Object.keys(i18next.store.data));
       
       // Set initial translation function - this is the key pattern from solid-i18next
       setTranslate(() => i18next.t);
@@ -148,6 +161,8 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
       // Event listeners - this is the solid-i18next pattern we were missing
       i18next.on('loaded', onLoaded);
       i18next.on('languageChanged', onLanguageChanged);
+      
+      console.log('I18nProvider: event listeners registered');
       
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
@@ -160,9 +175,18 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     t: translate(), // This will be reactive through the signal in useTranslation
     changeLanguage: async (lng: string) => {
       try {
+        console.log(`I18nProvider: changeLanguage called with ${lng}`);
+        console.log('I18nProvider: current i18next language before change:', i18next.language);
+        console.log('I18nProvider: current global state language:', globalState.ui.language);
+        
         await i18next.changeLanguage(lng);
+        console.log('I18nProvider: i18next.changeLanguage completed, new language:', i18next.language);
+        
         // Also update the global store to keep it in sync
         globalActions.setLanguage(lng);
+        console.log('I18nProvider: globalActions.setLanguage called with:', lng);
+        console.log('I18nProvider: new global state language:', globalState.ui.language);
+        
         // Language change will be handled by the event listener
       } catch (error) {
         console.error('Failed to change language:', error);

@@ -12,8 +12,14 @@ const Header: Component = () => {
   };
 
   const handleLanguageChange = async (language: string) => {
+    console.log(`Header: handleLanguageChange called with ${language}`);
+    console.log('Header: current globalState.ui.language:', globalState.ui.language);
+    
     globalActions.setLanguage(language);
+    console.log('Header: after globalActions.setLanguage, globalState.ui.language:', globalState.ui.language);
+    
     await changeLanguage(language);
+    console.log('Header: after changeLanguage call completed');
   };
 
   return (
