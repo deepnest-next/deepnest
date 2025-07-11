@@ -299,9 +299,13 @@ const PartsList: Component<PartsListProps> = (props) => {
                     <input
                       type="checkbox"
                       checked={props.isSelected?.(part.id) || false}
-                      onChange={(e) => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         props.onItemClick?.(part.id, e);
+                      }}
+                      onChange={() => {
+                        // Prevent default checkbox change behavior
+                        // Selection logic is handled in onClick
                       }}
                       class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
                     />

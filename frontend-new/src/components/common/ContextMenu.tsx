@@ -52,7 +52,19 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
     if (!items?.length) return;
     
     const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
-    const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+    let nextIndex: number;
+    
+    if (currentIndex === -1) {
+      // No item is focused, focus the first item
+      nextIndex = 0;
+    } else if (currentIndex >= items.length - 1) {
+      // At the last item, wrap to the first item
+      nextIndex = 0;
+    } else {
+      // Move to next item
+      nextIndex = currentIndex + 1;
+    }
+    
     (items[nextIndex] as HTMLElement).focus();
   };
 
@@ -61,7 +73,19 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
     if (!items?.length) return;
     
     const currentIndex = Array.from(items).findIndex(item => item === document.activeElement);
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+    let prevIndex: number;
+    
+    if (currentIndex === -1) {
+      // No item is focused, focus the last item
+      prevIndex = items.length - 1;
+    } else if (currentIndex <= 0) {
+      // At the first item, wrap to the last item
+      prevIndex = items.length - 1;
+    } else {
+      // Move to previous item
+      prevIndex = currentIndex - 1;
+    }
+    
     (items[prevIndex] as HTMLElement).focus();
   };
 

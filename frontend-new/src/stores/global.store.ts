@@ -143,6 +143,15 @@ export const globalActions = {
     }
   },
 
+  toggleDarkMode: () => {
+    const currentMode = globalState.ui.darkMode;
+    globalActions.setDarkMode(!currentMode);
+  },
+
+  setCurrentPanel: (panel: UIState['activeTab']) => {
+    setGlobalState('ui', 'activeTab', panel);
+  },
+
   setThemePreference: (preference: 'light' | 'dark' | 'system') => {
     if (typeof localStorage !== 'undefined') {
       try {
@@ -257,6 +266,14 @@ export const globalActions = {
   // Process actions
   setNestingStatus: (isNesting: boolean) => {
     setGlobalState('process', 'isNesting', isNesting);
+  },
+
+  startNesting: () => {
+    setGlobalState('process', 'isNesting', true);
+    setGlobalState('process', 'progress', 0);
+    setGlobalState('process', 'lastError', null);
+    // In a real app, this would trigger the nesting process
+    console.log('Starting nesting process...');
   },
 
   setNestingProgress: (progress: number) => {
