@@ -1,4 +1,4 @@
-import { createSignal, createContext, useContext, onMount, createEffect } from 'solid-js';
+import { createSignal, createContext, useContext, onMount, createEffect, createMemo } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import i18next from 'i18next';
 import { globalState } from '../stores/global.store';
@@ -107,6 +107,7 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
       setLanguage(initialLang);
       setTranslateFn(() => i18next.t); // Set the reactive translation function
       setReady(true);
+      console.log('I18nProvider: i18next initialized and ready set to true');
     } catch (error) {
       console.error('Failed to initialize i18n:', error);
       setReady(true); // Set ready even on error to prevent blocking
@@ -145,12 +146,16 @@ export const I18nProvider: Component<{ children: JSX.Element }> = (props) => {
     }
   };
   
-  const value = {
-    t,
-    changeLanguage,
-    language,
-    ready
-  };
+  // Create reactive context value
+  const value = createMemo(() => {
+    console.log('I18nProvider: creating context value, ready =', ready());
+    return {
+      t,
+      changeLanguage,
+      language,
+      ready
+    };
+  });
   
-  return I18nContext.Provider({ value, children: props.children });
+  return I18nContext.Provider({ value: value(), children: props.children });
 };
