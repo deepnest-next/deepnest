@@ -144,9 +144,9 @@ interface GlobalState {
 - [x] **Statistics**: Efficiency metrics and part placement info
 
 #### 2.4 Sheets Management
-- [ ] **Sheet Configuration**: Size, margins, material settings
-- [ ] **Sheet Preview**: Visual representation with measurements
-- [ ] **Sheet Templates**: Predefined sizes and custom dimensions
+- [x] **Sheet Configuration**: Size, margins, material settings
+- [x] **Sheet Preview**: Visual representation with measurements
+- [x] **Sheet Templates**: Predefined sizes and custom dimensions
 
 #### 2.5 Settings & Presets
 - [ ] **Preset Management**: Create, edit, delete, import/export
