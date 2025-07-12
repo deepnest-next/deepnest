@@ -1279,6 +1279,374 @@ export class Polygon {
   }
 
   /**
+   * Performs boolean union operation with another polygon using Clipper
+   * @param other The other polygon to union with
+   * @returns Array of resulting polygons from the union operation
+   */
+  union(other: Polygon): Polygon[] {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return [this.clone()];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib) {
+        const clipper = new ClipperLib.Clipper();
+        const solution = new ClipperLib.Paths();
+
+        // Convert polygons to Clipper format
+        const thisPath = this.toClipperPath();
+        const otherPath = other.toClipperPath();
+
+        // Add paths to clipper
+        clipper.AddPath(thisPath, ClipperLib.PolyType.ptSubject, true);
+        clipper.AddPath(otherPath, ClipperLib.PolyType.ptClip, true);
+
+        // Execute union operation
+        const success = clipper.Execute(
+          ClipperLib.ClipType.ctUnion,
+          solution,
+          ClipperLib.PolyFillType.pftNonZero,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        if (success && solution.length > 0) {
+          const results: Polygon[] = [];
+          for (let i = 0; i < solution.length; i++) {
+            const polygon = this.fromClipperPath(solution[i]);
+            if (polygon && polygon.points.length >= 3) {
+              results.push(polygon);
+            }
+          }
+          return results.length > 0 ? results : [this.clone()];
+        }
+      }
+    } catch (error) {
+      console.warn('Union operation failed:', error);
+    }
+
+    // Fallback: return both polygons
+    return [this.clone(), other.clone()];
+  }
+
+  /**
+   * Performs boolean intersection operation with another polygon using Clipper
+   * @param other The other polygon to intersect with
+   * @returns Array of resulting polygons from the intersection operation
+   */
+  intersection(other: Polygon): Polygon[] {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return [];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib) {
+        const clipper = new ClipperLib.Clipper();
+        const solution = new ClipperLib.Paths();
+
+        // Convert polygons to Clipper format
+        const thisPath = this.toClipperPath();
+        const otherPath = other.toClipperPath();
+
+        // Add paths to clipper
+        clipper.AddPath(thisPath, ClipperLib.PolyType.ptSubject, true);
+        clipper.AddPath(otherPath, ClipperLib.PolyType.ptClip, true);
+
+        // Execute intersection operation
+        const success = clipper.Execute(
+          ClipperLib.ClipType.ctIntersection,
+          solution,
+          ClipperLib.PolyFillType.pftNonZero,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        if (success && solution.length > 0) {
+          const results: Polygon[] = [];
+          for (let i = 0; i < solution.length; i++) {
+            const polygon = this.fromClipperPath(solution[i]);
+            if (polygon && polygon.points.length >= 3) {
+              results.push(polygon);
+            }
+          }
+          return results;
+        }
+      }
+    } catch (error) {
+      console.warn('Intersection operation failed:', error);
+    }
+
+    // Fallback: check if polygons intersect
+    return this.intersects(other) ? [this.clone()] : [];
+  }
+
+  /**
+   * Performs boolean difference operation (this - other) using Clipper
+   * @param other The polygon to subtract from this one
+   * @returns Array of resulting polygons from the difference operation
+   */
+  difference(other: Polygon): Polygon[] {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return [this.clone()];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib) {
+        const clipper = new ClipperLib.Clipper();
+        const solution = new ClipperLib.Paths();
+
+        // Convert polygons to Clipper format
+        const thisPath = this.toClipperPath();
+        const otherPath = other.toClipperPath();
+
+        // Add paths to clipper
+        clipper.AddPath(thisPath, ClipperLib.PolyType.ptSubject, true);
+        clipper.AddPath(otherPath, ClipperLib.PolyType.ptClip, true);
+
+        // Execute difference operation
+        const success = clipper.Execute(
+          ClipperLib.ClipType.ctDifference,
+          solution,
+          ClipperLib.PolyFillType.pftNonZero,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        if (success && solution.length > 0) {
+          const results: Polygon[] = [];
+          for (let i = 0; i < solution.length; i++) {
+            const polygon = this.fromClipperPath(solution[i]);
+            if (polygon && polygon.points.length >= 3) {
+              results.push(polygon);
+            }
+          }
+          return results.length > 0 ? results : [];
+        }
+      }
+    } catch (error) {
+      console.warn('Difference operation failed:', error);
+    }
+
+    // Fallback: return original if no intersection, empty if identical or fully contained
+    if (this === other || this.intersects(other)) {
+      return []; // Empty if identical or intersecting (simplified fallback)
+    }
+    return [this.clone()];
+  }
+
+  /**
+   * Performs boolean XOR (exclusive or) operation with another polygon using Clipper
+   * @param other The other polygon to XOR with
+   * @returns Array of resulting polygons from the XOR operation
+   */
+  xor(other: Polygon): Polygon[] {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      if (!other) {
+        return [this.clone()];
+      }
+      return [this.clone(), other.clone()];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib) {
+        const clipper = new ClipperLib.Clipper();
+        const solution = new ClipperLib.Paths();
+
+        // Convert polygons to Clipper format
+        const thisPath = this.toClipperPath();
+        const otherPath = other.toClipperPath();
+
+        // Add paths to clipper
+        clipper.AddPath(thisPath, ClipperLib.PolyType.ptSubject, true);
+        clipper.AddPath(otherPath, ClipperLib.PolyType.ptClip, true);
+
+        // Execute XOR operation
+        const success = clipper.Execute(
+          ClipperLib.ClipType.ctXor,
+          solution,
+          ClipperLib.PolyFillType.pftNonZero,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        if (success && solution.length > 0) {
+          const results: Polygon[] = [];
+          for (let i = 0; i < solution.length; i++) {
+            const polygon = this.fromClipperPath(solution[i]);
+            if (polygon && polygon.points.length >= 3) {
+              results.push(polygon);
+            }
+          }
+          return results.length > 0 ? results : [];
+        }
+      }
+    } catch (error) {
+      console.warn('XOR operation failed:', error);
+    }
+
+    // Fallback: return both if no intersection, neither if identical or fully overlapping
+    if (this === other) {
+      return []; // XOR of identical polygons is empty
+    }
+    if (this.intersects(other)) {
+      return []; // Simplified fallback for overlapping
+    }
+    return [this.clone(), other.clone()];
+  }
+
+  /**
+   * Calculates the Minkowski sum of this polygon with another polygon using Clipper
+   * @param other The other polygon to calculate Minkowski sum with
+   * @param isClosed Whether the paths should be treated as closed (default: true)
+   * @returns Array of resulting polygons from the Minkowski sum
+   */
+  minkowskiSum(other: Polygon, isClosed: boolean = true): Polygon[] {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return [this.clone()];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib?.Clipper?.MinkowskiSum) {
+        // Convert polygons to Clipper format
+        const thisPath = this.toClipperPath();
+        const otherPath = other.toClipperPath();
+
+        // Calculate Minkowski sum
+        const solution = ClipperLib.Clipper.MinkowskiSum(thisPath, otherPath, isClosed);
+
+        if (solution && solution.length > 0) {
+          const results: Polygon[] = [];
+          for (let i = 0; i < solution.length; i++) {
+            const polygon = this.fromClipperPath(solution[i]);
+            if (polygon && polygon.points.length >= 3) {
+              results.push(polygon);
+            }
+          }
+          return results.length > 0 ? results : [this.clone()];
+        }
+      }
+    } catch (error) {
+      console.warn('Minkowski sum operation failed:', error);
+    }
+
+    // Fallback: return original polygon
+    return [this.clone()];
+  }
+
+  /**
+   * Performs multiple boolean operations in sequence
+   * @param operations Array of operation objects with type and polygon
+   * @returns Array of resulting polygons
+   */
+  batchOperations(operations: Array<{type: 'union' | 'intersection' | 'difference' | 'xor', polygon: Polygon}>): Polygon[] {
+    let results = [this.clone()];
+
+    for (const op of operations) {
+      const newResults: Polygon[] = [];
+      
+      for (const polygon of results) {
+        let opResults: Polygon[];
+        
+        switch (op.type) {
+          case 'union':
+            opResults = polygon.union(op.polygon);
+            break;
+          case 'intersection':
+            opResults = polygon.intersection(op.polygon);
+            break;
+          case 'difference':
+            opResults = polygon.difference(op.polygon);
+            break;
+          case 'xor':
+            opResults = polygon.xor(op.polygon);
+            break;
+          default:
+            opResults = [polygon];
+        }
+        
+        newResults.push(...opResults);
+      }
+      
+      results = newResults;
+      
+      // Stop if no results remain
+      if (results.length === 0) {
+        break;
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Calculates the area using Clipper library for more accurate results
+   * @returns The area calculated by Clipper, or falls back to built-in area calculation
+   */
+  clipperArea(): number {
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib?.Clipper?.Area) {
+        const clipperPath = this.toClipperPath();
+        return Math.abs(ClipperLib.Clipper.Area(clipperPath)) / (10000000 * 10000000);
+      }
+    } catch (error) {
+      console.warn('Clipper area calculation failed:', error);
+    }
+
+    // Fallback to built-in area calculation
+    return Math.abs(this.area());
+  }
+
+  /**
+   * Reverses the orientation of the polygon (clockwise to counter-clockwise or vice versa)
+   * @returns New Polygon with reversed orientation
+   */
+  reverse(): Polygon {
+    const reversedPoints = [...this.points].reverse();
+    const reversed = new Polygon(reversedPoints);
+    
+    // Reverse children if they exist
+    if (this.children && this.children.length > 0) {
+      reversed.children = this.children.map(child => child.reverse());
+    }
+    
+    return reversed;
+  }
+
+  /**
+   * Checks if the polygon has clockwise orientation
+   * @returns true if clockwise, false if counter-clockwise
+   */
+  isClockwise(): boolean {
+    return this.area() < 0;
+  }
+
+  /**
+   * Ensures the polygon has the specified orientation
+   * @param clockwise Whether the polygon should be clockwise
+   * @returns New Polygon with the specified orientation
+   */
+  ensureOrientation(clockwise: boolean): Polygon {
+    if (this.isClockwise() === clockwise) {
+      return this.clone();
+    }
+    return this.reverse();
+  }
+
+  /**
    * String representation of the polygon
    */
   toString(): string {
