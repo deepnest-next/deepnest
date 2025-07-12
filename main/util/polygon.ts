@@ -1,4 +1,5 @@
 import { Point } from "./point.js";
+import { Matrix } from "./matrix.js";
 
 // Type definition for bounding box
 export interface BoundingBox {
@@ -404,6 +405,150 @@ export class Polygon {
         (b1.x <= b2.x ? x > b1.x + tolerance && x < b2.x - tolerance : x > b2.x + tolerance && x < b1.x - tolerance);
 
     return onSegmentAInterior && onSegmentBInterior;
+  }
+
+  /**
+   * Rotates the polygon by the specified angle in degrees around origin (0,0)
+   * @param degrees Angle in degrees (positive = counterclockwise)
+   * @returns New Polygon instance with rotated points
+   */
+  rotate(degrees: number): Polygon {
+    if (degrees === 0) {
+      return this.clone();
+    }
+
+    const angle = (degrees * Math.PI) / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const rotatedPoints = this.points.map(p => {
+      const x = p.x * cos - p.y * sin;
+      const y = p.x * sin + p.y * cos;
+      return new Point(x, y);
+    });
+
+    const rotated = new Polygon(rotatedPoints);
+    
+    // Rotate children if they exist
+    if (this.children && this.children.length > 0) {
+      rotated.children = this.children.map(child => child.rotate(degrees));
+    }
+
+    return rotated;
+  }
+
+  /**
+   * Rotates the polygon by the specified angle around a given center point
+   * @param degrees Angle in degrees (positive = counterclockwise)
+   * @param center Center point of rotation
+   * @returns New Polygon instance with rotated points
+   */
+  rotateAround(degrees: number, center: Point): Polygon {
+    if (degrees === 0) {
+      return this.clone();
+    }
+
+    // Translate to origin, rotate, then translate back
+    return this.translate(-center.x, -center.y)
+               .rotate(degrees)
+               .translate(center.x, center.y);
+  }
+
+  /**
+   * Translates the polygon by the specified offset
+   * @param dx Horizontal offset
+   * @param dy Vertical offset
+   * @returns New Polygon instance with translated points
+   */
+  translate(dx: number, dy: number): Polygon {
+    if (dx === 0 && dy === 0) {
+      return this.clone();
+    }
+
+    const translatedPoints = this.points.map(p => 
+      new Point(p.x + dx, p.y + dy)
+    );
+
+    const translated = new Polygon(translatedPoints);
+    
+    // Translate children if they exist
+    if (this.children && this.children.length > 0) {
+      translated.children = this.children.map(child => child.translate(dx, dy));
+    }
+
+    return translated;
+  }
+
+  /**
+   * Scales the polygon by the specified factors around origin (0,0)
+   * @param sx Horizontal scale factor
+   * @param sy Vertical scale factor (defaults to sx for uniform scaling)
+   * @returns New Polygon instance with scaled points
+   */
+  scale(sx: number, sy?: number): Polygon {
+    if (sy === undefined) {
+      sy = sx; // Uniform scaling
+    }
+
+    if (sx === 1 && sy === 1) {
+      return this.clone();
+    }
+
+    const scaledPoints = this.points.map(p => 
+      new Point(p.x * sx, p.y * sy!)
+    );
+
+    const scaled = new Polygon(scaledPoints);
+    
+    // Scale children if they exist
+    if (this.children && this.children.length > 0) {
+      scaled.children = this.children.map(child => child.scale(sx, sy));
+    }
+
+    return scaled;
+  }
+
+  /**
+   * Scales the polygon around a given center point
+   * @param sx Horizontal scale factor
+   * @param sy Vertical scale factor (defaults to sx for uniform scaling)
+   * @param center Center point of scaling
+   * @returns New Polygon instance with scaled points
+   */
+  scaleAround(sx: number, sy: number | undefined, center: Point): Polygon {
+    if (sy === undefined) {
+      sy = sx; // Uniform scaling
+    }
+
+    if (sx === 1 && sy === 1) {
+      return this.clone();
+    }
+
+    // Translate to origin, scale, then translate back
+    return this.translate(-center.x, -center.y)
+               .scale(sx, sy)
+               .translate(center.x, center.y);
+  }
+
+  /**
+   * Applies a transformation matrix to the polygon
+   * @param matrix The transformation matrix to apply
+   * @returns New Polygon instance with transformed points
+   */
+  transform(matrix: Matrix): Polygon {
+    if (matrix.isIdentity()) {
+      return this.clone();
+    }
+
+    const transformedPoints = this.points.map(p => matrix.calc(p));
+    const transformed = new Polygon(transformedPoints);
+    
+    // Transform children if they exist
+    if (this.children && this.children.length > 0) {
+      transformed.children = this.children.map(child => child.transform(matrix));
+    }
+
+    return transformed;
   }
 
   /**
