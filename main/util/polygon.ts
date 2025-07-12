@@ -826,6 +826,177 @@ export class Polygon {
   }
 
   /**
+   * Calculates the No-Fit Polygon (NFP) between two polygons
+   * The NFP represents all positions where polygon B can be placed relative to polygon A without overlap
+   * @param A The stationary polygon
+   * @param B The moving polygon  
+   * @param inside Whether to calculate interior NFP (B inside A) or exterior NFP
+   * @returns Array of NFP polygons
+   */
+  static noFitPolygon(A: Polygon, B: Polygon, inside: boolean = false): Polygon[] {
+    if (!A || A.points.length < 3 || !B || B.points.length < 3) {
+      return [];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const addon = (globalScope as any)?.addon;
+      
+      if (addon?.calculateNFP) {
+        // Use native addon for NFP calculation (most accurate and fast)
+        const result = addon.calculateNFP(
+          A.toArray(),
+          B.toArray(),
+          inside
+        );
+        
+        if (result && Array.isArray(result)) {
+          return result.map((nfpPoints: any) => {
+            if (Array.isArray(nfpPoints) && nfpPoints.length >= 3) {
+              return Polygon.fromArray(nfpPoints);
+            }
+            return null;
+          }).filter((p: Polygon | null) => p !== null) as Polygon[];
+        }
+      }
+
+      // Fallback to JavaScript implementation
+      const GeometryUtil = (globalScope as any)?.GeometryUtil;
+      if (GeometryUtil?.noFitPolygon) {
+        const result = GeometryUtil.noFitPolygon(
+          A.toArray(),
+          B.toArray(),
+          inside
+        );
+        
+        if (result && Array.isArray(result)) {
+          return result.map((nfpPoints: any) => {
+            if (Array.isArray(nfpPoints) && nfpPoints.length >= 3) {
+              return Polygon.fromArray(nfpPoints);
+            }
+            return null;
+          }).filter((p: Polygon | null) => p !== null) as Polygon[];
+        }
+      }
+    } catch (error) {
+      console.warn('NFP calculation failed:', error);
+    }
+
+    // Fallback: return empty array if NFP calculation is not available
+    return [];
+  }
+
+  /**
+   * Optimized NFP calculation for rectangular polygons
+   * @param A The stationary rectangular polygon
+   * @param B The moving rectangular polygon
+   * @returns Array containing the rectangular NFP, or empty array if not applicable
+   */
+  static noFitPolygonRectangle(A: Polygon, B: Polygon): Polygon[] {
+    if (!A || A.points.length !== 4 || !B || B.points.length !== 4) {
+      return [];
+    }
+
+    if (!A.isRectangle() || !B.isRectangle()) {
+      return [];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const GeometryUtil = (globalScope as any)?.GeometryUtil;
+      
+      if (GeometryUtil?.noFitPolygonRectangle) {
+        const result = GeometryUtil.noFitPolygonRectangle(
+          A.toArray(),
+          B.toArray()
+        );
+        
+        if (result && Array.isArray(result) && result.length > 0) {
+          return result.map((nfpPoints: any) => {
+            if (Array.isArray(nfpPoints) && nfpPoints.length >= 3) {
+              return Polygon.fromArray(nfpPoints);
+            }
+            return null;
+          }).filter((p: Polygon | null) => p !== null) as Polygon[];
+        }
+      }
+
+      // Manual calculation for rectangles
+      const boundsA = A.bounds();
+      const boundsB = B.bounds();
+
+      // Check if B can fit inside A
+      if (boundsB.width > boundsA.width || boundsB.height > boundsA.height) {
+        return [];
+      }
+
+      // Calculate the NFP as a rectangle representing valid placement positions
+      const nfpBounds = {
+        x: boundsA.x - boundsB.x,
+        y: boundsA.y - boundsB.y,
+        width: boundsA.width - boundsB.width,
+        height: boundsA.height - boundsB.height
+      };
+
+      if (nfpBounds.width <= 0 || nfpBounds.height <= 0) {
+        return [];
+      }
+
+      const nfpPoints = [
+        new Point(nfpBounds.x, nfpBounds.y),
+        new Point(nfpBounds.x + nfpBounds.width, nfpBounds.y),
+        new Point(nfpBounds.x + nfpBounds.width, nfpBounds.y + nfpBounds.height),
+        new Point(nfpBounds.x, nfpBounds.y + nfpBounds.height)
+      ];
+
+      return [new Polygon(nfpPoints)];
+    } catch (error) {
+      console.warn('Rectangle NFP calculation failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Merges two touching polygons into a single polygon representing their combined outer perimeter
+   * @param other The other polygon to merge with this one
+   * @returns New Polygon representing the merged outer perimeter, or null if merge fails
+   */
+  merge(other: Polygon): Polygon | null {
+    if (!other || other.points.length < 3) {
+      return null;
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const GeometryUtil = (globalScope as any)?.GeometryUtil;
+      
+      if (GeometryUtil?.polygonHull) {
+        // Add offset properties that the original function expects
+        const thisArray = this.toArray();
+        const otherArray = other.toArray();
+        (thisArray as any).offsetx = 0;
+        (thisArray as any).offsety = 0;
+        (otherArray as any).offsetx = 0;
+        (otherArray as any).offsety = 0;
+
+        const result = GeometryUtil.polygonHull(thisArray, otherArray);
+        
+        if (result && Array.isArray(result) && result.length >= 3) {
+          return Polygon.fromArray(result);
+        }
+      }
+
+      // Fallback: use convex hull of combined points
+      const combinedPoints = [...this.points, ...other.points];
+      const combinedPolygon = new Polygon(combinedPoints);
+      return combinedPolygon.hull();
+    } catch (error) {
+      console.warn('Polygon merge failed:', error);
+      return null;
+    }
+  }
+
+  /**
    * String representation of the polygon
    */
   toString(): string {
