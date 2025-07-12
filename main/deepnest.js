@@ -4,6 +4,7 @@
  */
 
 import { Point } from '../build/util/point.js';
+import { Polygon } from '../build/util/polygon.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
 
 const { simplifyPolygon: simplifyPoly } = require("@deepnest/svg-preprocessor");
@@ -203,7 +204,7 @@ export class DeepNest {
     var offsetArea = 0;
     var holes = [];
     for (i = 0; i < offsets.length; i++) {
-      var area = GeometryUtil.polygonArea(offsets[i]);
+      var area = Polygon.fromArray(offsets[i]).area();
       if (offset == null || area < offsetArea) {
         offset = offsets[i];
         offsetArea = area;
@@ -352,7 +353,7 @@ export class DeepNest {
       var largestArea = null;
       for (var i = 0; i < combined.length; i++) {
         var n = toNestCoordinates(combined[i], 10000000);
-        var sarea = -GeometryUtil.polygonArea(n);
+        var sarea = -Polygon.fromArray(n).area();
         if (largestArea === null || largestArea < sarea) {
           offset = n;
           largestArea = sarea;
@@ -569,11 +570,9 @@ export class DeepNest {
   };
 
   pointInPolygon(point, polygon) {
-    // scaling is deliberately coarse to filter out points that lie *on* the polygon
-    var p = this.svgToClipper(polygon, 1000);
-    var pt = new ClipperLib.IntPoint(1000 * point.x, 1000 * point.y);
-
-    return ClipperLib.Clipper.PointInPolygon(pt, p) > 0;
+    // Use the new Polygon class for point containment
+    const poly = Polygon.fromArray(polygon);
+    return poly.contains(new Point(point.x, point.y));
   };
 
   /*this.simplifyPolygon = function(polygon, concavehull){
@@ -600,7 +599,7 @@ export class DeepNest {
       hull = hull.getHull();
     }
 
-    var hullarea = Math.abs(GeometryUtil.polygonArea(hull));
+    var hullarea = Math.abs(Polygon.fromArray(hull).area());
 
     var concave = [];
     var detail = [];
@@ -657,7 +656,7 @@ export class DeepNest {
           continue;
         }
 
-        var testarea =  Math.abs(GeometryUtil.polygonArea(test));
+        var testarea =  Math.abs(Polygon.fromArray(test).area());
         //console.log(testarea, hullarea);
         if(testarea/hullarea < 0.98){
           simple.push(p);
@@ -692,7 +691,7 @@ export class DeepNest {
       if (
         poly &&
         poly.length > 2 &&
-        Math.abs(GeometryUtil.polygonArea(poly)) >
+        Math.abs(Polygon.fromArray(poly).area()) >
         config.curveTolerance * config.curveTolerance
       ) {
         poly.source = i;
@@ -800,7 +799,7 @@ export class DeepNest {
       part.polygontree = polygons[i];
       part.svgelements = [];
 
-      var bounds = GeometryUtil.getPolygonBounds(part.polygontree);
+      var bounds = Polygon.fromArray(part.polygontree).bounds();
       part.bounds = bounds;
       part.area = bounds.width * bounds.height;
       part.quantity = 1;
@@ -1215,8 +1214,8 @@ export class DeepNest {
       // seed with decreasing area
       adam.sort(function (a, b) {
         return (
-          Math.abs(GeometryUtil.polygonArea(b)) -
-          Math.abs(GeometryUtil.polygonArea(a))
+          Math.abs(Polygon.fromArray(b).area()) -
+          Math.abs(Polygon.fromArray(a).area())
         );
       });
 
