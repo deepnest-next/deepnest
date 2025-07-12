@@ -238,6 +238,175 @@ export class Polygon {
   }
 
   /**
+   * Tests if a point is inside the polygon using the ray casting algorithm
+   * @param point The point to test
+   * @param tolerance Optional tolerance for numerical precision (default: 1e-10)
+   * @returns true if point is inside, false if outside, null if exactly on edge
+   */
+  contains(point: Point, tolerance: number = 1e-10): boolean | null {
+    if (this.points.length < 3) {
+      return null;
+    }
+
+    let inside = false;
+    const n = this.points.length;
+
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = this.points[i].x;
+      const yi = this.points[i].y;
+      const xj = this.points[j].x;
+      const yj = this.points[j].y;
+
+      // Check if point is exactly on vertex
+      if (
+        Math.abs(point.x - xi) < tolerance &&
+        Math.abs(point.y - yi) < tolerance
+      ) {
+        return null; // On vertex
+      }
+
+      // Skip very small edges
+      if (
+        Math.abs(xi - xj) < tolerance &&
+        Math.abs(yi - yj) < tolerance
+      ) {
+        continue;
+      }
+
+      // Ray casting algorithm
+      const intersect =
+        yi > point.y !== yj > point.y &&
+        point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+      
+      if (intersect) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  }
+
+  /**
+   * Tests if this polygon intersects with another polygon
+   * @param other The other polygon to test intersection with
+   * @returns true if polygons intersect, false otherwise
+   */
+  intersects(other: Polygon): boolean {
+    // Quick bounding box check first
+    const thisBounds = this.bounds();
+    const otherBounds = other.bounds();
+    
+    if (
+      thisBounds.x + thisBounds.width < otherBounds.x ||
+      otherBounds.x + otherBounds.width < thisBounds.x ||
+      thisBounds.y + thisBounds.height < otherBounds.y ||
+      otherBounds.y + otherBounds.height < thisBounds.y
+    ) {
+      return false; // Bounding boxes don't overlap
+    }
+
+    // Check if any edges intersect
+    for (let i = 0; i < this.points.length; i++) {
+      const a1 = this.points[i];
+      const a2 = this.points[(i + 1) % this.points.length];
+
+      for (let j = 0; j < other.points.length; j++) {
+        const b1 = other.points[j];
+        const b2 = other.points[(j + 1) % other.points.length];
+
+        if (this.lineSegmentsIntersect(a1, a2, b1, b2)) {
+          return true;
+        }
+      }
+    }
+
+    // Check if one polygon is completely inside the other
+    if (this.points.length > 0 && other.contains(this.points[0]) === true) {
+      return true;
+    }
+    if (other.points.length > 0 && this.contains(other.points[0]) === true) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if this polygon is rectangular within a given tolerance
+   * @param tolerance Optional tolerance for angle and side length comparison
+   * @returns true if polygon is rectangular
+   */
+  isRectangle(tolerance: number = 1e-10): boolean {
+    if (this.points.length !== 4) {
+      return false;
+    }
+
+    const bounds = this.bounds();
+    
+    // Check if all points lie on the bounding box edges
+    for (const point of this.points) {
+      const onLeftEdge = Math.abs(point.x - bounds.x) < tolerance;
+      const onRightEdge = Math.abs(point.x - (bounds.x + bounds.width)) < tolerance;
+      const onBottomEdge = Math.abs(point.y - bounds.y) < tolerance;
+      const onTopEdge = Math.abs(point.y - (bounds.y + bounds.height)) < tolerance;
+
+      const onVerticalEdge = onLeftEdge || onRightEdge;
+      const onHorizontalEdge = onBottomEdge || onTopEdge;
+
+      if (!onVerticalEdge || !onHorizontalEdge) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Helper method to test if two line segments intersect
+   * @param a1 First point of first line segment
+   * @param a2 Second point of first line segment
+   * @param b1 First point of second line segment
+   * @param b2 Second point of second line segment
+   * @returns true if line segments intersect (but not if they just touch at endpoints)
+   */
+  private lineSegmentsIntersect(a1: Point, a2: Point, b1: Point, b2: Point): boolean {
+    const tolerance = 1e-10;
+
+    // Calculate line parameters
+    const a1x = a2.y - a1.y;
+    const b1x = a1.x - a2.x;
+    const c1 = a2.x * a1.y - a1.x * a2.y;
+    
+    const a2x = b2.y - b1.y;
+    const b2x = b1.x - b2.x;
+    const c2 = b2.x * b1.y - b1.x * b2.y;
+
+    const denom = a1x * b2x - a2x * b1x;
+
+    // Lines are parallel
+    if (Math.abs(denom) < tolerance) {
+      return false;
+    }
+
+    // Calculate intersection point
+    const x = (b1x * c2 - b2x * c1) / denom;
+    const y = (a2x * c1 - a1x * c2) / denom;
+
+    // Check if intersection point is in the interior of both line segments (not at endpoints)
+    const onSegmentAInterior = 
+      Math.abs(a1.x - a2.x) <= tolerance ? 
+        (a1.y <= a2.y ? y > a1.y + tolerance && y < a2.y - tolerance : y > a2.y + tolerance && y < a1.y - tolerance) :
+        (a1.x <= a2.x ? x > a1.x + tolerance && x < a2.x - tolerance : x > a2.x + tolerance && x < a1.x - tolerance);
+
+    const onSegmentBInterior = 
+      Math.abs(b1.x - b2.x) <= tolerance ?
+        (b1.y <= b2.y ? y > b1.y + tolerance && y < b2.y - tolerance : y > b2.y + tolerance && y < b1.y - tolerance) :
+        (b1.x <= b2.x ? x > b1.x + tolerance && x < b2.x - tolerance : x > b2.x + tolerance && x < b1.x - tolerance);
+
+    return onSegmentAInterior && onSegmentBInterior;
+  }
+
+  /**
    * String representation of the polygon
    */
   toString(): string {
