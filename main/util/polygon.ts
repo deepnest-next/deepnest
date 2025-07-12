@@ -27,6 +27,10 @@ export class Polygon {
   private _perimeter?: number;
   private _centroid?: Point;
 
+  /** Static cache for frequently used polygon instances */
+  private static _polygonCache = new Map<string, Polygon>();
+  private static readonly MAX_CACHE_SIZE = 1000;
+
   /**
    * Creates a new Polygon from an array of Points
    * @param points Array of Point objects defining the polygon vertices
@@ -44,11 +48,28 @@ export class Polygon {
   /**
    * Creates a Polygon from an array of coordinate objects
    * @param coords Array of objects with x and y properties
-   * @returns New Polygon instance
+   * @returns New Polygon instance (cached for performance)
    */
   static fromArray(coords: { x: number; y: number }[]): Polygon {
+    // Create cache key from coordinates
+    const cacheKey = coords.map(c => `${c.x.toFixed(6)},${c.y.toFixed(6)}`).join('|');
+    
+    // Check cache first
+    if (this._polygonCache.has(cacheKey)) {
+      const cached = this._polygonCache.get(cacheKey)!;
+      return cached.clone(); // Return clone to maintain immutability
+    }
+    
+    // Create new polygon
     const points = coords.map((coord) => new Point(coord.x, coord.y));
-    return new Polygon(points);
+    const polygon = new Polygon(points);
+    
+    // Cache the result if cache isn't full
+    if (this._polygonCache.size < this.MAX_CACHE_SIZE) {
+      this._polygonCache.set(cacheKey, polygon.clone());
+    }
+    
+    return polygon;
   }
 
   /**
@@ -57,6 +78,25 @@ export class Polygon {
    */
   toArray(): { x: number; y: number }[] {
     return this.points.map((p) => ({ x: p.x, y: p.y }));
+  }
+
+  /**
+   * Clears the static polygon cache to free memory
+   * Call this periodically in long-running operations
+   */
+  static clearCache(): void {
+    this._polygonCache.clear();
+  }
+
+  /**
+   * Gets current cache statistics
+   * @returns Object with cache size and hit information
+   */
+  static getCacheStats(): { size: number; maxSize: number } {
+    return {
+      size: this._polygonCache.size,
+      maxSize: this.MAX_CACHE_SIZE
+    };
   }
 
   /**
