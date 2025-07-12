@@ -1,6 +1,8 @@
 'use strict';
 
 import { NfpCache } from '../build/nfpDb.js';
+import { Polygon } from '../build/util/polygon.js';
+import { Point } from '../build/util/point.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
 
 window.onload = function () {
@@ -104,7 +106,7 @@ window.onload = function () {
       var largestArea = null;
       for (let i = 0; i < solution.length; i++) {
         var n = toNestCoordinates(solution[i], 10000000);
-        var sarea = -GeometryUtil.polygonArea(n);
+        var sarea = -Polygon.fromArray(n).area();
         if (largestArea === null || largestArea < sarea) {
           clipperNfp = n;
           largestArea = sarea;
@@ -432,7 +434,7 @@ function nfpToClipperCoordinates(nfp, config) {
   // children first
   if (nfp.children && nfp.children.length > 0) {
     for (let j = 0; j < nfp.children.length; j++) {
-      if (GeometryUtil.polygonArea(nfp.children[j]) < 0) {
+      if (Polygon.fromArray(nfp.children[j]).area() < 0) {
         nfp.children[j].reverse();
       }
       var childNfp = toClipperCoordinates(nfp.children[j]);
@@ -441,7 +443,7 @@ function nfpToClipperCoordinates(nfp, config) {
     }
   }
 
-  if (GeometryUtil.polygonArea(nfp) > 0) {
+  if (Polygon.fromArray(nfp).area() > 0) {
     nfp.reverse();
   }
 
@@ -623,7 +625,7 @@ function getOuterNfp(A, B, inside) {
 }
 
 function getFrame(A) {
-  var bounds = GeometryUtil.getPolygonBounds(A);
+  var bounds = Polygon.fromArray(A).bounds();
 
   // expand bounds by 10%
   bounds.width *= 1.1;
