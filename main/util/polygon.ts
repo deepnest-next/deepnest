@@ -115,12 +115,12 @@ export class Polygon {
    * Clears all cached computed values
    * Should be called when the polygon is modified
    */
-  private clearCache(): void {
-    this._area = undefined;
-    this._bounds = undefined;
-    this._perimeter = undefined;
-    this._centroid = undefined;
-  }
+  // private clearCache(): void {
+  //   this._area = undefined;
+  //   this._bounds = undefined;
+  //   this._perimeter = undefined;
+  //   this._centroid = undefined;
+  // }
 
   /**
    * Calculates the signed area of the polygon
@@ -993,6 +993,288 @@ export class Polygon {
     } catch (error) {
       console.warn('Polygon merge failed:', error);
       return null;
+    }
+  }
+
+  /**
+   * Calculates the minimum distance this polygon would need to slide in the given direction
+   * to avoid overlap with another polygon
+   * @param other The other polygon to avoid
+   * @param direction The direction vector to slide in
+   * @param ignoreNegative Whether to ignore negative distances (default: false)
+   * @returns The minimum slide distance, or null if no collision would occur
+   */
+  slideDistance(other: Polygon, direction: Point, ignoreNegative: boolean = false): number | null {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return null;
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const GeometryUtil = (globalScope as any)?.GeometryUtil;
+      
+      if (GeometryUtil?.polygonSlideDistance) {
+        // Convert to arrays and add offset properties
+        const thisArray = this.toArray();
+        const otherArray = other.toArray();
+        (thisArray as any).offsetx = 0;
+        (thisArray as any).offsety = 0;
+        (otherArray as any).offsetx = 0;
+        (otherArray as any).offsety = 0;
+
+        return GeometryUtil.polygonSlideDistance(
+          thisArray,
+          otherArray,
+          direction,
+          ignoreNegative
+        );
+      }
+    } catch (error) {
+      console.warn('Slide distance calculation failed:', error);
+    }
+
+    // Fallback: basic implementation using bounding boxes
+    return this.fallbackSlideDistance(other, direction, ignoreNegative);
+  }
+
+  /**
+   * Projects each point of another polygon onto this polygon in the given direction
+   * and returns the minimum projection distance
+   * @param other The polygon to project onto this one
+   * @param direction The projection direction vector
+   * @returns The minimum projection distance, or null if projection fails
+   */
+  projectionDistance(other: Polygon, direction: Point): number | null {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return null;
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const GeometryUtil = (globalScope as any)?.GeometryUtil;
+      
+      if (GeometryUtil?.polygonProjectionDistance) {
+        // Convert to arrays and add offset properties
+        const thisArray = this.toArray();
+        const otherArray = other.toArray();
+        (thisArray as any).offsetx = 0;
+        (thisArray as any).offsety = 0;
+        (otherArray as any).offsetx = 0;
+        (otherArray as any).offsety = 0;
+
+        return GeometryUtil.polygonProjectionDistance(
+          thisArray,
+          otherArray,
+          direction
+        );
+      }
+    } catch (error) {
+      console.warn('Projection distance calculation failed:', error);
+    }
+
+    // Fallback: return null if GeometryUtil is not available
+    return null;
+  }
+
+  /**
+   * Calculates the distance from a point to a line segment in a given direction
+   * @param point The point to measure from
+   * @param segmentStart First point of the line segment
+   * @param segmentEnd Second point of the line segment
+   * @param direction The direction vector (normal to the measurement direction)
+   * @param infinite Whether to treat the segment as an infinite line (default: false)
+   * @returns The distance, or null if no intersection
+   */
+  static pointToSegmentDistance(
+    point: Point,
+    segmentStart: Point,
+    segmentEnd: Point,
+    direction: Point,
+    infinite: boolean = false
+  ): number | null {
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const GeometryUtil = (globalScope as any)?.GeometryUtil;
+      
+      if (GeometryUtil?.pointDistance) {
+        return GeometryUtil.pointDistance(
+          point,
+          segmentStart,
+          segmentEnd,
+          direction,
+          infinite
+        );
+      }
+    } catch (error) {
+      console.warn('Point to segment distance calculation failed:', error);
+    }
+
+    // Fallback: simple perpendicular distance calculation
+    return Polygon.fallbackPointToSegmentDistance(point, segmentStart, segmentEnd, direction, infinite);
+  }
+
+  /**
+   * Calculates the distance between this polygon and another polygon
+   * @param other The other polygon
+   * @returns The minimum distance between the polygons (0 if they intersect)
+   */
+  distanceTo(other: Polygon): number {
+    if (!other || other.points.length < 3 || this.points.length < 3) {
+      return Infinity;
+    }
+
+    // Quick check for intersection
+    if (this.intersects(other)) {
+      return 0;
+    }
+
+    // Find minimum distance between all edges
+    let minDistance = Infinity;
+
+    for (let i = 0; i < this.points.length; i++) {
+      const thisStart = this.points[i];
+      const thisEnd = this.points[(i + 1) % this.points.length];
+
+      for (let j = 0; j < other.points.length; j++) {
+        const otherStart = other.points[j];
+        const otherEnd = other.points[(j + 1) % other.points.length];
+
+        const distance = this.segmentToSegmentDistance(thisStart, thisEnd, otherStart, otherEnd);
+        if (distance < minDistance) {
+          minDistance = distance;
+        }
+      }
+    }
+
+    return minDistance;
+  }
+
+  /**
+   * Fallback implementation for slide distance using bounding box approximation
+   */
+  private fallbackSlideDistance(other: Polygon, direction: Point, ignoreNegative: boolean): number | null {
+    const thisBounds = this.bounds();
+    const otherBounds = other.bounds();
+
+    // Normalize direction vector
+    const length = Math.hypot(direction.x, direction.y);
+    if (length === 0) return null;
+    
+    const normalizedDir = new Point(direction.x / length, direction.y / length);
+
+    // Calculate how far to slide based on bounding box overlap
+    const dx = normalizedDir.x > 0 ? 
+      (otherBounds.x + otherBounds.width) - thisBounds.x :
+      otherBounds.x - (thisBounds.x + thisBounds.width);
+    
+    const dy = normalizedDir.y > 0 ? 
+      (otherBounds.y + otherBounds.height) - thisBounds.y :
+      otherBounds.y - (thisBounds.y + thisBounds.height);
+
+    const distance = dx * normalizedDir.x + dy * normalizedDir.y;
+
+    if (ignoreNegative && distance < 0) {
+      return null;
+    }
+
+    return distance;
+  }
+
+  /**
+   * Fallback implementation for point to segment distance
+   */
+  private static fallbackPointToSegmentDistance(
+    point: Point,
+    segmentStart: Point,
+    segmentEnd: Point,
+    direction: Point,
+    infinite: boolean
+  ): number | null {
+    // Normalize direction vector
+    const length = Math.hypot(direction.x, direction.y);
+    if (length === 0) return null;
+    
+    const normal = new Point(direction.x / length, direction.y / length);
+
+    // Create perpendicular vector
+    const perpendicular = new Point(normal.y, -normal.x);
+
+    // Project point onto the line
+    const segmentVector = new Point(segmentEnd.x - segmentStart.x, segmentEnd.y - segmentStart.y);
+    const pointVector = new Point(point.x - segmentStart.x, point.y - segmentStart.y);
+
+    const segmentLength = Math.hypot(segmentVector.x, segmentVector.y);
+    if (segmentLength === 0) return null;
+
+    const segmentUnit = new Point(segmentVector.x / segmentLength, segmentVector.y / segmentLength);
+    const projection = pointVector.x * segmentUnit.x + pointVector.y * segmentUnit.y;
+
+    if (!infinite && (projection < 0 || projection > segmentLength)) {
+      return null; // Point projection falls outside segment
+    }
+
+    // Calculate perpendicular distance
+    const projectionPoint = new Point(
+      segmentStart.x + projection * segmentUnit.x,
+      segmentStart.y + projection * segmentUnit.y
+    );
+
+    const distance = Math.hypot(point.x - projectionPoint.x, point.y - projectionPoint.y);
+    
+    // Determine sign based on which side of the line the point is on
+    const cross = pointVector.x * perpendicular.x + pointVector.y * perpendicular.y;
+    return cross >= 0 ? distance : -distance;
+  }
+
+  /**
+   * Calculates the distance between two line segments
+   */
+  private segmentToSegmentDistance(a1: Point, a2: Point, b1: Point, b2: Point): number {
+    // Check if segments intersect
+    if (this.lineSegmentsIntersect(a1, a2, b1, b2)) {
+      return 0;
+    }
+
+    // Calculate distance from endpoints to opposite segments
+    const distances = [
+      this.pointToSegmentDistance(a1, b1, b2),
+      this.pointToSegmentDistance(a2, b1, b2),
+      this.pointToSegmentDistance(b1, a1, a2),
+      this.pointToSegmentDistance(b2, a1, a2)
+    ].filter(d => d !== null) as number[];
+
+    return distances.length > 0 ? Math.min(...distances) : Infinity;
+  }
+
+  /**
+   * Calculates the distance from a point to a line segment
+   */
+  private pointToSegmentDistance(point: Point, segmentStart: Point, segmentEnd: Point): number {
+    const segmentVector = new Point(segmentEnd.x - segmentStart.x, segmentEnd.y - segmentStart.y);
+    const pointVector = new Point(point.x - segmentStart.x, point.y - segmentStart.y);
+
+    const segmentLengthSquared = segmentVector.x * segmentVector.x + segmentVector.y * segmentVector.y;
+    
+    if (segmentLengthSquared === 0) {
+      // Segment is a point
+      return Math.hypot(point.x - segmentStart.x, point.y - segmentStart.y);
+    }
+
+    const projection = (pointVector.x * segmentVector.x + pointVector.y * segmentVector.y) / segmentLengthSquared;
+
+    if (projection < 0) {
+      // Closest point is segmentStart
+      return Math.hypot(point.x - segmentStart.x, point.y - segmentStart.y);
+    } else if (projection > 1) {
+      // Closest point is segmentEnd
+      return Math.hypot(point.x - segmentEnd.x, point.y - segmentEnd.y);
+    } else {
+      // Closest point is on the segment
+      const closestPoint = new Point(
+        segmentStart.x + projection * segmentVector.x,
+        segmentStart.y + projection * segmentVector.y
+      );
+      return Math.hypot(point.x - closestPoint.x, point.y - closestPoint.y);
     }
   }
 
