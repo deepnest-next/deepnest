@@ -1647,6 +1647,494 @@ export class Polygon {
   }
 
   /**
+   * Creates a Polygon from an SVG element (polygon, polyline, rect, circle, ellipse, path)
+   * @param element The SVG element to convert
+   * @param tolerance Tolerance for curve approximation (default: 2)
+   * @param toleranceSvg Tolerance for SVG unit handling (default: 0.01)
+   * @returns New Polygon instance or null if conversion fails
+   */
+  static fromSVGElement(element: SVGElement, tolerance: number = 2, toleranceSvg: number = 0.01): Polygon | null {
+    if (!element) {
+      return null;
+    }
+
+    const coords = Polygon.polygonifyElement(element, tolerance);
+    if (!coords || coords.length < 3) {
+      return null;
+    }
+
+    // Remove duplicate endpoint if it coincides with starting point
+    while (coords.length > 0) {
+      const first = coords[0];
+      const last = coords[coords.length - 1];
+      const dx = Math.abs(first.x - last.x);
+      const dy = Math.abs(first.y - last.y);
+      
+      if (dx < toleranceSvg && dy < toleranceSvg) {
+        coords.pop();
+      } else {
+        break;
+      }
+    }
+
+    if (coords.length < 3) {
+      return null;
+    }
+
+    try {
+      const points = coords.map(coord => new Point(coord.x, coord.y));
+      return new Polygon(points);
+    } catch (error) {
+      console.warn('Failed to create polygon from SVG element:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Creates a Polygon from an SVG path element
+   * @param path The SVG path element
+   * @param tolerance Tolerance for curve approximation (default: 2)
+   * @returns New Polygon instance or null if conversion fails
+   */
+  static fromSVGPath(path: SVGPathElement, tolerance: number = 2): Polygon | null {
+    if (!path || !(path as any).pathSegList) {
+      return null;
+    }
+
+    try {
+      const coords = Polygon.polygonifyPath(path, tolerance);
+      if (!coords || coords.length < 3) {
+        return null;
+      }
+
+      const points = coords.map(coord => new Point(coord.x, coord.y));
+      return new Polygon(points);
+    } catch (error) {
+      console.warn('Failed to create polygon from SVG path:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Converts the polygon to an SVG path string
+   * @param precision Number of decimal places for coordinates (default: 3)
+   * @returns SVG path string
+   */
+  toSVGPath(precision: number = 3): string {
+    if (this.points.length === 0) {
+      return '';
+    }
+
+    const formatNumber = (num: number): string => {
+      return Number(num.toFixed(precision)).toString();
+    };
+
+    const first = this.points[0];
+    let path = `M ${formatNumber(first.x)} ${formatNumber(first.y)}`;
+
+    for (let i = 1; i < this.points.length; i++) {
+      const point = this.points[i];
+      path += ` L ${formatNumber(point.x)} ${formatNumber(point.y)}`;
+    }
+
+    path += ' Z'; // Close the path
+    return path;
+  }
+
+  /**
+   * Creates an SVG polygon element
+   * @param svgDocument The SVG document to create the element in
+   * @param precision Number of decimal places for coordinates (default: 3)
+   * @returns SVG polygon element
+   */
+  toSVGPolygon(svgDocument: Document, precision: number = 3): SVGPolygonElement {
+    const polygon = svgDocument.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    
+    const formatNumber = (num: number): string => {
+      return Number(num.toFixed(precision)).toString();
+    };
+
+    const pointsStr = this.points
+      .map(p => `${formatNumber(p.x)},${formatNumber(p.y)}`)
+      .join(' ');
+    
+    polygon.setAttribute('points', pointsStr);
+    return polygon;
+  }
+
+  /**
+   * Creates an SVG polyline element
+   * @param svgDocument The SVG document to create the element in
+   * @param precision Number of decimal places for coordinates (default: 3)
+   * @returns SVG polyline element
+   */
+  toSVGPolyline(svgDocument: Document, precision: number = 3): SVGPolylineElement {
+    const polyline = svgDocument.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    
+    const formatNumber = (num: number): string => {
+      return Number(num.toFixed(precision)).toString();
+    };
+
+    const pointsStr = this.points
+      .map(p => `${formatNumber(p.x)},${formatNumber(p.y)}`)
+      .join(' ');
+    
+    polyline.setAttribute('points', pointsStr);
+    return polyline;
+  }
+
+  /**
+   * Converts SVG element to coordinate array (polygonify functionality)
+   * @param element SVG element to convert
+   * @param tolerance Tolerance for curve approximation
+   * @returns Array of coordinate objects
+   */
+  private static polygonifyElement(element: SVGElement, tolerance: number): { x: number; y: number }[] {
+    const poly: { x: number; y: number }[] = [];
+
+    switch (element.tagName.toLowerCase()) {
+      case 'polygon':
+      case 'polyline':
+        const svgPoints = (element as SVGPolygonElement | SVGPolylineElement).points;
+        for (let i = 0; i < svgPoints.length; i++) {
+          const point = svgPoints.getItem(i);
+          poly.push({ x: point.x, y: point.y });
+        }
+        break;
+
+      case 'rect':
+        const rect = element as SVGRectElement;
+        const x = parseFloat(rect.getAttribute('x') || '0') || 0;
+        const y = parseFloat(rect.getAttribute('y') || '0') || 0;
+        const width = parseFloat(rect.getAttribute('width') || '0') || 0;
+        const height = parseFloat(rect.getAttribute('height') || '0') || 0;
+
+        // Don't create rectangles with zero area
+        if (width <= 0 || height <= 0) {
+          return [];
+        }
+
+        poly.push({ x: x, y: y });
+        poly.push({ x: x + width, y: y });
+        poly.push({ x: x + width, y: y + height });
+        poly.push({ x: x, y: y + height });
+        break;
+
+      case 'circle':
+        const circle = element as SVGCircleElement;
+        const radius = parseFloat(circle.getAttribute('r') || '0') || 0;
+        const cx = parseFloat(circle.getAttribute('cx') || '0') || 0;
+        const cy = parseFloat(circle.getAttribute('cy') || '0') || 0;
+
+        // Don't create circles with zero radius
+        if (radius <= 0) {
+          return [];
+        }
+
+        // Calculate number of segments needed for the given tolerance
+        let numSegments = Math.ceil((2 * Math.PI) / Math.acos(1 - (tolerance / radius)));
+        if (numSegments < 12) {
+          numSegments = 12;
+        }
+
+        for (let i = 0; i <= numSegments; i++) {
+          const theta = i * (2 * Math.PI) / numSegments;
+          poly.push({
+            x: radius * Math.cos(theta) + cx,
+            y: radius * Math.sin(theta) + cy
+          });
+        }
+        break;
+
+      case 'ellipse':
+        const ellipse = element as SVGEllipseElement;
+        const rx = parseFloat(ellipse.getAttribute('rx') || '0') || 0;
+        const ry = parseFloat(ellipse.getAttribute('ry') || '0') || 0;
+        const maxRadius = Math.max(rx, ry);
+        const elCx = parseFloat(ellipse.getAttribute('cx') || '0') || 0;
+        const elCy = parseFloat(ellipse.getAttribute('cy') || '0') || 0;
+
+        // Don't create ellipses with zero radius
+        if (rx <= 0 || ry <= 0) {
+          return [];
+        }
+
+        let elNumSegments = Math.ceil((2 * Math.PI) / Math.acos(1 - (tolerance / maxRadius)));
+        if (elNumSegments < 12) {
+          elNumSegments = 12;
+        }
+
+        for (let i = 0; i <= elNumSegments; i++) {
+          const theta = i * (2 * Math.PI) / elNumSegments;
+          poly.push({
+            x: rx * Math.cos(theta) + elCx,
+            y: ry * Math.sin(theta) + elCy
+          });
+        }
+        break;
+
+      case 'path':
+        const pathPoly = Polygon.polygonifyPath(element as SVGPathElement, tolerance);
+        return pathPoly || [];
+
+      default:
+        console.warn(`Unsupported SVG element type: ${element.tagName}`);
+        return [];
+    }
+
+    return poly;
+  }
+
+  /**
+   * Converts SVG path element to coordinate array
+   * @param path SVG path element
+   * @param tolerance Tolerance for curve approximation
+   * @returns Array of coordinate objects
+   */
+  private static polygonifyPath(path: SVGPathElement, tolerance: number): { x: number; y: number }[] | null {
+    try {
+      // Check if pathSegList is available (deprecated but still used in some environments)
+      if (!(path as any).pathSegList) {
+        // Fallback: use pathData or attempt to parse the 'd' attribute
+        console.warn('SVG pathSegList not available, using fallback path parsing');
+        return Polygon.parsePathData(path.getAttribute('d') || '', tolerance);
+      }
+
+      const seglist = (path as any).pathSegList;
+      const poly: { x: number; y: number }[] = [];
+      
+      let x = 0, y = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+      let prevx = 0, prevy = 0, prevx1 = 0, prevy1 = 0, prevx2 = 0, prevy2 = 0;
+
+      for (let i = 0; i < seglist.numberOfItems; i++) {
+        const s = seglist.getItem(i);
+        const command = s.pathSegTypeAsLetter;
+
+        prevx = x;
+        prevy = y;
+        prevx1 = x1;
+        prevy1 = y1;
+        prevx2 = x2;
+        prevy2 = y2;
+
+        // Handle absolute vs relative coordinates
+        if (/[MLHVCSQTA]/.test(command)) {
+          // Absolute coordinates
+          if ('x1' in s) x1 = (s as any).x1;
+          if ('x2' in s) x2 = (s as any).x2;
+          if ('y1' in s) y1 = (s as any).y1;
+          if ('y2' in s) y2 = (s as any).y2;
+          if ('x' in s) x = (s as any).x;
+          if ('y' in s) y = (s as any).y;
+        } else {
+          // Relative coordinates
+          if ('x1' in s) x1 = x + (s as any).x1;
+          if ('x2' in s) x2 = x + (s as any).x2;
+          if ('y1' in s) y1 = y + (s as any).y1;
+          if ('y2' in s) y2 = y + (s as any).y2;
+          if ('x' in s) x += (s as any).x;
+          if ('y' in s) y += (s as any).y;
+        }
+
+        switch (command) {
+          case 'm':
+          case 'M':
+          case 'l':
+          case 'L':
+          case 'h':
+          case 'H':
+          case 'v':
+          case 'V':
+            poly.push({ x: x, y: y });
+            break;
+
+          case 'q':
+          case 'Q':
+          case 't':
+          case 'T':
+            // Quadratic Bezier curves - linearize them
+            if (command === 't' || command === 'T') {
+              // Implicit control point for smooth quadratic
+              if (i > 0 && /[QqTt]/.test(seglist.getItem(i - 1).pathSegTypeAsLetter)) {
+                x1 = prevx + (prevx - prevx1);
+                y1 = prevy + (prevy - prevy1);
+              } else {
+                x1 = prevx;
+                y1 = prevy;
+              }
+            }
+            
+            // Linearize quadratic Bezier (simplified approximation)
+            const quadSteps = Math.max(4, Math.ceil(tolerance * 2));
+            for (let t = 1; t <= quadSteps; t++) {
+              const ratio = t / quadSteps;
+              const invRatio = 1 - ratio;
+              const px = invRatio * invRatio * prevx + 2 * invRatio * ratio * x1 + ratio * ratio * x;
+              const py = invRatio * invRatio * prevy + 2 * invRatio * ratio * y1 + ratio * ratio * y;
+              poly.push({ x: px, y: py });
+            }
+            break;
+
+          case 'c':
+          case 'C':
+          case 's':
+          case 'S':
+            // Cubic Bezier curves - linearize them
+            if (command === 's' || command === 'S') {
+              // Implicit first control point for smooth cubic
+              if (i > 0 && /[CcSs]/.test(seglist.getItem(i - 1).pathSegTypeAsLetter)) {
+                x1 = prevx + (prevx - prevx2);
+                y1 = prevy + (prevy - prevy2);
+              } else {
+                x1 = prevx;
+                y1 = prevy;
+              }
+            }
+            
+            // Linearize cubic Bezier (simplified approximation)
+            const cubicSteps = Math.max(6, Math.ceil(tolerance * 3));
+            for (let t = 1; t <= cubicSteps; t++) {
+              const ratio = t / cubicSteps;
+              const invRatio = 1 - ratio;
+              const px = invRatio * invRatio * invRatio * prevx + 
+                        3 * invRatio * invRatio * ratio * x1 + 
+                        3 * invRatio * ratio * ratio * x2 + 
+                        ratio * ratio * ratio * x;
+              const py = invRatio * invRatio * invRatio * prevy + 
+                        3 * invRatio * invRatio * ratio * y1 + 
+                        3 * invRatio * ratio * ratio * y2 + 
+                        ratio * ratio * ratio * y;
+              poly.push({ x: px, y: py });
+            }
+            break;
+
+          case 'a':
+          case 'A':
+            // Arc - linearize with line segments (simplified approximation)
+            const arcSteps = Math.max(8, Math.ceil(tolerance * 4));
+            for (let t = 1; t <= arcSteps; t++) {
+              const ratio = t / arcSteps;
+              const px = prevx + ratio * (x - prevx);
+              const py = prevy + ratio * (y - prevy);
+              poly.push({ x: px, y: py });
+            }
+            break;
+
+          case 'z':
+          case 'Z':
+            // Close path - no additional points needed
+            break;
+        }
+      }
+
+      return poly;
+    } catch (error) {
+      console.warn('Failed to polygonify path:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Fallback parser for SVG path data when pathSegList is not available
+   * @param pathData The 'd' attribute value of the path
+   * @param tolerance Tolerance for curve approximation
+   * @returns Array of coordinate objects
+   */
+  private static parsePathData(pathData: string, _tolerance: number): { x: number; y: number }[] {
+    // This is a simplified fallback - in a real implementation you would want
+    // a more robust SVG path parser
+    const poly: { x: number; y: number }[] = [];
+    
+    // Simple regex to extract basic move and line commands
+    const commands = pathData.match(/[MLHVZmlhvz][^MLHVZmlhvz]*/g) || [];
+    
+    let x = 0, y = 0;
+    
+    for (const cmd of commands) {
+      const command = cmd[0];
+      const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+      
+      switch (command) {
+        case 'M':
+          if (coords.length >= 2) {
+            x = coords[0];
+            y = coords[1];
+            poly.push({ x, y });
+          }
+          break;
+        case 'm':
+          if (coords.length >= 2) {
+            x += coords[0];
+            y += coords[1];
+            poly.push({ x, y });
+          }
+          break;
+        case 'L':
+          for (let i = 0; i < coords.length; i += 2) {
+            if (i + 1 < coords.length) {
+              x = coords[i];
+              y = coords[i + 1];
+              poly.push({ x, y });
+            }
+          }
+          break;
+        case 'l':
+          for (let i = 0; i < coords.length; i += 2) {
+            if (i + 1 < coords.length) {
+              x += coords[i];
+              y += coords[i + 1];
+              poly.push({ x, y });
+            }
+          }
+          break;
+        case 'H':
+          if (coords.length >= 1) {
+            x = coords[0];
+            poly.push({ x, y });
+          }
+          break;
+        case 'h':
+          if (coords.length >= 1) {
+            x += coords[0];
+            poly.push({ x, y });
+          }
+          break;
+        case 'V':
+          if (coords.length >= 1) {
+            y = coords[0];
+            poly.push({ x, y });
+          }
+          break;
+        case 'v':
+          if (coords.length >= 1) {
+            y += coords[0];
+            poly.push({ x, y });
+          }
+          break;
+        // For curves and arcs, we just approximate with line segments
+        case 'C':
+        case 'c':
+        case 'Q':
+        case 'q':
+        case 'A':
+        case 'a':
+          // Simplified: just use the end point
+          if (coords.length >= 2) {
+            const endIndex = coords.length - 2;
+            const endX = command === command.toUpperCase() ? coords[endIndex] : x + coords[endIndex];
+            const endY = command === command.toUpperCase() ? coords[endIndex + 1] : y + coords[endIndex + 1];
+            x = endX;
+            y = endY;
+            poly.push({ x, y });
+          }
+          break;
+      }
+    }
+    
+    return poly;
+  }
+
+  /**
    * String representation of the polygon
    */
   toString(): string {
