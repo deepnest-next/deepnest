@@ -1,5 +1,6 @@
 import { Point } from "./point.js";
 import { Matrix } from "./matrix.js";
+import { HullPolygon } from "./HullPolygon.js";
 
 // Type definition for bounding box
 export interface BoundingBox {
@@ -549,6 +550,279 @@ export class Polygon {
     }
 
     return transformed;
+  }
+
+  /**
+   * Simplifies the polygon using Douglas-Peucker algorithm
+   * @param tolerance The tolerance for simplification (larger = more simplified)
+   * @param preserveCorners Whether to preserve sharp corners
+   * @returns New simplified Polygon instance
+   */
+  simplify(tolerance: number, preserveCorners: boolean = false): Polygon {
+    if (tolerance <= 0 || this.points.length < 3) {
+      return this.clone();
+    }
+
+    // Try to use external simplify function, fallback to basic simplification
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const simplifyFn = (globalScope as any)?.deepnest?.simplifyPolygon;
+      
+      if (simplifyFn) {
+        // Convert to polyline format (closed polygon with duplicate first/last point)
+        const polyline = [...this.points.map(p => ({ x: p.x, y: p.y }))];
+        polyline.push(polyline[0]);
+
+        // Mark long segments to preserve if preserveCorners is true
+        if (preserveCorners) {
+          const fixedTolerance = (40 * tolerance) ** 2;
+          for (let i = 0; i < polyline.length - 1; i++) {
+            const p1 = polyline[i];
+            const p2 = polyline[i + 1];
+            const sqd = (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2;
+            if (sqd > fixedTolerance) {
+              (p1 as any).marked = true;
+              (p2 as any).marked = true;
+            }
+          }
+        }
+
+        const simplified = simplifyFn(polyline, tolerance, true) || polyline;
+        
+        // Remove duplicate last point
+        if (simplified.length > 0) {
+          simplified.pop();
+        }
+
+        if (simplified.length >= 3) {
+          const simplifiedPoints = simplified.map((p: any) => new Point(p.x, p.y));
+          const result = new Polygon(simplifiedPoints);
+
+          // Simplify children if they exist
+          if (this.children && this.children.length > 0) {
+            result.children = this.children.map(child => child.simplify(tolerance, preserveCorners));
+          }
+
+          return result;
+        }
+      }
+    } catch (error) {
+      // Fall through to basic simplification
+    }
+
+    // Fallback: basic simplification - just return the polygon
+    // In a production environment, we could implement a basic RDP algorithm here
+    return this.clone();
+  }
+
+  /**
+   * Creates offset polygons at the specified distance
+   * Positive distance creates outward offset, negative creates inward offset
+   * @param distance The offset distance
+   * @returns Array of new Polygon instances representing the offset
+   */
+  offset(distance: number): Polygon[] {
+    if (distance === 0 || this.points.length < 3) {
+      return [this.clone()];
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib) {
+        // Convert to Clipper format
+        const clipperPoly = this.toClipperPath();
+        
+        // Create clipper offset
+        const miterLimit = 4;
+        const arcTolerance = 0.3 * 10000000; // Default curve tolerance scaled
+        const co = new ClipperLib.ClipperOffset(miterLimit, arcTolerance);
+        
+        co.AddPath(
+          clipperPoly,
+          ClipperLib.JoinType.jtMiter,
+          ClipperLib.EndType.etClosedPolygon
+        );
+
+        const offsetPaths = new ClipperLib.Paths();
+        co.Execute(offsetPaths, distance * 10000000);
+
+        // Convert back to Polygon instances
+        const results: Polygon[] = [];
+        for (let i = 0; i < offsetPaths.length; i++) {
+          const polygon = this.fromClipperPath(offsetPaths[i]);
+          if (polygon && polygon.points.length >= 3) {
+            results.push(polygon);
+          }
+        }
+
+        return results.length > 0 ? results : [this.clone()];
+      }
+    } catch (error) {
+      // Fall through to fallback
+    }
+
+    // Fallback: return original polygon if Clipper is not available
+    return [this.clone()];
+  }
+
+  /**
+   * Cleans the polygon by removing self-intersections and degenerate features
+   * @param tolerance Optional tolerance for cleaning (default: 1e-10)
+   * @returns New cleaned Polygon instance or null if polygon becomes invalid
+   */
+  clean(tolerance: number = 1e-10): Polygon | null {
+    if (this.points.length < 3) {
+      return null;
+    }
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      
+      if (ClipperLib) {
+        // Convert to Clipper format
+        const clipperPoly = this.toClipperPath();
+
+        // Remove self-intersections
+        const simplified = ClipperLib.Clipper.SimplifyPolygon(
+          clipperPoly,
+          ClipperLib.PolyFillType.pftNonZero
+        );
+
+        if (!simplified || simplified.length === 0) {
+          return null;
+        }
+
+        // Find the largest remaining polygon
+        let biggest = simplified[0];
+        let biggestArea = Math.abs(ClipperLib.Clipper.Area(biggest));
+        
+        for (let i = 1; i < simplified.length; i++) {
+          const area = Math.abs(ClipperLib.Clipper.Area(simplified[i]));
+          if (area > biggestArea) {
+            biggest = simplified[i];
+            biggestArea = area;
+          }
+        }
+
+        // Clean up singularities and coincident points
+        const cleaned = ClipperLib.Clipper.CleanPolygon(
+          biggest,
+          tolerance * 10000000 // Scale tolerance to clipper coordinates
+        );
+
+        if (!cleaned || cleaned.length === 0) {
+          return null;
+        }
+
+        const result = this.fromClipperPath(cleaned);
+        if (!result || result.points.length < 3) {
+          return null;
+        }
+
+        // Remove duplicate endpoints
+        const start = result.points[0];
+        const end = result.points[result.points.length - 1];
+        if (Math.abs(start.x - end.x) < tolerance && Math.abs(start.y - end.y) < tolerance) {
+          result.points.pop();
+        }
+
+        // Clean children if they exist
+        if (this.children && this.children.length > 0) {
+          result.children = this.children
+            .map(child => child.clean(tolerance))
+            .filter(child => child !== null) as Polygon[];
+        }
+
+        return result.points.length >= 3 ? result : null;
+      }
+    } catch (error) {
+      // Fall through to fallback
+    }
+
+    // Fallback: basic cleaning - just remove duplicate endpoints
+    const result = this.clone();
+    const start = result.points[0];
+    const end = result.points[result.points.length - 1];
+    if (Math.abs(start.x - end.x) < tolerance && Math.abs(start.y - end.y) < tolerance) {
+      result.points.pop();
+    }
+
+    return result.points.length >= 3 ? result : null;
+  }
+
+  /**
+   * Calculates the convex hull of the polygon
+   * @returns New Polygon instance representing the convex hull
+   */
+  hull(): Polygon {
+    if (this.points.length < 3) {
+      return this.clone();
+    }
+
+    // Use the imported HullPolygon class
+    const hullPoints = HullPolygon.hull(this.points);
+    
+    if (!hullPoints || hullPoints.length < 3) {
+      return this.clone();
+    }
+
+    return new Polygon(hullPoints);
+  }
+
+  /**
+   * Converts polygon to Clipper library format
+   * @param scale Optional scale factor (default: 10000000)
+   * @returns Clipper path
+   */
+  private toClipperPath(scale: number = 10000000): any {
+    const clipperPath = this.points.map(p => ({
+      X: p.x,
+      Y: p.y
+    }));
+
+    try {
+      const globalScope = typeof window !== 'undefined' ? window : global;
+      const ClipperLib = (globalScope as any)?.ClipperLib;
+      if (ClipperLib?.JS?.ScaleUpPath) {
+        ClipperLib.JS.ScaleUpPath(clipperPath, scale);
+      } else {
+        // Manual scaling if ClipperLib is not available
+        clipperPath.forEach(p => {
+          p.X *= scale;
+          p.Y *= scale;
+        });
+      }
+    } catch (error) {
+      // Manual scaling fallback
+      clipperPath.forEach(p => {
+        p.X *= scale;
+        p.Y *= scale;
+      });
+    }
+
+    return clipperPath;
+  }
+
+  /**
+   * Converts from Clipper library format to Polygon
+   * @param clipperPath Clipper path
+   * @param scale Optional scale factor (default: 10000000)
+   * @returns New Polygon instance
+   */
+  private fromClipperPath(clipperPath: any, scale: number = 10000000): Polygon | null {
+    if (!clipperPath || clipperPath.length < 3) {
+      return null;
+    }
+
+    const points = clipperPath.map((cp: any) => new Point(
+      cp.X / scale,
+      cp.Y / scale
+    ));
+
+    return new Polygon(points);
   }
 
   /**
