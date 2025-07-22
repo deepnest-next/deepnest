@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Global</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Global</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2></h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="TOL"><span class="type-signature">(constant) </span>TOL<span class="type-signature"></span></h4>
+
+
+<p class="summary"><p>Floating point comparison tolerance for vector calculations</p>.</p>
+
+
+
+<div class="description">
+    <p>Floating point comparison tolerance for vector calculations</p>
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="build_util_vector.js.html">build/util/vector.js</a>, <a href="build_util_vector.js.html#line2">line 2</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="_almostEqual"><span class="type-signature"></span>_almostEqual<span class="signature">(a, b, tolerance)</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Compares two floating point numbers for approximate equality.</p>
+    
+
+
+
+<div class="description">
+    <p>Compares two floating point numbers for approximate equality.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>a</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>First number to compare</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>b</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Second number to compare</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>tolerance</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Optional tolerance value (defaults to TOL)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="build_util_vector.js.html">build/util/vector.js</a>, <a href="build_util_vector.js.html#line11">line 11</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>True if the numbers are approximately equal within the tolerance</p>
+</div>
+
+
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="analyzeParts"><span class="type-signature"></span>analyzeParts<span class="signature">(parts, averageHoleArea, config)</span><span class="type-signature"> &rarr; {Object|Array.&lt;Part>|Array.&lt;Part>}</span></h4>
+    
+
+    
+    <p class="summary">Analyzes parts to categorize them for hole-optimized placement strategy.</p>
+    
+
+
+
+<div class="description">
+    <p>Analyzes parts to categorize them for hole-optimized placement strategy.</p>
+<p>Examines all parts to identify which have holes (can contain other parts)
+and which are small enough to potentially fit inside holes. This analysis
+enables the advanced hole-in-hole optimization that significantly reduces
+material waste by utilizing otherwise unusable hole space.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>parts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Part></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Array of part objects to analyze</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>averageHoleArea</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Average hole area from sheet analysis</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Configuration object with hole detection settings</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>holeAreaThreshold</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Minimum area to consider as hole candidate</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_background.js.html">main/background.js</a>, <a href="main_background.js.html#line2306">line 2306</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a> for hole detection in sheets</li>
+        
+            <li>GeometryUtil.polygonArea for area calculations</li>
+        
+            <li>GeometryUtil.getPolygonBounds for dimension analysis</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+<ul>
+        <li>
+<div class="param-desc">
+    <p>Categorized parts for optimized placement</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.mainParts - Large parts that should be placed first</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Part></span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.holeCandidates - Small parts that can fit in holes</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Part></span>
+
+
+    </dd>
+</dl>
+</li>
+    </ul>
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>const { mainParts, holeCandidates } = analyzeParts(parts, 1000, { holeAreaThreshold: 500 });
+console.log(`${mainParts.length} main parts, ${holeCandidates.length} hole candidates`);</code></pre>
+
+    <pre class="prettyprint"><code>// Advanced usage with custom thresholds
+const analysis = analyzeParts(parts, averageHoleArea, {
+  holeAreaThreshold: averageHoleArea * 0.6  // 60% of average hole size
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="analyzeSheetHoles"><span class="type-signature"></span>analyzeSheetHoles<span class="signature">(sheets)</span><span class="type-signature"> &rarr; {Object|Array.&lt;Object>|number|number|number}</span></h4>
+    
+
+    
+    <p class="summary">Analyzes holes in all sheets to enable hole-in-hole optimization.</p>
+    
+
+
+
+<div class="description">
+    <p>Analyzes holes in all sheets to enable hole-in-hole optimization.</p>
+<p>Scans through all sheet children (holes) and calculates geometric properties
+needed for hole-fitting optimization. Provides statistics for determining
+which parts are suitable candidates for hole placement.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sheets</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Sheet></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Array of sheet objects with potential holes</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_background.js.html">main/background.js</a>, <a href="main_background.js.html#line2208">line 2208</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="global.html#analyzeParts">analyzeParts</a> for complementary part analysis</li>
+        
+            <li>GeometryUtil.polygonArea for area calculation</li>
+        
+            <li>GeometryUtil.getPolygonBounds for bounding box</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+<ul>
+        <li>
+<div class="param-desc">
+    <p>Comprehensive hole analysis data</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.holes - Array of hole information objects</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Object></span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.totalHoleArea - Sum of all hole areas</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.averageHoleArea - Average hole area for threshold calculations</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.count - Total number of holes found</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+</li>
+    </ul>
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>const sheets = [{ children: [hole1, hole2] }, { children: [hole3] }];
+const analysis = analyzeSheetHoles(sheets);
+console.log(`Found ${analysis.count} holes with average area ${analysis.averageHoleArea}`);</code></pre>
+
+    <pre class="prettyprint"><code>// Use analysis for part categorization
+const holeAnalysis = analyzeSheetHoles(sheets);
+const threshold = holeAnalysis.averageHoleArea * 0.8; // 80% of average
+const smallParts = parts.filter(p => getPartArea(p) &lt; threshold);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="loadPresetList"><span class="type-signature">(async) </span>loadPresetList<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+    
+
+    
+    <p class="summary">Loads available presets from storage and populates the preset dropdown.</p>
+    
+
+
+
+<div class="description">
+    <p>Loads available presets from storage and populates the preset dropdown.</p>
+<p>Communicates with the main Electron process to retrieve saved presets
+and dynamically updates the UI dropdown. Clears existing options except
+the default &quot;Select preset&quot; option before adding current presets.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_page.js.html">main/page.js</a>, <a href="main_page.js.html#line151">line 151</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Called during initialization and after preset modifications
+await loadPresetList();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="mergedLength"><span class="type-signature"></span>mergedLength<span class="signature">(parts, p, minlength, tolerance)</span><span class="type-signature"> &rarr; {Object|number|Array.&lt;Object>}</span></h4>
+    
+
+    
+    <p class="summary">Calculates total length of merged overlapping line segments between parts.</p>
+    
+
+
+
+<div class="description">
+    <p>Calculates total length of merged overlapping line segments between parts.</p>
+<p>Advanced optimization algorithm that identifies where edges of different parts
+overlap or run parallel within tolerance. When parts share common edges
+(like cutting lines), this can reduce total cutting time and improve
+manufacturing efficiency. Particularly important for laser cutting operations.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>parts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Part></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Array of all placed parts to check against</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>p</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Polygon</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Current part polygon to find merges for</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>minlength</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Minimum line length to consider (filters noise)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>tolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Distance tolerance for considering lines as merged</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_background.js.html">main/background.js</a>, <a href="main_background.js.html#line578">line 578</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>rotatePolygon for coordinate transformations</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+<ul>
+        <li>
+<div class="param-desc">
+    <p>Merge analysis result</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.totalLength - Total length of merged line segments</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.segments - Array of merged segment details</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Object></span>
+
+
+    </dd>
+</dl>
+</li>
+    </ul>
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>const mergeResult = mergedLength(placedParts, newPart, 0.5, 0.1);
+console.log(`${mergeResult.totalLength} units of cutting saved`);</code></pre>
+
+    <pre class="prettyprint"><code>// Used in placement scoring to favor positions with shared edges
+const merged = mergedLength(existing, candidate, minLength, tolerance);
+const bonus = merged.totalLength * config.timeRatio; // Time savings
+const adjustedFitness = baseFitness - bonus; // Lower = better</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="placeParts"><span class="type-signature"></span>placeParts<span class="signature">(sheets, parts, config, nestindex)</span><span class="type-signature"> &rarr; {Object|Array.&lt;Placement>|number|number|Object}</span></h4>
+    
+
+    
+    <p class="summary">Main placement algorithm that arranges parts on sheets using greedy best-fit with hole optimization.</p>
+    
+
+
+
+<div class="description">
+    <p>Main placement algorithm that arranges parts on sheets using greedy best-fit with hole optimization.</p>
+<p>Core nesting algorithm that implements advanced placement strategies including:</p>
+<ul>
+<li>Gravity-based positioning for stability</li>
+<li>Hole-in-hole optimization for space efficiency</li>
+<li>Multi-rotation evaluation for better fits</li>
+<li>NFP-based collision avoidance</li>
+<li>Adaptive sheet utilization</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sheets</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Sheet></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Available sheets/containers for placement</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>parts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Part></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Parts to be placed with rotation and metadata</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Placement algorithm configuration</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>spacing</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Minimum spacing between parts in units</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rotations</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Number of discrete rotation angles (2, 4, 8)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>placementType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Placement strategy ('gravity', 'random', 'bottomLeft')</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>holeAreaThreshold</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Minimum area for hole detection</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>mergeLines</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Whether to merge overlapping line segments</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nestindex</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Index of current nesting iteration for caching</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_background.js.html">main/background.js</a>, <a href="main_background.js.html#line1123">line 1123</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a> for hole detection implementation</li>
+        
+            <li><a href="global.html#analyzeParts">analyzeParts</a> for part categorization logic</li>
+        
+            <li>getOuterNfp for NFP calculation with caching</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+<ul>
+        <li>
+<div class="param-desc">
+    <p>Placement result with fitness score and part positions</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.placements - Array of placed parts with positions</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Placement></span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.fitness - Overall fitness score (lower = better)</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.sheets - Number of sheets used</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.stats - Placement statistics and metrics</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+</li>
+    </ul>
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>const result = placeParts(sheets, parts, {
+  spacing: 2,
+  rotations: 4,
+  placementType: 'gravity',
+  holeAreaThreshold: 1000
+}, 0);
+console.log(`Fitness: ${result.fitness}, Sheets used: ${result.sheets}`);</code></pre>
+
+    <pre class="prettyprint"><code>// Advanced configuration for complex nesting
+const config = {
+  spacing: 1.5,
+  rotations: 8,
+  placementType: 'gravity',
+  holeAreaThreshold: 500,
+  mergeLines: true
+};
+const optimizedResult = placeParts(sheets, parts, config, iteration);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="ready"><span class="type-signature"></span>ready<span class="signature">(fn)</span><span class="type-signature"> &rarr; {void}</span></h4>
+    
+
+    
+    <p class="summary">Cross-browser DOM ready function that ensures DOM is fully loaded before execution.</p>
+    
+
+
+
+<div class="description">
+    <p>Cross-browser DOM ready function that ensures DOM is fully loaded before execution.</p>
+<p>Provides a reliable way to execute code when the DOM is ready, handling both
+cases where the script loads before or after the DOM is complete. Essential
+for ensuring all DOM elements are available before UI initialization.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fn</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Callback function to execute when DOM is ready</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_page.js.html">main/page.js</a>, <a href="main_page.js.html#line60">line 60</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState">https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Execute initialization code when DOM is ready
+ready(function() {
+  console.log('DOM is ready for manipulation');
+  initializeUI();
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Works with async functions
+ready(async function() {
+  await loadUserPreferences();
+  setupEventHandlers();
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="saveJSON"><span class="type-signature"></span>saveJSON<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+    <p class="summary">Exports the currently selected nesting result to a JSON file.</p>
+    
+
+
+
+<div class="description">
+    <p>Exports the currently selected nesting result to a JSON file.</p>
+<p>Saves the selected nesting result data to a JSON file in the exports directory.
+Only operates on the most recently selected nest result, allowing users to
+export their preferred nesting solution for external processing or archival.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_page.js.html">main/page.js</a>, <a href="main_page.js.html#line628">line 628</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>False if no nests are selected, undefined on successful save</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Called when user clicks export JSON button
+saveJSON();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="updateForm"><span class="type-signature"></span>updateForm<span class="signature">(c)</span><span class="type-signature"> &rarr; {void}</span></h4>
+    
+
+    
+    <p class="summary">Updates the configuration form UI to reflect current application settings.</p>
+    
+
+
+
+<div class="description">
+    <p>Updates the configuration form UI to reflect current application settings.</p>
+<p>Synchronizes the UI form controls with the current configuration state,
+handling unit conversions, checkbox states, and input values. Essential
+for maintaining UI consistency when loading presets or changing settings.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>c</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Configuration object containing all application settings</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_page.js.html">main/page.js</a>, <a href="main_page.js.html#line704">line 704</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Update form after loading preset
+const config = getLoadedPresetConfig();
+updateForm(config);</code></pre>
+
+    <pre class="prettyprint"><code>// Update form after configuration change
+updateForm(window.DeepNest.config());</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
