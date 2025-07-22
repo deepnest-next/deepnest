@@ -2,6 +2,7 @@
 
 import { NfpCache } from '../build/nfpDb.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import { Polygon } from '../build/util/polygon.js';
 
 window.onload = function () {
   const { ipcRenderer } = require('electron');
@@ -482,6 +483,11 @@ function toNestCoordinates(polygon, scale) {
 };
 
 function getHull(polygon) {
+	if (polygon instanceof Polygon) {
+		var hullPolygon = HullPolygon.hull(polygon);
+		return hullPolygon ? hullPolygon.toArray() : polygon.toArray();
+	}
+	
 	// Convert the polygon points to proper Point objects for HullPolygon
 	var points = [];
 	for (let i = 0; i < polygon.length; i++) {
@@ -498,10 +504,33 @@ function getHull(polygon) {
 		return polygon;
 	}
 
-	return hullpoints;
+	return hullpoints instanceof Polygon ? hullpoints.toArray() : hullpoints;
 }
 
 function rotatePolygon(polygon, degrees) {
+  if (polygon instanceof Polygon) {
+    var rotated = polygon.rotate(degrees);
+    var rotatedArray = rotated.toArray();
+    
+    // Preserve exact property from original points
+    var originalPoints = polygon.toArray();
+    for (let i = 0; i < rotatedArray.length && i < originalPoints.length; i++) {
+      if (originalPoints[i].exact) {
+        rotatedArray[i].exact = originalPoints[i].exact;
+      }
+    }
+    
+    // Handle children if they exist
+    if (polygon.children && polygon.children.length > 0) {
+      rotatedArray.children = [];
+      for (let j = 0; j < polygon.children.length; j++) {
+        rotatedArray.children.push(rotatePolygon(polygon.children[j], degrees));
+      }
+    }
+    
+    return rotatedArray;
+  }
+  
   var rotated = [];
   var angle = degrees * Math.PI / 180;
   for (let i = 0; i < polygon.length; i++) {
