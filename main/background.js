@@ -262,7 +262,7 @@ window.onload = function () {
 // returns the square of the length of any merged lines
 // filter out any lines less than minlength long
 function mergedLength(parts, p, minlength, tolerance) {
-  var min2 = minlength * minlength;
+  var minLenght2 = minlength * minlength;
   var totalLength = 0;
   var segments = [];
 
@@ -283,7 +283,7 @@ function mergedLength(parts, p, minlength, tolerance) {
     var Ax2 = (A2.x - A1.x) * (A2.x - A1.x);
     var Ay2 = (A2.y - A1.y) * (A2.y - A1.y);
 
-    if (Ax2 + Ay2 < min2) {
+    if (Ax2 + Ay2 < minLenght2) {
       continue;
     }
 
@@ -317,7 +317,7 @@ function mergedLength(parts, p, minlength, tolerance) {
           var Bx2 = (B2.x - B1.x) * (B2.x - B1.x);
           var By2 = (B2.y - B1.y) * (B2.y - B1.y);
 
-          if (Bx2 + By2 < min2) {
+          if (Bx2 + By2 < minLenght2) {
             continue;
           }
 
@@ -373,7 +373,7 @@ function mergedLength(parts, p, minlength, tolerance) {
             relC2x = Math.max(min1, min2);
           }
 
-          if (len * len > min2) {
+          if (len * len > minLenght2) {
             totalLength += len;
 
             var relC1 = { x: relC1x * c2, y: relC1x * s2 };
