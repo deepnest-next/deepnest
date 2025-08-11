@@ -1096,134 +1096,70 @@ export class SvgParser {
 					var path = this.svg.createElementNS('http://www.w3.org/2000/svg', 'path');
 					var cx = parseFloat(element.getAttribute('cx')) || 0;
 					var cy = parseFloat(element.getAttribute('cy')) || 0;
-					var r = parseFloat(element.getAttribute('r')) || 0;
+					var r = parseFloat(element.getAttribute('r'));
 
-					// Create circle path using arc commands
-					var d = 'M ' + (cx - r) + ',' + cy +
-						' A ' + r + ',' + r + ' 0 1,0 ' + (cx + r) + ',' + cy +
-						' A ' + r + ',' + r + ' 0 1,0 ' + (cx - r) + ',' + cy +
-						' Z';
+					if (isNaN(r) || r === 0) {
+						console.warn('Degenerate circle encountered and will be removed or ignored:', element);
+						if(element.parentNode) element.parentNode.removeChild(element);
+						return;
+					}
 
+					// Create a path representing the circle
+					// M cx-r,cy A r,r 0 1,0 cx+r,cy A r,r 0 1,0 cx-r,cy Z
+					var d = `M ${cx - r},${cy} A ${r},${r} 0 1,0 ${cx + r},${cy} A ${r},${r} 0 1,0 ${cx - r},${cy} Z`;
 					path.setAttribute('d', d);
+					path.setAttribute('transform', transformString); // Apply the original transform to the new path
 
-					// Copy other attributes that might be relevant
-					if(element.hasAttribute('style')) {
-						path.setAttribute('style', element.getAttribute('style'));
-					}
-
-					if(element.hasAttribute('fill')) {
-						path.setAttribute('fill', element.getAttribute('fill'));
-					}
-
-					if(element.hasAttribute('stroke')) {
-						path.setAttribute('stroke', element.getAttribute('stroke'));
-					}
-
-					if(element.hasAttribute('stroke-width')) {
-						path.setAttribute('stroke-width', element.getAttribute('stroke-width'));
-					}
-
-					// Apply the transform to the path instead
-					if(transformString) {
-						path.setAttribute('transform', transformString);
-					}
-
-					// Replace the circle with the path
-					element.parentElement.replaceChild(path, element);
-					element = path;
-
-					// Process the path with the existing path transformation code
-					this.pathToAbsolute(element);
-					var seglist = element.pathSegList;
-					var prevx = 0;
-					var prevy = 0;
-
-					for(var i=0; i<seglist.numberOfItems; i++){
-						var s = seglist.getItem(i);
-						var command = s.pathSegTypeAsLetter;
-
-						if(command == 'H'){
-							seglist.replaceItem(element.createSVGPathSegLinetoAbs(s.x,prevy),i);
-							s = seglist.getItem(i);
-						}
-						else if(command == 'V'){
-							seglist.replaceItem(element.createSVGPathSegLinetoAbs(prevx,s.y),i);
-							s = seglist.getItem(i);
-						}
-						else if(command == 'A'){
-							var arcrotate = s.angle + rotate;
-							var arcsweep = s.sweepFlag;
-
-							seglist.replaceItem(element.createSVGPathSegArcAbs(s.x,s.y,s.r1*scale,s.r2*scale,arcrotate,s.largeArcFlag,arcsweep),i);
-							s = seglist.getItem(i);
-						}
-
-						if('x' in s && 'y' in s){
-							var transformed = transform.calc(new Point(s.x, s.y));
-							prevx = s.x;
-							prevy = s.y;
-
-							s.x = transformed.x;
-							s.y = transformed.y;
-						}
-						if('x1' in s && 'y1' in s){
-							var transformed = transform.calc(new Point(s.x1, s.y1));
-							s.x1 = transformed.x;
-							s.y1 = transformed.y;
-						}
-						if('x2' in s && 'y2' in s){
-							var transformed = transform.calc(new Point(s.x2, s.y2));
-							s.x2 = transformed.x;
-							s.y2 = transformed.y;
+					// Copy other relevant attributes
+					for (var k = 0; k < element.attributes.length; k++) {
+						var attr = element.attributes[k];
+						if (attr.name !== 'cx' && attr.name !== 'cy' && attr.name !== 'r' && attr.name !== 'transform') {
+							path.setAttribute(attr.name, attr.value);
 						}
 					}
 
-					element.removeAttribute('transform');
-				break;
+					element.parentNode.replaceChild(path, element);
+					// After replacing, we need to process this new path with its transform
+					this.applyTransform(path, '', skipClosed, dxfFlag);
+					break;
 
 				case 'rect':
 					if(skipClosed){
 						element.setAttribute('transform', transformString);
 						return;
 					}
-					// similar to the ellipse, we'll replace rect with polygon
+					var x = parseFloat(element.getAttribute('x')) || 0;
+					var y = parseFloat(element.getAttribute('y')) || 0;
+					var width = parseFloat(element.getAttribute('width'));
+					var height = parseFloat(element.getAttribute('height'));
+
+					// If width or height is 0 or NaN, this rect is degenerate
+					if (isNaN(width) || isNaN(height) || width === 0 || height === 0) {
+						console.warn('Degenerate rect encountered and will be removed or ignored:', element);
+						// Optionally remove the element if it makes sense for the application
+						if(element.parentNode) element.parentNode.removeChild(element);
+						return; // Stop processing this element
+					}
+
+					var p1 = transform.calc(x,y);
+					var p2 = transform.calc(x+width,y);
+					var p3 = transform.calc(x+width,y+height);
+					var p4 = transform.calc(x,y+height);
+
 					var polygon = this.svg.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+					polygon.setAttribute('points', p1.x+','+p1.y+' '+p2.x+','+p2.y+' '+p3.x+','+p3.y+' '+p4.x+','+p4.y);
 
-
-					var p1 = this.svgRoot.createSVGPoint();
-					var p2 = this.svgRoot.createSVGPoint();
-					var p3 = this.svgRoot.createSVGPoint();
-					var p4 = this.svgRoot.createSVGPoint();
-
-					p1.x = parseFloat(element.getAttribute('x')) || 0;
-					p1.y = parseFloat(element.getAttribute('y')) || 0;
-
-					p2.x = p1.x + parseFloat(element.getAttribute('width'));
-					p2.y = p1.y;
-
-					p3.x = p2.x;
-					p3.y = p1.y + parseFloat(element.getAttribute('height'));
-
-					p4.x = p1.x;
-					p4.y = p3.y;
-
-					polygon.points.appendItem(p1);
-					polygon.points.appendItem(p2);
-					polygon.points.appendItem(p3);
-					polygon.points.appendItem(p4);
-
-					// OnShape exports a rectangle at position 0/0, drop it
-					if (p1.x === 0 && p1.y === 0) {
-						polygon.points.clear();
+					// Copy other relevant attributes (like fill, stroke, id, class etc.) from rect to polygon
+					for (var k = 0; k < element.attributes.length; k++) {
+						var attr = element.attributes[k];
+						// Avoid copying attributes that are specific to rect or already handled
+						if (attr.name !== 'x' && attr.name !== 'y' && attr.name !== 'width' && attr.name !== 'height' && attr.name !== 'transform') {
+							polygon.setAttribute(attr.name, attr.value);
+						}
 					}
 
-					var transformProperty = element.getAttribute('transform');
-					if(transformProperty){
-						polygon.setAttribute('transform', transformProperty);
-					}
-
-					element.parentElement.replaceChild(polygon, element);
-					element = polygon;
+					element.parentNode.replaceChild(polygon, element);
+					break;
 
 				case 'polygon':
 				case 'polyline':
@@ -1572,6 +1508,85 @@ export class SvgParser {
 			if (command=='M' || command=='m') x0=x, y0=y;
 		}
 
+		// After generating the polygon points, check for self-intersection.
+		if (poly.length > 0) {
+			let uniquePolyForCheck = poly.slice();
+
+			// Remove duplicate last point if it's the same as the first (for closed paths)
+			if (uniquePolyForCheck.length > 1 && GeometryUtil.almostEqualPoints(uniquePolyForCheck[0], uniquePolyForCheck[uniquePolyForCheck.length - 1], this.conf.toleranceSvg)) {
+				uniquePolyForCheck.pop();
+			}
+
+      if (uniquePolyForCheck.length >= 3 && this.isPolygonSelfIntersecting(uniquePolyForCheck)) {
+				console.warn('SVG Import: Path was skipped due to self-intersection. Source path d:', path.getAttribute('d') || 'N/A');
+        console.trace();
+				return []; // Return an empty array to indicate this path should be skipped
+			}
+		}
+
 		return poly;
 	};
 }
+
+SvgParser.prototype.isPolygonSelfIntersecting = function(uniquePolygonPoints) {
+    const n = uniquePolygonPoints.length;
+    // console.log('[isPolygonSelfIntersecting] Checking polygon with points:', JSON.parse(JSON.stringify(uniquePolygonPoints)));
+    // A simple polygon needs at least 4 vertices to self-intersect.
+    // Triangles (n=3) cannot self-intersect in this context.
+    if (n < 4) {
+        // console.log('[isPolygonSelfIntersecting] Polygon has less than 4 points, cannot self-intersect.');
+        return false;
+    }
+
+    for (let i = 0; i < n; i++) {
+        const p1 = uniquePolygonPoints[i];
+        const p2 = uniquePolygonPoints[(i + 1) % n]; // End of the first segment
+
+        // Iterate over subsequent segments for comparison
+        // Start j from i + 1 to get unique pairs of segments.
+        // The adjacency check will filter out immediate neighbors.
+        for (let j = i + 1; j < n; j++) {
+            const p3 = uniquePolygonPoints[j];
+            const p4 = uniquePolygonPoints[(j + 1) % n]; // End of the second segment
+
+            // console.log(`[isPolygonSelfIntersecting] Comparing segment ${i}-${(i + 1) % n} [(${p1.x},${p1.y})-(${p2.x},${p2.y})] with segment ${j}-${(j + 1) % n} [(${p3.x},${p3.y})-(${p4.x},${p4.y})]`);
+
+            // Avoid checking adjacent segments.
+            if (((i + 1) % n === j) || (i === (j + 1) % n)) {
+                // console.log(`[isPolygonSelfIntersecting] Segments ${i}-${(i + 1) % n} and ${j}-${(j + 1) % n} are adjacent. Skipping.`);
+                continue;
+            }
+
+            const intersection = GeometryUtil.lineIntersect(p1, p2, p3, p4, false);
+
+            if (intersection) {
+                //console.log(`[isPolygonSelfIntersecting] Raw intersection found between segment ${i}-${(i+1)%n} and ${j}-${(j+1)%n}:`, JSON.parse(JSON.stringify(intersection)), 'P1,P2:', JSON.parse(JSON.stringify(p1)), JSON.parse(JSON.stringify(p2)), 'P3,P4:', JSON.parse(JSON.stringify(p3)), JSON.parse(JSON.stringify(p4)));
+
+                const tol = this.conf.toleranceSvg || 0.01;
+
+                // Check if the intersection point is an endpoint of the first segment
+                let isEndpointForSeg1 = GeometryUtil.almostEqualPoints(intersection, p1, tol) ||
+                                        GeometryUtil.almostEqualPoints(intersection, p2, tol);
+
+                // Check if the intersection point is an endpoint of the second segment
+                let isEndpointForSeg2 = GeometryUtil.almostEqualPoints(intersection, p3, tol) ||
+                                        GeometryUtil.almostEqualPoints(intersection, p4, tol);
+
+                //console.log(`[isPolygonSelfIntersecting] Endpoint checks for intersection: isEndpointForSeg1=${isEndpointForSeg1}, isEndpointForSeg2=${isEndpointForSeg2}`);
+
+                // A true self-intersection occurs if the intersection is NOT a shared vertex for both segments.
+                // If it's an endpoint for one segment but lies in the interior of the other (or vice-versa),
+                // or if it's in the interior of both, it's a self-intersection.
+                // It's NOT a self-intersection if it's an endpoint of seg1 AND an endpoint of seg2 (segments touch at a common vertex).
+                if (!(isEndpointForSeg1 && isEndpointForSeg2)) {
+                    console.warn('[isPolygonSelfIntersecting] Self-intersecting path segment DETECTED. Intersection at:', JSON.parse(JSON.stringify(intersection)), 'Segments:', {i, p1: JSON.parse(JSON.stringify(p1)), p2: JSON.parse(JSON.stringify(p2))}, {j, p3: JSON.parse(JSON.stringify(p3)), p4: JSON.parse(JSON.stringify(p4))});
+                    return true; // Found a true self-intersection
+                } /* else {
+                    console.log('[isPolygonSelfIntersecting] Intersection is a shared vertex (endpoint of both segments). Not a self-intersection in this context. Details:', {i, j, p1: JSON.parse(JSON.stringify(p1)), p2: JSON.parse(JSON.stringify(p2)), p3: JSON.parse(JSON.stringify(p3)), p4: JSON.parse(JSON.stringify(p4)), intersection: JSON.parse(JSON.stringify(intersection))});
+                } */
+            }
+        }
+    }
+    // console.log('[isPolygonSelfIntersecting] No self-intersection detected for polygon:', JSON.parse(JSON.stringify(uniquePolygonPoints)));
+    return false; // No self-intersections found
+};
