@@ -1,0 +1,2951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: SvgParser</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: SvgParser</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>SvgParser<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>SVG Parser for converting SVG documents to polygon representations for CAD/CAM operations.</p>
+<p>Comprehensive SVG processing library that handles complex SVG parsing, coordinate
+transformations, path merging, and polygon conversion. Designed specifically for
+nesting applications where SVG shapes need to be converted to precise polygon
+representations for geometric calculations and collision detection.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="SvgParser"><span class="type-signature"></span>new SvgParser<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Creates a new SvgParser instance with default configuration.</p>
+    
+
+
+
+<div class="description">
+    <p>Creates a new SvgParser instance with default configuration.</p>
+<p>Initializes the parser with default tolerance values optimized for
+CAD/CAM applications and sets up element whitelists for safe parsing.
+The parser is configured for precision geometric operations.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>svg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGDocument</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Parsed SVG document object</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>svgRoot</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Root SVG element of the document</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>allowedElements</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;string></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Whitelisted SVG elements for import</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>polygonElements</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;string></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Elements that can be converted to polygons</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>conf</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Parser configuration object</p>
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Bezier curve approximation tolerance (default: 2)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>toleranceSvg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>SVG unit handling fudge factor (default: 0.01)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scale</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Default scaling factor (default: 72)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>endpointTolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Endpoint matching tolerance (default: 2)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>dirPath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Directory path for resolving relative references</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line44">line 44</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic usage
+const parser = new SvgParser();
+parser.config({ tolerance: 1.5, endpointTolerance: 1.0 });
+const svgRoot = parser.load('./files/', svgContent, 72, 1.0);
+const cleanSvg = parser.cleanInput(false);</code></pre>
+
+    <pre class="prettyprint"><code>// Advanced processing with DXF support
+const parser = new SvgParser();
+const svgRoot = parser.load('./cad/', dxfContent, 300, 0.1);
+const cleanSvg = parser.cleanInput(true); // DXF flag enabled
+const polygons = parser.polygonify(cleanSvg);</code></pre>
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="SvgParser.html">SvgParser</a></dt>
+            <dd>Creates a new SvgParser instance with default configuration.</dd>
+        </dl>
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="allowedElements"><span class="type-signature"></span>allowedElements<span class="type-signature"> :Array.&lt;string></span></h4>
+
+
+<p class="summary"><p>Elements that can be imported safely</p>.</p>
+
+
+
+<div class="description">
+    <p>Elements that can be imported safely</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;string></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line82">line 82</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="conf"><span class="type-signature"></span>conf<span class="type-signature"> :Object</span></h4>
+
+
+<p class="summary"><p>Parser configuration settings</p>.</p>
+
+
+
+<div class="description">
+    <p>Parser configuration settings</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line88">line 88</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="dirPath"><span class="type-signature"></span>dirPath<span class="type-signature"> :string|null</span></h4>
+
+
+<p class="summary"><p>Directory path for resolving relative image references</p>.</p>
+
+
+
+<div class="description">
+    <p>Directory path for resolving relative image references</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line96">line 96</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="polygonElements"><span class="type-signature"></span>polygonElements<span class="type-signature"> :Array.&lt;string></span></h4>
+
+
+<p class="summary"><p>Elements that can be converted to polygons</p>.</p>
+
+
+
+<div class="description">
+    <p>Elements that can be converted to polygons</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;string></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line85">line 85</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="svg"><span class="type-signature"></span>svg<span class="type-signature"> :SVGDocument</span></h4>
+
+
+<p class="summary"><p>Parsed SVG document object</p>.</p>
+
+
+
+<div class="description">
+    <p>Parsed SVG document object</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">SVGDocument</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line76">line 76</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="svgRoot"><span class="type-signature"></span>svgRoot<span class="type-signature"> :SVGElement</span></h4>
+
+
+<p class="summary"><p>Root SVG element of the document</p>.</p>
+
+
+
+<div class="description">
+    <p>Root SVG element of the document</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">SVGElement</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line79">line 79</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="applyTransform"><span class="type-signature"></span>applyTransform<span class="signature">(element, globalTransform, skipClosed, dxfFlag)</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Recursively applies matrix transformations to SVG elements and their coordinates.</p>
+    
+
+
+
+<div class="description">
+    <p>Recursively applies matrix transformations to SVG elements and their coordinates.</p>
+<p>Complex coordinate transformation system that handles all SVG transform types
+including matrix, translate, scale, rotate, skewX, and skewY. Applies transformations
+to element coordinates and removes transform attributes to normalize the coordinate
+system for geometric operations.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>element</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>SVG element to transform (recursive on children)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>globalTransform</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Accumulated transform string from parent elements</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>skipClosed</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Skip closed shapes (for selective processing)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>dxfFlag</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Enable DXF-specific transformation handling</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line1452">line 1452</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>transformParse for transform string parsing</li>
+        
+            <li>Matrix for transformation matrix operations</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Apply all transformations to prepare for geometric operations
+parser.applyTransform(svgRoot, '', false, false);</code></pre>
+
+    <pre class="prettyprint"><code>// Skip closed shapes, process only lines/open paths
+parser.applyTransform(svgRoot, '', true, false);</code></pre>
+
+    <pre class="prettyprint"><code>// DXF-specific processing with special handling
+parser.applyTransform(svgRoot, '', false, true);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="cleanInput"><span class="type-signature"></span>cleanInput<span class="signature">(dxfFlag)</span><span class="type-signature"> &rarr; {SVGElement}</span></h4>
+    
+
+    
+    <p class="summary">Comprehensive SVG cleaning pipeline for CAD/CAM operations.</p>
+    
+
+
+
+<div class="description">
+    <p>Comprehensive SVG cleaning pipeline for CAD/CAM operations.</p>
+<p>Orchestrates the complete SVG preprocessing workflow to prepare SVG content
+for geometric operations and nesting algorithms. Applies transformations,
+merges paths, eliminates redundant elements, and ensures geometric precision
+required for manufacturing applications.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>dxfFlag</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Special handling flag for DXF-generated SVG content</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line368">line 368</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>applyTransform for coordinate transformation details</li>
+        
+            <li>mergeLines for path merging algorithm</li>
+        
+            <li>flatten for structure simplification</li>
+        
+            <li>filter for element filtering</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Cleaned and processed SVG root element</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">SVGElement</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>const parser = new SvgParser();
+parser.load('./files/', svgContent, 72, 1.0);
+const cleanSvg = parser.cleanInput(false); // Standard SVG</code></pre>
+
+    <pre class="prettyprint"><code>// DXF import with special handling
+parser.load('./cad/', dxfContent, 300, 0.1);
+const cleanSvg = parser.cleanInput(true); // DXF-specific processing</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="config"><span class="type-signature"></span>config<span class="signature">(config)</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Updates parser configuration with new tolerance values.</p>
+    
+
+
+
+<div class="description">
+    <p>Updates parser configuration with new tolerance values.</p>
+<p>Allows runtime adjustment of parsing tolerances to optimize for different
+SVG sources and precision requirements. Lower tolerances provide higher
+precision but may result in more complex polygons.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Configuration object with tolerance settings</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Bezier curve approximation tolerance</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>endpointTolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Endpoint matching tolerance for path merging</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line126">line 126</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>const parser = new SvgParser();
+parser.config({
+  tolerance: 1.0,        // Higher precision for small parts
+  endpointTolerance: 0.5 // Stricter endpoint matching
+});</code></pre>
+
+    <pre class="prettyprint"><code>// Relaxed settings for performance
+parser.config({
+  tolerance: 5.0,
+  endpointTolerance: 3.0
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getEndpoints"><span class="type-signature"></span>getEndpoints<span class="signature">(p)</span><span class="type-signature"> &rarr; {Object|null|<a href="Point.html">Point</a>|<a href="Point.html">Point</a>}</span></h4>
+    
+
+    
+    <p class="summary">Extracts start and end points from SVG path elements for endpoint analysis.</p>
+    
+
+
+
+<div class="description">
+    <p>Extracts start and end points from SVG path elements for endpoint analysis.</p>
+<p>Critical utility function for path merging operations that determines the
+geometric endpoints of various SVG element types. Used extensively in
+line segment merging, path continuation detection, and closed shape analysis.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>p</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>SVG path element (line, polyline, or path)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line1272">line 1272</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>getCoincident for endpoint matching logic</li>
+        
+            <li>mergeLines for primary usage context</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+<ul>
+        <li>
+<div class="param-desc">
+    <p>Object with start and end point properties, or null if invalid</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.start - Starting point with x,y coordinates</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="Point.html">Point</a></span>
+
+
+    </dd>
+</dl>
+</li>
+    
+        <li>
+<div class="param-desc">
+    <p>returns.end - Ending point with x,y coordinates</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="Point.html">Point</a></span>
+
+
+    </dd>
+</dl>
+</li>
+    </ul>
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get endpoints from line element
+const line = document.querySelector('line');
+const endpoints = parser.getEndpoints(line);
+console.log(`Line: (${endpoints.start.x}, ${endpoints.start.y}) → (${endpoints.end.x}, ${endpoints.end.y})`);</code></pre>
+
+    <pre class="prettyprint"><code>// Get endpoints from polyline
+const polyline = document.querySelector('polyline');
+const endpoints = parser.getEndpoints(polyline);
+if (endpoints) {
+  console.log(`Polyline starts at (${endpoints.start.x}, ${endpoints.start.y})`);
+}</code></pre>
+
+    <pre class="prettyprint"><code>// Get endpoints from complex path
+const path = document.querySelector('path');
+const endpoints = parser.getEndpoints(path);
+// Returns first and last vertex of polygonified path</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="load"><span class="type-signature"></span>load<span class="signature">(dirpath, svgString, scale, scalingFactor)</span><span class="type-signature"> &rarr; {SVGElement}</span></h4>
+    
+
+    
+    <p class="summary">Loads and parses an SVG string with comprehensive preprocessing and scaling.</p>
+    
+
+
+
+<div class="description">
+    <p>Loads and parses an SVG string with comprehensive preprocessing and scaling.</p>
+<p>Core SVG loading function that handles document parsing, coordinate system
+transformations, unit conversions, and scaling calculations. Includes special
+handling for Inkscape SVGs and robust error checking for malformed content.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>dirpath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Directory path for resolving relative image references</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>svgString</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>SVG content as string to parse</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scale</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Target scale factor for coordinate system (typically 72 for pts)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scalingFactor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Additional scaling multiplier applied to final coordinates</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line187">line 187</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>cleanInput for post-loading cleanup operations</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>If SVG string is invalid or parsing fails</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Root SVG element of the parsed and processed document</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">SVGElement</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic SVG loading
+const parser = new SvgParser();
+const svgRoot = parser.load('./files/', svgContent, 72, 1.0);</code></pre>
+
+    <pre class="prettyprint"><code>// DXF import with custom scaling
+const svgRoot = parser.load('./cad/', dxfSvgContent, 300, 0.1);</code></pre>
+
+    <pre class="prettyprint"><code>// High-resolution import
+const svgRoot = parser.load('./designs/', svgContent, 300, 2.0);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="mergeLines"><span class="type-signature"></span>mergeLines<span class="signature">(root, tolerance)</span><span class="type-signature"> &rarr; {void}</span></h4>
+    
+
+    
+    <p class="summary">Merges collinear line segments and open paths to form closed shapes.</p>
+    
+
+
+
+<div class="description">
+    <p>Merges collinear line segments and open paths to form closed shapes.</p>
+<p>Critical preprocessing step that combines disconnected line segments into
+continuous paths by identifying coincident endpoints and merging compatible
+segments. This is essential for DXF imports and CAD files where shapes
+are often composed of separate line segments rather than continuous paths.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>root</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Root SVG element containing path elements to merge</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>tolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Distance tolerance for endpoint matching</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line517">line 517</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>getCoincident for endpoint matching logic</li>
+        
+            <li>mergeOpenPaths for actual path merging implementation</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Modifies:</h5>
+
+        
+
+
+
+    
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Modifies the root element in-place</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Merge disconnected lines from DXF import
+const parser = new SvgParser();
+const svgRoot = parser.load('./cad/', dxfSvgContent, 300, 0.1);
+parser.mergeLines(svgRoot, 1.0);</code></pre>
+
+    <pre class="prettyprint"><code>// Precise merging for small parts
+parser.mergeLines(svgRoot, 0.1);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="mergeOverlap"><span class="type-signature"></span>mergeOverlap<span class="signature">(root, tolerance)</span><span class="type-signature"> &rarr; {void}</span></h4>
+    
+
+    
+    <p class="summary">Merges overlapping collinear line segments to reduce redundancy and improve processing.</p>
+    
+
+
+
+<div class="description">
+    <p>Merges overlapping collinear line segments to reduce redundancy and improve processing.</p>
+<p>Advanced geometric algorithm that identifies line segments lying on the same line
+and merges those that overlap or are adjacent. Uses coordinate rotation to normalize
+comparisons and handles complex overlap scenarios including partial overlaps,
+containment, and exact duplicates.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>root</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Root SVG element containing line elements to merge</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>tolerance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Geometric tolerance for collinearity testing</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line677">line 677</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>GeometryUtil.almostEqual for floating-point comparison</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Modifies:</h5>
+
+        
+
+
+
+    
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Modifies the root element in-place by merging overlapping lines</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Merge overlapping lines from CAD import
+const parser = new SvgParser();
+const svgRoot = parser.load('./cad/', cadSvgContent, 300, 1.0);
+parser.mergeOverlap(svgRoot, 0.1);</code></pre>
+
+    <pre class="prettyprint"><code>// Clean up redundant geometry
+parser.mergeOverlap(svgRoot, 1.0);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="polygonify"><span class="type-signature"></span>polygonify<span class="signature">(element)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Point.html">Point</a>>}</span></h4>
+    
+
+    
+    <p class="summary">Converts SVG elements to polygon point arrays for geometric processing.</p>
+    
+
+
+
+<div class="description">
+    <p>Converts SVG elements to polygon point arrays for geometric processing.</p>
+<p>Universal SVG-to-polygon converter that handles all major SVG element types
+including rectangles, circles, ellipses, polygons, polylines, and complex paths.
+For curved elements, applies adaptive approximation to convert curves into
+linear segments suitable for collision detection and nesting algorithms.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>element</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>SVG element to convert to polygon representation</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line1944">line 1944</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>polygonifyPath for complex path processing details</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of point objects with x,y coordinates</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Point.html">Point</a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Convert rectangle to polygon
+const rect = document.querySelector('rect');
+const polygon = parser.polygonify(rect);
+console.log(`Rectangle converted to ${polygon.length} points`); // 4 points</code></pre>
+
+    <pre class="prettyprint"><code>// Convert circle with adaptive approximation
+const circle = document.querySelector('circle');
+const polygon = parser.polygonify(circle);
+console.log(`Circle approximated with ${polygon.length} points`); // 12+ points</code></pre>
+
+    <pre class="prettyprint"><code>// Convert complex path
+const path = document.querySelector('path');
+const polygon = parser.polygonify(path);
+// Results in linear approximation of curves and arcs</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="polygonifyPath"><span class="type-signature"></span>polygonifyPath<span class="signature">(path)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Point.html">Point</a>>}</span></h4>
+    
+
+    
+    <p class="summary">Converts SVG path elements to polygon point arrays with curve approximation.</p>
+    
+
+
+
+<div class="description">
+    <p>Converts SVG path elements to polygon point arrays with curve approximation.</p>
+<p>Most complex function in the SVG parser that handles comprehensive path-to-polygon
+conversion including all SVG path commands: lines, curves, arcs, and beziers.
+Uses adaptive curve approximation to convert curved segments into linear
+approximations suitable for geometric operations and collision detection.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>path</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGPathElement</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>SVG path element to convert to polygon</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_svgparser.js.html">main/svgparser.js</a>, <a href="main_svgparser.js.html#line2131">line 2131</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>approximateBezier for curve approximation details</li>
+        
+            <li>splitPath for path preprocessing requirements</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of point objects representing polygon vertices</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Point.html">Point</a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Convert simple path to polygon
+const path = document.querySelector('path');
+const polygon = parser.polygonifyPath(path);
+console.log(`Polygon has ${polygon.length} vertices`);</code></pre>
+
+    <pre class="prettyprint"><code>// Process path with curves
+const curvePath = createCurvedPath(); // Path with bezier curves
+const polygon = parser.polygonifyPath(curvePath);
+// Results in linear approximation of curves</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
