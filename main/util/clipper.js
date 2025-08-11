@@ -1,3 +1,47 @@
+/**
+ * @fileoverview ClipperLib - Polygon clipping and offsetting library
+ *
+ * This is a JavaScript port of the Clipper Library - an open source freeware
+ * library for clipping and offsetting lines and polygons. It implements the
+ * Vatti clipping algorithm and is used extensively in CNC applications, laser
+ * cutting, and 3D printing for nesting and boolean operations on polygons.
+ *
+ * Key Features:
+ * - Boolean operations (intersection, union, difference, XOR) on polygons
+ * - Polygon offsetting (inflate/deflate) with different join types
+ * - High precision integer-based calculations to avoid floating-point errors
+ * - Support for both closed polygons and open polylines
+ * - Hierarchical polygon tree structure for complex results
+ *
+ * Performance Notes:
+ * - Uses BigInteger arithmetic for high precision (limited coordinate space)
+ * - JavaScript coordinate space: ±4,503,599,627,370,495 (vs C# ±4,611,686,018,427,387,903)
+ * - Optimized for different browsers with runtime performance detection
+ *
+ * @author Angus Johnson (Original C# implementation)
+ * @author Timo (JavaScript port)
+ * @version 6.2.1.0
+ * @since 2014
+ * @license Boost Software License Version 1.0
+ *
+ * @example
+ * // Basic boolean operation
+ * var cpr = new ClipperLib.Clipper();
+ * var subj = [[{X:10,Y:10},{X:110,Y:10},{X:110,Y:110},{X:10,Y:110}]];
+ * var clip = [[{X:50,Y:50},{X:150,Y:50},{X:150,Y:150},{X:50,Y:150}]];
+ * var solution = new ClipperLib.Paths();
+ * cpr.AddPaths(subj, ClipperLib.PolyType.ptSubject, true);
+ * cpr.AddPaths(clip, ClipperLib.PolyType.ptClip, true);
+ * cpr.Execute(ClipperLib.ClipType.ctIntersection, solution);
+ *
+ * @example
+ * // Polygon offsetting
+ * var co = new ClipperLib.ClipperOffset();
+ * var offsetSolution = new ClipperLib.Paths();
+ * co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+ * co.Execute(offsetSolution, 10.0);
+ */
+
 // rev 482
 /********************************************************************************
  *                                                                              *
@@ -73,6 +117,33 @@
   //UseLines: Enables open path clipping. Adds a very minor cost to performance.
   var use_lines = true;
 
+  /**
+   * @namespace ClipperLib
+   * @description The main namespace containing all ClipperLib classes, enumerations, and utilities.
+   *
+   * ClipperLib is a polygon clipping and offsetting library that performs boolean operations
+   * (intersection, union, difference, XOR) on polygons and polylines. It uses integer-based
+   * coordinates to ensure numerical robustness and avoid floating-point precision issues.
+   *
+   * The library implements the Vatti clipping algorithm, which is particularly well-suited
+   * for complex polygon operations and handles edge cases that can cause problems with
+   * other clipping algorithms.
+   *
+   * Main components:
+   * - {@link ClipperLib.Clipper} - Main class for boolean operations
+   * - {@link ClipperLib.ClipperOffset} - Class for polygon offsetting operations
+   * - {@link ClipperLib.IntPoint} - Integer-based point representation
+   * - {@link ClipperLib.PolyTree} - Hierarchical structure for complex polygon results
+   * - Various enumerations for operation types, fill rules, and join types
+   *
+   * @example
+   * // Access the main clipping functionality
+   * var clipper = new ClipperLib.Clipper();
+   *
+   * // Use enumeration values
+   * var unionOp = ClipperLib.ClipType.ctUnion;
+   * var subjectType = ClipperLib.PolyType.ptSubject;
+   */
   var ClipperLib = {};
   var isNode = false;
   /*if (typeof module !== 'undefined' && module.exports)
@@ -93,7 +164,20 @@
     var nav = "chrome"; // Node.js uses Chrome's V8 engine
     navigator_appName = "Netscape"; // Firefox, Chrome and Safari returns "Netscape", so Node.js should also
   }
-  // Browser test to speedup performance critical functions
+  /**
+   * Browser detection for performance optimization.
+   * Different JavaScript engines have varying performance characteristics for different operations.
+   * This detection allows ClipperLib to choose the fastest implementation for critical functions
+   * like integer casting and BigInteger arithmetic.
+   *
+   * The browser-specific optimizations include:
+   * - Chrome/V8: Optimized bitwise operations for integer casting
+   * - Firefox: Uses Number.toInteger when available
+   * - Safari/WebKit: Uses bitwise OR for casting
+   * - Internet Explorer: Different strategies based on version
+   *
+   * @private
+   */
   var browser = {};
   if (nav.indexOf("chrome") != -1 && nav.indexOf("chromium") == -1)
     browser.chrome = 1;
@@ -133,12 +217,60 @@
   // All Rights Reserved.
   // See "LICENSE" for details.
   // Basic JavaScript BN library - subset useful for RSA encryption.
-  // Bits per digit
+  /**
+   * Number of bits per digit in BigInteger representation.
+   * This value is determined at runtime based on the JavaScript engine's capabilities.
+   * Different engines have different optimal digit sizes for BigInteger arithmetic.
+   *
+   * @type {number}
+   * @private
+   */
   var dbits;
-  // JavaScript engine analysis
+  /**
+   * JavaScript engine capability detection.
+   * This canary test determines if the JavaScript engine correctly handles
+   * bitwise operations on large numbers. The result influences which
+   * BigInteger arithmetic implementation is selected for optimal performance.
+   *
+   * @type {number}
+   * @private
+   */
   var canary = 0xdeadbeefcafe;
+  /**
+   * Result of JavaScript engine capability test.
+   * True if the engine handles large number bitwise operations correctly.
+   *
+   * @type {boolean}
+   * @private
+   */
   var j_lm = (canary & 0xffffff) == 0xefcafe;
-  // (public) Constructor
+  /**
+   * @class BigInteger
+   * @memberof ClipperLib
+   * @description High-precision integer implementation used by ClipperLib for exact geometric calculations.
+   *
+   * This is a JavaScript implementation of arbitrary precision integers, based on Tom Wu's JSBN library.
+   * It's used internally by ClipperLib to avoid floating-point precision errors in polygon operations.
+   * The JavaScript version has a more limited coordinate space compared to the original C# implementation
+   * due to JavaScript's number limitations.
+   *
+   * Coordinate space limitations:
+   * - JavaScript version: ±4,503,599,627,370,495 (sqrt(2^106 - 1)/2)
+   * - C# version: ±4,611,686,018,427,387,903 (sqrt(2^127 - 1)/2)
+   *
+   * @param {number|string|Array} [a] - Initial value - can be number, string, or byte array
+   * @param {number} [b] - For fromNumber: number of bits, for fromString: radix base
+   * @param {*} [c] - For fromNumber: random number generator
+   *
+   * @example
+   * var bigInt1 = new BigInteger(12345);
+   * var bigInt2 = new BigInteger("123456789012345678901234567890");
+   * var bigInt3 = new BigInteger(256, 80, rng); // 80-bit random number
+   *
+   * @author Tom Wu (JSBN library)
+   * @license Multiple licenses - see JSBN documentation
+   * @since 2005
+   */
   function BigInteger(a, b, c) {
     // This test variable can be removed,
     // but at least for performance tests it is useful piece of knowledge
@@ -151,17 +283,38 @@
       else if (b == null && "string" != typeof a) this.fromString(a, 256);
       else this.fromString(a, b);
   }
-  // return new, unset BigInteger
+  /**
+   * Creates a new uninitialized BigInteger instance.
+   * This is an internal utility function used extensively throughout the BigInteger
+   * implementation for creating temporary calculation results.
+   *
+   * @returns {BigInteger} A new BigInteger with no initial value
+   * @private
+   */
   function nbi() {
     return new BigInteger(null, undefined, undefined);
   }
-  // am: Compute w_j += (x*this_i), propagate carries,
-  // c is initial carry, returns final carry.
-  // c < 3*dvalue, x < 2*dvalue, this_i < dvalue
-  // We need to select the fastest one that works in this environment.
-  // am1: use a single mult and divide to get the high bits,
-  // max digit bits should be 26 because
-  // max internal value = 2*dvalue^2-2*dvalue (< 2^53)
+  /**
+   * BigInteger arithmetic multiplication function - Implementation 1.
+   *
+   * Computes w[j] += (x * this[i]) with carry propagation.
+   * This is one of three different implementations optimized for different JavaScript engines.
+   *
+   * Algorithm details:
+   * - Uses single multiplication and division to extract high/low bits
+   * - Optimized for engines where division is relatively fast
+   * - Maximum digit bits should be 26 to prevent overflow
+   * - Maximum internal value: 2*dvalue^2-2*dvalue (< 2^53)
+   *
+   * @param {number} i - Starting index in this BigInteger
+   * @param {number} x - Multiplier value (< 2*dvalue)
+   * @param {Array<number>} w - Result array to write to
+   * @param {number} j - Starting index in result array
+   * @param {number} c - Initial carry value (< 3*dvalue)
+   * @param {number} n - Number of digits to process
+   * @returns {number} Final carry value
+   * @private
+   */
   function am1(i, x, w, j, c, n) {
     while (--n >= 0) {
       var v = x * this[i++] + w[j] + c;
@@ -170,9 +323,28 @@
     }
     return c;
   }
-  // am2 avoids a big mult-and-extract completely.
-  // Max digit bits should be <= 30 because we do bitwise ops
-  // on values up to 2*hdvalue^2-hdvalue-1 (< 2^31)
+  /**
+   * BigInteger arithmetic multiplication function - Implementation 2.
+   *
+   * Avoids large multiplication and division by splitting numbers into high/low parts.
+   * This implementation is optimized for engines where bitwise operations are faster
+   * than division, particularly Internet Explorer.
+   *
+   * Algorithm details:
+   * - Splits multiplier into 15-bit high and low parts
+   * - Uses separate multiply operations for each part
+   * - Combines results using bitwise operations
+   * - Maximum digit bits should be <= 30 for safe bitwise operations
+   *
+   * @param {number} i - Starting index in this BigInteger
+   * @param {number} x - Multiplier value
+   * @param {Array<number>} w - Result array to write to
+   * @param {number} j - Starting index in result array
+   * @param {number} c - Initial carry value
+   * @param {number} n - Number of digits to process
+   * @returns {number} Final carry value
+   * @private
+   */
   function am2(i, x, w, j, c, n) {
     var xl = x & 0x7fff,
       xh = x >> 15;
@@ -186,8 +358,28 @@
     }
     return c;
   }
-  // Alternately, set max digit bits to 28 since some
-  // browsers slow down when dealing with 32-bit numbers.
+  /**
+   * BigInteger arithmetic multiplication function - Implementation 3.
+   *
+   * Similar to am2 but uses 14-bit parts instead of 15-bit parts.
+   * This provides better performance on some browsers that slow down
+   * when dealing with 32-bit numbers.
+   *
+   * Algorithm details:
+   * - Uses 14-bit high and low parts (vs 15-bit in am2)
+   * - More conservative approach for broader browser compatibility
+   * - Maximum digit bits set to 28 for safety
+   * - Preferred by Mozilla/Netscape engines
+   *
+   * @param {number} i - Starting index in this BigInteger
+   * @param {number} x - Multiplier value
+   * @param {Array<number>} w - Result array to write to
+   * @param {number} j - Starting index in result array
+   * @param {number} c - Initial carry value
+   * @param {number} n - Number of digits to process
+   * @returns {number} Final carry value
+   * @private
+   */
   function am3(i, x, w, j, c, n) {
     var xl = x & 0x3fff,
       xh = x >> 14;
@@ -219,7 +411,15 @@
   BigInteger.prototype.FV = Math.pow(2, BI_FP);
   BigInteger.prototype.F1 = BI_FP - dbits;
   BigInteger.prototype.F2 = 2 * dbits - BI_FP;
-  // Digit conversions
+  /**
+   * Character-to-digit conversion tables for different number bases.
+   * Used for parsing and formatting BigInteger values in various radixes.
+   *
+   * BI_RM: Digits for radix conversion (0-9, a-z)
+   * BI_RC: Reverse lookup table for parsing digits
+   *
+   * @private
+   */
   var BI_RM = "0123456789abcdefghijklmnopqrstuvwxyz";
   var BI_RC = new Array();
   var rr, vv;
@@ -230,32 +430,78 @@
   rr = "A".charCodeAt(0);
   for (vv = 10; vv < 36; ++vv) BI_RC[rr++] = vv;
 
+  /**
+   * Converts a digit value to its character representation.
+   * Used when formatting BigInteger values as strings in different bases.
+   *
+   * @param {number} n - Digit value (0-35)
+   * @returns {string} Character representation ('0'-'9', 'a'-'z')
+   * @private
+   */
   function int2char(n) {
     return BI_RM.charAt(n);
   }
 
+  /**
+   * Converts a character to its numeric digit value.
+   * Used when parsing BigInteger values from string representations.
+   *
+   * @param {string} s - String containing the character
+   * @param {number} i - Index of the character to convert
+   * @returns {number} Digit value (0-35) or -1 if invalid
+   * @private
+   */
   function intAt(s, i) {
     var c = BI_RC[s.charCodeAt(i)];
     return c == null ? -1 : c;
   }
-  // (protected) copy this to r
+  /**
+   * Copies the current BigInteger to another BigInteger instance.
+   * This is an internal utility function used throughout BigInteger operations
+   * to create copies and avoid modifying original values.
+   *
+   * @param {BigInteger} r - Destination BigInteger to copy to
+   * @private
+   * @this {BigInteger}
+   */
   function bnpCopyTo(r) {
+    // Copy all digit values from most significant to least significant
     for (var i = this.t - 1; i >= 0; --i) r[i] = this[i];
-    r.t = this.t;
-    r.s = this.s;
+    r.t = this.t; // Copy digit count
+    r.s = this.s; // Copy sign
   }
-  // (protected) set from integer value x, -DV <= x < DV
+  /**
+   * Initializes BigInteger from a regular JavaScript integer.
+   * Handles the conversion from JavaScript's number type to BigInteger's
+   * internal digit array representation.
+   *
+   * @param {number} x - Integer value to convert (-DV <= x < DV)
+   * @private
+   * @this {BigInteger}
+   */
   function bnpFromInt(x) {
-    this.t = 1;
-    this.s = x < 0 ? -1 : 0;
-    if (x > 0) this[0] = x;
-    else if (x < -1) this[0] = x + this.DV;
-    else this.t = 0;
+    this.t = 1; // Assume one digit initially
+    this.s = x < 0 ? -1 : 0; // Set sign: -1 for negative, 0 for non-negative
+
+    if (x > 0) {
+      this[0] = x; // Store positive value directly
+    } else if (x < -1) {
+      this[0] = x + this.DV; // Convert negative to internal representation
+    } else {
+      this.t = 0; // Special case: x is 0 or -1, no digits needed
+    }
   }
-  // return bigint initialized to value
+  /**
+   * Creates a new BigInteger initialized to the specified integer value.
+   * Convenience function for creating BigInteger instances from regular JavaScript integers.
+   *
+   * @param {number} i - Integer value to create BigInteger from
+   * @returns {BigInteger} New BigInteger with the specified value
+   * @private
+   */
   function nbv(i) {
-    var r = nbi();
-    r.fromInt(i);
+    var r = nbi(); // Create new uninitialized BigInteger
+    r.fromInt(i);  // Initialize it with the integer value
     return r;
   }
   // (protected) set from string and radix
@@ -361,7 +607,19 @@
     while (--i >= 0) if ((r = this[i] - a[i]) != 0) return r;
     return 0;
   }
-  // returns bit length of the integer x
+  /**
+   * Calculates the number of bits required to represent an integer.
+   * Uses efficient bit manipulation to determine bit length without loops.
+   * This is used internally for BigInteger bit length calculations.
+   *
+   * Algorithm uses successive bit shifts to find the highest set bit:
+   * - Check upper 16 bits, then upper 8, then 4, 2, 1
+   * - Each step narrows down the position of the highest bit
+   *
+   * @param {number} x - Integer to measure (must be positive)
+   * @returns {number} Number of bits needed to represent x
+   * @private
+   */
   function nbits(x) {
     var r = 1,
       t;
@@ -387,9 +645,20 @@
     }
     return r;
   }
-  // (public) return the number of bits in "this"
+  /**
+   * Calculates the total bit length of this BigInteger.
+   * For multi-digit BigIntegers, this combines the bit contributions
+   * from all digits to give the total number of significant bits.
+   *
+   * @returns {number} Total number of bits in this BigInteger
+   * @public
+   * @this {BigInteger}
+   */
   function bnBitLength() {
-    if (this.t <= 0) return 0;
+    if (this.t <= 0) return 0; // Empty BigInteger has zero bits
+
+    // Calculate bits: (full digits * bits per digit) + (bits in highest digit)
+    // The XOR with sign mask handles the two's complement representation
     return (
       this.DB * (this.t - 1) + nbits(this[this.t - 1] ^ (this.s & this.DM))
     );
@@ -1616,9 +1885,54 @@
       ce.$baseCtor = ce2;
     }
   };
+  /**
+   * @typedef {Array<ClipperLib.IntPoint>} ClipperLib.Path
+   * @memberof ClipperLib
+   * @description Represents a single polygon or polyline as an array of IntPoint vertices.
+   *
+   * A Path is simply an array of {@link ClipperLib.IntPoint} objects representing the vertices
+   * of a polygon (closed path) or polyline (open path). The vertices should be ordered either
+   * clockwise or counter-clockwise. For closed paths, the last vertex does not need to duplicate
+   * the first vertex as closure is implied.
+   *
+   * @example
+   * // Create a rectangular path
+   * var path = new ClipperLib.Path();
+   * path.push(new ClipperLib.IntPoint(10, 10));
+   * path.push(new ClipperLib.IntPoint(110, 10));
+   * path.push(new ClipperLib.IntPoint(110, 110));
+   * path.push(new ClipperLib.IntPoint(10, 110));
+   *
+   * @example
+   * // Alternative creation using array literal
+   * var path = [
+   *   {X: 10, Y: 10},
+   *   {X: 110, Y: 10},
+   *   {X: 110, Y: 110},
+   *   {X: 10, Y: 110}
+   * ];
+   */
   ClipperLib.Path = function () {
     return [];
   };
+
+  /**
+   * @typedef {Array<ClipperLib.Path>} ClipperLib.Paths
+   * @memberof ClipperLib
+   * @description Represents multiple polygons/polylines as an array of Path objects.
+   *
+   * Paths is an array of {@link ClipperLib.Path} objects, used to represent complex shapes
+   * consisting of multiple separate polygons or polylines. This is the primary data structure
+   * used for input and output in ClipperLib operations.
+   *
+   * @example
+   * // Create multiple rectangular paths
+   * var paths = new ClipperLib.Paths();
+   * var rect1 = [{X:0,Y:0}, {X:10,Y:0}, {X:10,Y:10}, {X:0,Y:10}];
+   * var rect2 = [{X:5,Y:5}, {X:15,Y:5}, {X:15,Y:15}, {X:5,Y:15}];
+   * paths.push(rect1);
+   * paths.push(rect2);
+   */
   ClipperLib.Paths = function () {
     return []; // Was previously [[]], but caused problems when pushed
   };
@@ -1654,6 +1968,45 @@
   };
   // PolyTree & PolyNode start
   // -------------------------------
+  /**
+   * @class ClipperLib.PolyNode
+   * @memberof ClipperLib
+   * @description Represents a single node in a polygon tree structure.
+   *
+   * PolyNode represents a single polygon within a hierarchical tree structure. It contains
+   * the polygon's path data and maintains parent-child relationships with other polygons.
+   * This is particularly useful for representing complex polygon results where polygons
+   * can contain holes or be contained within other polygons.
+   *
+   * The tree structure allows you to distinguish between:
+   * - Outer polygons (positive area)
+   * - Holes within polygons (negative area)
+   * - Islands within holes (positive area)
+   * - And so on...
+   *
+   * @property {ClipperLib.PolyNode|null} m_Parent - Parent node in the tree
+   * @property {ClipperLib.Path} m_polygon - The polygon path data
+   * @property {number} m_Index - Index of this node
+   * @property {Array<ClipperLib.PolyNode>} m_Childs - Array of child nodes
+   * @property {boolean} IsOpen - Whether this represents an open path
+   *
+   * @example
+   * // Typically created as result of clipping operation
+   * var polytree = new ClipperLib.PolyTree();
+   * clipper.Execute(ClipperLib.ClipType.ctUnion, polytree);
+   *
+   * // Traverse the tree structure
+   * function traversePolyTree(polynode) {
+   *   // Process this polygon
+   *   var path = polynode.Contour();
+   *   console.log("Polygon with", path.length, "vertices");
+   *
+   *   // Process children
+   *   for (var i = 0; i < polynode.ChildCount(); i++) {
+   *     traversePolyTree(polynode.m_Childs[i]);
+   *   }
+   * }
+   */
   ClipperLib.PolyNode = function () {
     this.m_Parent = null;
     this.m_polygon = new ClipperLib.Path();
@@ -1704,6 +2057,60 @@
     return this.IsHoleNode();
   };
   // PolyTree : PolyNode
+  /**
+   * @class ClipperLib.PolyTree
+   * @extends ClipperLib.PolyNode
+   * @memberof ClipperLib
+   * @description Root container for a hierarchical tree of polygon results.
+   *
+   * PolyTree is a specialized PolyNode that serves as the root container for polygon
+   * clipping results. It maintains a hierarchical tree structure where:
+   * - Outer polygons are direct children of the root
+   * - Holes are children of their containing polygons
+   * - Islands within holes are children of the hole nodes
+   *
+   * This structure preserves the parent-child relationships between polygons and their
+   * holes, which is essential for proper rendering and further processing. The tree
+   * structure makes it easy to distinguish between solid areas and holes.
+   *
+   * Use PolyTree as the solution parameter in Clipper.Execute() when you need to
+   * preserve hole information, otherwise use Paths for simple flat results.
+   *
+   * @property {Array<ClipperLib.PolyNode>} m_AllPolys - Internal array of all polygon nodes
+   *
+   * @example
+   * // Use PolyTree to preserve hole relationships
+   * var clipper = new ClipperLib.Clipper();
+   * var solution = new ClipperLib.PolyTree();
+   *
+   * clipper.AddPaths(subjects, ClipperLib.PolyType.ptSubject, true);
+   * clipper.AddPaths(clips, ClipperLib.PolyType.ptClip, true);
+   * clipper.Execute(ClipperLib.ClipType.ctUnion, solution);
+   *
+   * console.log("Total polygons:", solution.Total());
+   *
+   * // Get first outer polygon
+   * var firstChild = solution.GetFirst();
+   * if (firstChild) {
+   *   console.log("First polygon has", firstChild.ChildCount(), "holes");
+   * }
+   *
+   * @example
+   * // Convert PolyTree to simple Paths array
+   * function polyTreeToPaths(polytree) {
+   *   var paths = [];
+   *   function addPolyNodeToPaths(polynode) {
+   *     if (polynode.Contour().length > 0) {
+   *       paths.push(polynode.Contour());
+   *     }
+   *     for (var i = 0; i < polynode.ChildCount(); i++) {
+   *       addPolyNodeToPaths(polynode.m_Childs[i]);
+   *     }
+   *   }
+   *   addPolyNodeToPaths(polytree);
+   *   return paths;
+   * }
+   */
   ClipperLib.PolyTree = function () {
     this.m_AllPolys = [];
     ClipperLib.PolyNode.call(this);
@@ -1795,6 +2202,71 @@
   //ClipperLib.MaxSteps = 64; // How many steps at maximum in arc in BuildArc() function
   ClipperLib.PI = 3.141592653589793;
   ClipperLib.PI2 = 2 * 3.141592653589793;
+  /**
+   * @class ClipperLib.IntPoint
+   * @memberof ClipperLib
+   * @description Represents a 2D point with integer coordinates, optionally with Z coordinate.
+   *
+   * IntPoint is the fundamental data type used throughout ClipperLib for representing vertex
+   * coordinates. It uses integer coordinates to avoid floating-point precision issues that
+   * can cause robustness problems in geometric algorithms.
+   *
+   * The coordinate system limitations:
+   * - JavaScript version: ±4,503,599,627,370,495 (due to 53-bit mantissa in IEEE 754)
+   * - Original C# version: ±4,611,686,018,427,387,903 (using 64-bit integers)
+   *
+   * When use_xyz is enabled, points include a Z coordinate for 3D applications.
+   * The Z coordinate can be used to store elevation data, material properties,
+   * or other custom vertex attributes.
+   *
+   * @property {number} X - X coordinate (horizontal position)
+   * @property {number} Y - Y coordinate (vertical position)
+   * @property {number} [Z] - Z coordinate (optional, when use_xyz is enabled)
+   *
+   * @param {number|ClipperLib.IntPoint|ClipperLib.DoublePoint} [x] - X coordinate, or point to copy from
+   * @param {number} [y] - Y coordinate (if first parameter is X coordinate)
+   * @param {number} [z] - Z coordinate (if use_xyz enabled and providing X,Y,Z)
+   *
+   * @example
+   * // Create points with different constructors
+   * var point1 = new ClipperLib.IntPoint();           // (0, 0)
+   * var point2 = new ClipperLib.IntPoint(10, 20);      // (10, 20)
+   * var point3 = new ClipperLib.IntPoint(point2);      // Copy constructor
+   *
+   * // With Z coordinate (when use_xyz is true)
+   * var point3d = new ClipperLib.IntPoint(10, 20, 5);  // (10, 20, 5)
+   *
+   * // From DoublePoint (with rounding)
+   * var doublePoint = new ClipperLib.DoublePoint(10.7, 20.3);
+   * var intPoint = new ClipperLib.IntPoint(doublePoint); // (11, 20)
+   * can cause robustness problems in geometric algorithms.
+   *
+   * The use of integer coordinates means that input coordinates should be scaled appropriately
+   * before processing. For example, if working with coordinates that have 2 decimal places of
+   * precision, multiply by 100 before processing and divide by 100 afterward.
+   *
+   * @param {number|ClipperLib.IntPoint|ClipperLib.DoublePoint} [x] - X coordinate, or point to copy from
+   * @param {number} [y] - Y coordinate (required if x is a number)
+   * @param {number} [z] - Z coordinate (only available if use_xyz is enabled)
+   *
+   * @property {number} X - The X coordinate
+   * @property {number} Y - The Y coordinate
+   * @property {number} [Z] - The Z coordinate (optional, depends on use_xyz setting)
+   *
+   * @example
+   * // Create point with coordinates
+   * var pt1 = new ClipperLib.IntPoint(100, 200);
+   *
+   * // Copy from another point
+   * var pt2 = new ClipperLib.IntPoint(pt1);
+   *
+   * // Create from DoublePoint (will be rounded to integers)
+   * var dpt = new ClipperLib.DoublePoint(10.7, 20.3);
+   * var pt3 = new ClipperLib.IntPoint(dpt); // X=11, Y=20
+   *
+   * // Object literal (also valid)
+   * var pt4 = {X: 50, Y: 75};
+   */
   ClipperLib.IntPoint = function () {
     var a = arguments,
       alen = a.length;
@@ -1858,10 +2330,37 @@
       }
     }
   };
+  /**
+   * Tests equality between two IntPoint instances.
+   * Two points are equal if their X and Y coordinates match exactly.
+   * Z coordinates are not considered in equality comparison.
+   *
+   * @param {ClipperLib.IntPoint} a - First point to compare
+   * @param {ClipperLib.IntPoint} b - Second point to compare
+   * @returns {boolean} True if points have identical X and Y coordinates
+   *
+   * @example
+   * var p1 = new ClipperLib.IntPoint(10, 20);
+   * var p2 = new ClipperLib.IntPoint(10, 20);
+   * var equal = ClipperLib.IntPoint.op_Equality(p1, p2); // true
+   */
   ClipperLib.IntPoint.op_Equality = function (a, b) {
     //return a == b;
     return a.X == b.X && a.Y == b.Y;
   };
+  /**
+   * Tests inequality between two IntPoint instances.
+   * Two points are inequal if either their X or Y coordinates differ.
+   *
+   * @param {ClipperLib.IntPoint} a - First point to compare
+   * @param {ClipperLib.IntPoint} b - Second point to compare
+   * @returns {boolean} True if points have different X or Y coordinates
+   *
+   * @example
+   * var p1 = new ClipperLib.IntPoint(10, 20);
+   * var p2 = new ClipperLib.IntPoint(15, 20);
+   * var notEqual = ClipperLib.IntPoint.op_Inequality(p1, p2); // true
+   */
   ClipperLib.IntPoint.op_Inequality = function (a, b) {
     //return a != b;
     return a.X != b.X || a.Y != b.Y;
@@ -1925,6 +2424,41 @@
       this.Y = y;
     };
   }
+  /**
+   * @class ClipperLib.IntRect
+   * @memberof ClipperLib
+   * @description Represents an axis-aligned rectangle with integer coordinates.
+   *
+   * IntRect is used for bounding box calculations and spatial optimizations
+   * throughout the ClipperLib algorithms. It represents the smallest rectangle
+   * that completely contains a set of points or polygons.
+   *
+   * The rectangle is defined by its left, top, right, and bottom coordinates,
+   * where:
+   * - left < right (left edge is to the left of right edge)
+   * - top < bottom (top edge is above bottom edge in screen coordinates)
+   *
+   * @property {number} left - Left edge X coordinate
+   * @property {number} top - Top edge Y coordinate
+   * @property {number} right - Right edge X coordinate
+   * @property {number} bottom - Bottom edge Y coordinate
+   *
+   * @param {number|ClipperLib.IntRect} [l] - Left coordinate, or IntRect to copy from
+   * @param {number} [t] - Top coordinate (if first parameter is left)
+   * @param {number} [r] - Right coordinate
+   * @param {number} [b] - Bottom coordinate
+   *
+   * @example
+   * // Create rectangles in different ways
+   * var rect1 = new ClipperLib.IntRect();              // (0,0,0,0)
+   * var rect2 = new ClipperLib.IntRect(10, 20, 30, 40); // (10,20,30,40)
+   * var rect3 = new ClipperLib.IntRect(rect2);          // Copy constructor
+   *
+   * // Check if point is inside rectangle
+   * var point = new ClipperLib.IntPoint(25, 35);
+   * var inside = (point.X >= rect2.left && point.X <= rect2.right &&
+   *               point.Y >= rect2.top && point.Y <= rect2.bottom);
+   */
   ClipperLib.IntRect = function () {
     var a = arguments,
       alen = a.length;
@@ -1966,42 +2500,212 @@
     this.right = r;
     this.bottom = b;
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration for the different boolean clipping operations.
+   *
+   * ClipType specifies the type of boolean operation to perform between subject and clip polygons.
+   * Each operation produces different results based on how the polygons overlap:
+   *
+   * - ctIntersection: Returns only the overlapping regions
+   * - ctUnion: Returns the combined area of both polygon sets
+   * - ctDifference: Returns subject polygons minus clip polygons
+   * - ctXor: Returns the symmetric difference (union minus intersection)
+   *
+   * @example
+   * // Perform a union operation
+   * clipper.Execute(ClipperLib.ClipType.ctUnion, solution);
+   *
+   * // Subtract clip polygons from subject polygons
+   * clipper.Execute(ClipperLib.ClipType.ctDifference, solution);
+   */
   ClipperLib.ClipType = {
+    /** @description Returns only areas where subject and clip polygons overlap */
     ctIntersection: 0,
+    /** @description Returns the combined area of all subject and clip polygons */
     ctUnion: 1,
+    /** @description Returns subject polygons with clip polygon areas removed */
     ctDifference: 2,
+    /** @description Returns the symmetric difference (areas that don't overlap) */
     ctXor: 3,
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration to distinguish between subject and clip polygon types.
+   *
+   * When adding paths to a Clipper object, each path must be designated as either
+   * a subject or clip polygon. The boolean operation is performed between these
+   * two polygon sets.
+   *
+   * @example
+   * // Add subject polygons (the base polygons to operate on)
+   * clipper.AddPaths(subjectPaths, ClipperLib.PolyType.ptSubject, true);
+   *
+   * // Add clip polygons (the polygons to clip with)
+   * clipper.AddPaths(clipPaths, ClipperLib.PolyType.ptClip, true);
+   */
   ClipperLib.PolyType = {
+    /** @description Subject polygons - the primary polygons for the operation */
     ptSubject: 0,
+    /** @description Clip polygons - the polygons used to clip the subjects */
     ptClip: 1,
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration for polygon filling rules that determine polygon interiors.
+   *
+   * The fill type determines which areas are considered "inside" a polygon when polygons
+   * are self-intersecting or when multiple polygons overlap. This affects how boolean
+   * operations are performed.
+   *
+   * - pftEvenOdd: A point is inside if it crosses an odd number of polygon edges
+   * - pftNonZero: Uses winding number; inside if winding number is non-zero
+   * - pftPositive: Inside if winding number is positive (> 0)
+   * - pftNegative: Inside if winding number is negative (< 0)
+   *
+   * @example
+   * // Set fill types for subject and clip polygons
+   * clipper.Execute(ClipperLib.ClipType.ctUnion, solution,
+   *   ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+   */
   ClipperLib.PolyFillType = {
+    /** @description Even-odd fill rule (alternating in/out on edge crossings) */
     pftEvenOdd: 0,
+    /** @description Non-zero winding rule (standard for most applications) */
     pftNonZero: 1,
+    /** @description Only positive winding numbers are considered inside */
     pftPositive: 2,
+    /** @description Only negative winding numbers are considered inside */
     pftNegative: 3,
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration for join types used in polygon offsetting operations.
+   *
+   * When offsetting polygons, the JoinType determines how the offset path handles
+   * the connections between adjacent edges at polygon vertices.
+   *
+   * - jtSquare: Square joins with perpendicular edges
+   * - jtRound: Rounded joins using circular arcs
+   * - jtMiter: Sharp pointed joins that extend edges until they meet
+   *
+   * @example
+   * // Create rounded corners when offsetting
+   * clipperOffset.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+   */
   ClipperLib.JoinType = {
+    /** @description Square joins create perpendicular corners */
     jtSquare: 0,
+    /** @description Round joins create smooth curved corners */
     jtRound: 1,
+    /** @description Miter joins create sharp pointed corners */
     jtMiter: 2,
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration for end types used in polygon offsetting operations.
+   *
+   * EndType determines how the ends of open paths are handled during offsetting.
+   * For closed paths, use etClosedPolygon or etClosedLine.
+   *
+   * - etOpenSquare: Open paths end with a square cap
+   * - etOpenRound: Open paths end with a rounded cap
+   * - etOpenButt: Open paths end with a flat butt cap
+   * - etClosedLine: Treat as closed path but don't add end caps
+   * - etClosedPolygon: Treat as closed polygon (most common for filled shapes)
+   *
+   * @example
+   * // Offset open paths with rounded ends
+   * clipperOffset.AddPaths(openPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etOpenRound);
+   *
+   * // Offset closed polygons
+   * clipperOffset.AddPaths(closedPaths, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+   */
   ClipperLib.EndType = {
+    /** @description Open paths end with square caps extending perpendicular to the path */
     etOpenSquare: 0,
+    /** @description Open paths end with rounded semicircular caps */
     etOpenRound: 1,
+    /** @description Open paths end with flat caps (no extension) */
     etOpenButt: 2,
+    /** @description Closed line - path is closed but treated as a line for offsetting */
     etClosedLine: 3,
+    /** @description Closed polygon - standard closed shape (most common) */
     etClosedPolygon: 4,
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration indicating which side of an edge is being processed.
+   *
+   * Used internally by the Vatti clipping algorithm to track edge relationships
+   * and determine winding number contributions during polygon processing.
+   *
+   * @private
+   */
   ClipperLib.EdgeSide = {
+    /** @description Left side of an edge */
     esLeft: 0,
+    /** @description Right side of an edge */
     esRight: 1,
   };
+  /**
+   * @enum {number}
+   * @memberof ClipperLib
+   * @description Enumeration for polygon orientation/direction.
+   *
+   * Determines the direction in which polygon vertices are ordered:
+   * - dRightToLeft: Clockwise orientation (negative area)
+   * - dLeftToRight: Counter-clockwise orientation (positive area)
+   *
+   * This affects how the algorithm determines polygon interiors and
+   * the sign of calculated polygon areas.
+   *
+   * @example
+   * // Check polygon orientation
+   * var area = ClipperLib.Clipper.Area(path);
+   * var direction = (area >= 0) ? ClipperLib.Direction.dLeftToRight : ClipperLib.Direction.dRightToLeft;
+   */
   ClipperLib.Direction = {
+    /** @description Clockwise polygon orientation */
     dRightToLeft: 0,
+    /** @description Counter-clockwise polygon orientation */
     dLeftToRight: 1,
   };
+  /**
+   * @class ClipperLib.TEdge
+   * @memberof ClipperLib
+   * @description Internal data structure representing a polygon edge in the Vatti algorithm.
+   *
+   * TEdge (Table Edge) represents a single edge segment within the Active Edge Table (AEL)
+   * used by the Vatti clipping algorithm. Each edge contains geometric information,
+   * winding counters, and linked list pointers for efficient scanline processing.
+   *
+   * The edge structure maintains:
+   * - Geometric properties: start/end points, slope, current position
+   * - Polygon metadata: which polygon it belongs to, fill contribution
+   * - Algorithm state: winding numbers, output polygon index
+   * - List pointers: connections to other edges in various linked lists
+   *
+   * @property {ClipperLib.IntPoint} Bot - Bottom point of the edge (lower Y coordinate)
+   * @property {ClipperLib.IntPoint} Curr - Current position during scanline sweep
+   * @property {ClipperLib.IntPoint} Top - Top point of the edge (higher Y coordinate)
+   * @property {ClipperLib.IntPoint} Delta - Edge direction vector (Top - Bot)
+   * @property {number} Dx - Edge slope (Delta.X / Delta.Y) for efficient intersection calculation
+   * @property {ClipperLib.PolyType} PolyTyp - Whether this edge belongs to subject or clip polygon
+   * @property {ClipperLib.EdgeSide} Side - Which side of the polygon this edge represents
+   * @property {number} WindDelta - Winding contribution of this edge (+1 or -1)
+   * @property {number} WindCnt - Winding count for subject polygons
+   * @property {number} WindCnt2 - Winding count for clip polygons
+   * @property {number} OutIdx - Index of output polygon this edge contributes to
+   *
+   * @private
+   */
   ClipperLib.TEdge = function () {
     this.Bot = new ClipperLib.IntPoint();
     this.Curr = new ClipperLib.IntPoint();
@@ -2022,6 +2726,25 @@
     this.NextInSEL = null;
     this.PrevInSEL = null;
   };
+  /**
+   * @class ClipperLib.IntersectNode
+   * @memberof ClipperLib
+   * @description Represents an intersection point between two edges.
+   *
+   * IntersectNode stores information about where two polygon edges intersect
+   * during the Vatti clipping algorithm. These intersections are crucial for
+   * determining the correct output polygons.
+   *
+   * The intersections are sorted and processed in order to maintain the
+   * correct edge ordering in the Active Edge List and properly handle
+   * edge swapping at intersection points.
+   *
+   * @property {ClipperLib.TEdge} Edge1 - First edge in the intersection
+   * @property {ClipperLib.TEdge} Edge2 - Second edge in the intersection
+   * @property {ClipperLib.IntPoint} Pt - The intersection point coordinates
+   *
+   * @private
+   */
   ClipperLib.IntersectNode = function () {
     this.Edge1 = null;
     this.Edge2 = null;
@@ -2035,16 +2758,77 @@
     else return 0;
   };
 
+  /**
+   * @class ClipperLib.LocalMinima
+   * @memberof ClipperLib
+   * @description Represents a local minimum in polygon edge processing.
+   *
+   * LocalMinima points are Y-coordinate values where polygon edges have
+   * local minima. At these points, new edges become active in the scanline
+   * algorithm. Each local minimum has associated left and right bound edges.
+   *
+   * The local minima are processed in Y-sorted order during the clipping
+   * algorithm, with edges being added to the Active Edge List as their
+   * local minima are encountered.
+   *
+   * @property {number} Y - Y-coordinate of the local minimum
+   * @property {ClipperLib.TEdge} LeftBound - Left-bound edge at this minimum
+   * @property {ClipperLib.TEdge} RightBound - Right-bound edge at this minimum
+   * @property {ClipperLib.LocalMinima} Next - Next local minimum in sorted list
+   *
+   * @private
+   */
   ClipperLib.LocalMinima = function () {
     this.Y = 0;
     this.LeftBound = null;
     this.RightBound = null;
     this.Next = null;
   };
+  /**
+   * @class ClipperLib.Scanbeam
+   * @memberof ClipperLib
+   * @description Represents a horizontal scanline position in the Vatti algorithm.
+   *
+   * Scanbeam maintains a sorted list of Y-coordinates where significant events
+   * occur during polygon processing. These include:
+   * - Local minima and maxima of edges
+   * - Edge intersection points
+   * - Polygon vertex Y-coordinates
+   *
+   * The scanline algorithm processes these Y-coordinates in order,
+   * updating the Active Edge List and detecting intersections at each level.
+   *
+   * @property {number} Y - Y-coordinate of the scanbeam
+   * @property {ClipperLib.Scanbeam} Next - Next scanbeam in sorted list
+   *
+   * @private
+   */
   ClipperLib.Scanbeam = function () {
     this.Y = 0;
     this.Next = null;
   };
+  /**
+   * @class ClipperLib.OutRec
+   * @memberof ClipperLib
+   * @description Output record representing a single polygon in the result.
+   *
+   * OutRec maintains information about a polygon that results from the clipping
+   * operation. It tracks the polygon's vertices, its relationship to other polygons
+   * (for hole detection), and various properties needed for correct output generation.
+   *
+   * The polygon vertices are stored as a circular doubly-linked list of OutPt objects,
+   * which allows efficient insertion and removal of vertices during processing.
+   *
+   * @property {number} Idx - Unique index for this output record
+   * @property {boolean} IsHole - Whether this polygon represents a hole
+   * @property {boolean} IsOpen - Whether this is an open path (vs closed polygon)
+   * @property {ClipperLib.OutRec} FirstLeft - Parent polygon that contains this one
+   * @property {ClipperLib.OutPt} Pts - First vertex in the polygon's point list
+   * @property {ClipperLib.OutPt} BottomPt - Bottom-most point (used for hole detection)
+   * @property {ClipperLib.PolyNode} PolyNode - Associated PolyNode in result tree
+   *
+   * @private
+   */
   ClipperLib.OutRec = function () {
     this.Idx = 0;
     this.IsHole = false;
@@ -2740,6 +3524,62 @@
       lm = lm.Next;
     }
   };
+  /**
+   * @class ClipperLib.Clipper
+   * @extends ClipperLib.ClipperBase
+   * @memberof ClipperLib
+   * @description The main class for performing boolean clipping operations on polygons.
+   *
+   * Clipper performs boolean operations (intersection, union, difference, XOR) between
+   * two sets of polygons - subjects and clips. It uses the Vatti clipping algorithm
+   * which is robust and handles complex polygons including those with holes.
+   *
+   * The typical workflow is:
+   * 1. Create a new Clipper instance
+   * 2. Add subject and clip paths using AddPath() or AddPaths()
+   * 3. Execute the operation with Execute()
+   * 4. Process the resulting solution paths or PolyTree
+   *
+   * Key Features:
+   * - Handles complex polygons with holes and self-intersections
+   * - Supports both closed polygons and open polylines (when use_lines is enabled)
+   * - Integer-based coordinates for numerical robustness
+   * - Can return results as simple paths or hierarchical PolyTree
+   *
+   * @param {number} [InitOptions=0] - Initialization options (currently unused)
+   *
+   * @property {boolean} ReverseSolution - If true, reverses orientation of solution polygons
+   * @property {boolean} StrictlySimple - If true, ensures solution contains only simple polygons
+   *
+   * @example
+   * // Basic clipping operation
+   * var clipper = new ClipperLib.Clipper();
+   * var solution = new ClipperLib.Paths();
+   *
+   * // Add subject polygons (the base shapes)
+   * clipper.AddPaths(subjectPaths, ClipperLib.PolyType.ptSubject, true);
+   *
+   * // Add clip polygons (the clipping shapes)
+   * clipper.AddPaths(clipPaths, ClipperLib.PolyType.ptClip, true);
+   *
+   * // Perform union operation
+   * if (clipper.Execute(ClipperLib.ClipType.ctUnion, solution)) {
+   *   console.log("Operation successful, got", solution.length, "result polygons");
+   * }
+   *
+   * @example
+   * // Using PolyTree for hierarchical results
+   * var clipper = new ClipperLib.Clipper();
+   * var solutionTree = new ClipperLib.PolyTree();
+   *
+   * clipper.AddPaths(subjects, ClipperLib.PolyType.ptSubject, true);
+   * clipper.AddPaths(clips, ClipperLib.PolyType.ptClip, true);
+   *
+   * if (clipper.Execute(ClipperLib.ClipType.ctIntersection, solutionTree)) {
+   *   // Process tree structure preserving hole information
+   *   console.log("Total polygons:", solutionTree.Total());
+   * }
+   */
   ClipperLib.Clipper = function (
     InitOptions // public Clipper(int InitOptions = 0)
   ) {
@@ -2828,52 +3668,93 @@
       sb2.Next = newSb;
     }
   };
-  // ************************************
+  /**
+   * Performs the boolean clipping operation on previously added paths.
+   *
+   * This is the main method that executes the Vatti clipping algorithm on the subject
+   * and clip polygons that were previously added with AddPath() or AddPaths().
+   * The method can return results either as a flat array of paths or as a hierarchical
+   * PolyTree that preserves parent-child relationships between polygons and holes.
+   *
+   * The method supports multiple overloads:
+   * - Execute(clipType, solution) - Basic operation with default fill types
+   * - Execute(clipType, solution, subjFillType, clipFillType) - With explicit fill types
+   * - Execute(clipType, polytree) - Returns hierarchical PolyTree result
+   * - Execute(clipType, polytree, subjFillType, clipFillType) - PolyTree with fill types
+   *
+   * @param {ClipperLib.ClipType} clipType - Type of boolean operation to perform
+   * @param {ClipperLib.Paths|ClipperLib.PolyTree} solution - Output container for results
+   * @param {ClipperLib.PolyFillType} [subjFillType=pftEvenOdd] - Fill rule for subject polygons
+   * @param {ClipperLib.PolyFillType} [clipFillType=pftEvenOdd] - Fill rule for clip polygons
+   * @returns {boolean} True if the operation completed successfully
+   *
+   * @example
+   * // Basic intersection with default fill types
+   * var success = clipper.Execute(ClipperLib.ClipType.ctIntersection, solution);
+   *
+   * @example
+   * // Union with specific fill types
+   * var success = clipper.Execute(
+   *   ClipperLib.ClipType.ctUnion,
+   *   solution,
+   *   ClipperLib.PolyFillType.pftNonZero,
+   *   ClipperLib.PolyFillType.pftNonZero
+   * );
+   */
   ClipperLib.Clipper.prototype.Execute = function () {
     var a = arguments,
       alen = a.length,
       ispolytree = a[1] instanceof ClipperLib.PolyTree;
     if (alen == 4 && !ispolytree) {
-      // function (clipType, solution, subjFillType, clipFillType)
+      // Overload: Execute(clipType, solution, subjFillType, clipFillType)
+      // Returns results as flat array of paths with specified fill types
       var clipType = a[0],
         solution = a[1],
         subjFillType = a[2],
         clipFillType = a[3];
-      if (this.m_ExecuteLocked) return false;
+      if (this.m_ExecuteLocked) return false; // Prevent recursive execution
+      // Open paths require PolyTree result to preserve path structure
       if (this.m_HasOpenPaths)
         ClipperLib.Error(
           "Error: PolyTree struct is need for open path clipping."
         );
-      this.m_ExecuteLocked = true;
-      ClipperLib.Clear(solution);
-      this.m_SubjFillType = subjFillType;
-      this.m_ClipFillType = clipFillType;
-      this.m_ClipType = clipType;
-      this.m_UsingPolyTree = false;
+      this.m_ExecuteLocked = true; // Lock to prevent re-entrance
+      ClipperLib.Clear(solution);  // Clear any existing results
+
+      // Set operation parameters
+      this.m_SubjFillType = subjFillType; // How to determine inside/outside for subjects
+      this.m_ClipFillType = clipFillType; // How to determine inside/outside for clips
+      this.m_ClipType = clipType;         // Type of boolean operation
+      this.m_UsingPolyTree = false;       // Flat path results, not hierarchical
       try {
+        // Execute the core Vatti clipping algorithm
         var succeeded = this.ExecuteInternal();
-        //build the return polygons ...
+
+        // Convert internal polygon representation to output format
         if (succeeded) this.BuildResult(solution);
       } finally {
+        // Always clean up internal data structures
         this.DisposeAllPolyPts();
         this.m_ExecuteLocked = false;
       }
       return succeeded;
     } else if (alen == 4 && ispolytree) {
-      // function (clipType, polytree, subjFillType, clipFillType)
+      // Overload: Execute(clipType, polytree, subjFillType, clipFillType)
+      // Returns hierarchical PolyTree result with specified fill types
       var clipType = a[0],
         polytree = a[1],
         subjFillType = a[2],
         clipFillType = a[3];
-      if (this.m_ExecuteLocked) return false;
+      if (this.m_ExecuteLocked) return false; // Prevent recursive execution
       this.m_ExecuteLocked = true;
       this.m_SubjFillType = subjFillType;
       this.m_ClipFillType = clipFillType;
       this.m_ClipType = clipType;
-      this.m_UsingPolyTree = true;
+      this.m_UsingPolyTree = true; // Enable hierarchical result structure
       try {
         var succeeded = this.ExecuteInternal();
         //build the return polygons ...
+        // Convert to hierarchical PolyTree preserving hole relationships
         if (succeeded) this.BuildResult2(polytree);
       } finally {
         this.DisposeAllPolyPts();
@@ -2881,7 +3762,7 @@
       }
       return succeeded;
     } else if (alen == 2 && !ispolytree) {
-      // function (clipType, solution)
+      // Overload: Execute(clipType, solution) - uses default EvenOdd fill types
       var clipType = a[0],
         solution = a[1];
       return this.Execute(
@@ -2891,7 +3772,7 @@
         ClipperLib.PolyFillType.pftEvenOdd
       );
     } else if (alen == 2 && ispolytree) {
-      // function (clipType, polytree)
+      // Overload: Execute(clipType, polytree) - PolyTree with default EvenOdd fill types
       var clipType = a[0],
         polytree = a[1];
       return this.Execute(
@@ -2916,39 +3797,91 @@
       orfl = orfl.FirstLeft;
     outRec.FirstLeft = orfl;
   };
+  /**
+   * Internal method that implements the core Vatti clipping algorithm.
+   *
+   * This method contains the main scanline algorithm that processes polygon edges
+   * and generates the final clipped result. The algorithm works by:
+   *
+   * 1. Initializing scanbeam list with all significant Y coordinates
+   * 2. Processing each scanbeam level from bottom to top:
+   *    - Adding new local minima edges to Active Edge List (AEL)
+   *    - Processing horizontal edges
+   *    - Finding and processing edge intersections
+   *    - Updating edge positions and winding numbers
+   * 3. Building output polygons from the processed edge data
+   *
+   * The Vatti algorithm is particularly robust because it:
+   * - Handles arbitrary polygon complexity including self-intersections
+   * - Processes edges in a predictable scanline order
+   * - Uses winding numbers to determine polygon fill regions
+   * - Maintains numerical precision through integer coordinates
+   *
+   * @returns {boolean} True if the algorithm completed successfully
+   * @private
+   */
   ClipperLib.Clipper.prototype.ExecuteInternal = function () {
     try {
+      // Initialize the clipping engine - sets up scanbeam list and edge tables
       this.Reset();
+
+      // If no local minima exist, there are no polygons to process
       if (this.m_CurrentLM === null) return false;
+
+      // Get the first (bottom-most) scanbeam Y coordinate
       var botY = this.PopScanbeam();
+      // Main scanline loop - process each horizontal level from bottom to top
       do {
+        // Add any local minima edges that start at this Y level to the Active Edge List
         this.InsertLocalMinimaIntoAEL(botY);
+
+        // Clear temporary join data from previous scanbeam
         ClipperLib.Clear(this.m_GhostJoins);
+
+        // Process any horizontal edges at the current scanbeam level
         this.ProcessHorizontals(false);
+
+        // If no more scanbeams, we're done with this level
         if (this.m_Scanbeam === null) break;
+
+        // Get the next scanbeam Y coordinate
         var topY = this.PopScanbeam();
+
+        // Find and process all edge intersections between botY and topY
         if (!this.ProcessIntersections(topY)) return false;
 
+        // Update edge positions and process edges that end at topY
         this.ProcessEdgesAtTopOfScanbeam(topY);
+
+        // Move up to the next scanbeam level
         botY = topY;
       } while (this.m_Scanbeam !== null || this.m_CurrentLM !== null);
-      //fix orientations ...
+      // Post-process output polygons - fix orientations
+      // Ensure holes have opposite orientation to outer polygons
       for (var i = 0, ilen = this.m_PolyOuts.length; i < ilen; i++) {
         var outRec = this.m_PolyOuts[i];
         if (outRec.Pts === null || outRec.IsOpen) continue;
+
+        // Check if polygon orientation matches expected orientation for holes vs solids
         if ((outRec.IsHole ^ this.ReverseSolution) == this.Area(outRec) > 0)
           this.ReversePolyPtLinks(outRec.Pts);
       }
+      // Join polygon segments that were split during processing
+      // This connects output points that should form continuous polygons
       this.JoinCommonEdges();
+      // Final cleanup of output polygons - remove duplicate points and fix topology
       for (var i = 0, ilen = this.m_PolyOuts.length; i < ilen; i++) {
         var outRec = this.m_PolyOuts[i];
         if (outRec.Pts !== null && !outRec.IsOpen) this.FixupOutPolygon(outRec);
       }
+      // If StrictlySimple mode is enabled, ensure result contains only simple polygons
+      // This splits self-intersecting polygons into multiple simple polygons
       if (this.StrictlySimple) this.DoSimplePolygons();
       return true;
     } finally {
-      ClipperLib.Clear(this.m_Joins);
-      ClipperLib.Clear(this.m_GhostJoins);
+      // Always clean up temporary data structures
+      ClipperLib.Clear(this.m_Joins);      // Clear polygon join information
+      ClipperLib.Clear(this.m_GhostJoins); // Clear temporary join data
     }
   };
   ClipperLib.Clipper.prototype.PopScanbeam = function () {
@@ -3598,10 +4531,11 @@
     outRec1,
     outRec2
   ) {
-    do {
-      outRec1 = outRec1.FirstLeft;
+    // Defensive: tolerate undefined/null chains
+    while (outRec1) {
+      outRec1 = outRec1.FirstLeft || null;
       if (outRec1 == outRec2) return true;
-    } while (outRec1 !== null);
+    }
     return false;
   };
   ClipperLib.Clipper.prototype.GetOutRec = function (idx) {
@@ -3614,6 +4548,28 @@
     //get the start and ends of both output polygons ...
     var outRec1 = this.m_PolyOuts[e1.OutIdx];
     var outRec2 = this.m_PolyOuts[e2.OutIdx];
+    // If any record is missing, try to recover by skipping merge gracefully
+    if (!outRec1 || !outRec2) {
+      // if (typeof console !== "undefined" && console.warn) {
+      //   try {
+      //     var now = Date.now ? Date.now() : new Date().getTime();
+      //     if (typeof ClipperLib.__appendPolyWarnLastTs !== "number") {
+      //       ClipperLib.__appendPolyWarnLastTs = 0;
+      //     }
+      //     if (now - ClipperLib.__appendPolyWarnLastTs >= 1000) {
+      //       ClipperLib.__appendPolyWarnLastTs = now;
+      //       console.warn("Clipper.AppendPolygon: missing outRec, skipping merge", {
+      //         e1OutIdx: e1.OutIdx,
+      //         e2OutIdx: e2.OutIdx,
+      //       });
+      //     }
+      //   } catch (_) {}
+      // }
+      // Invalidate both edges to avoid further use
+      e1.OutIdx = -1;
+      e2.OutIdx = -1;
+      return;
+    }
     var holeStateRec;
     if (this.Param1RightOfParam2(outRec1, outRec2)) holeStateRec = outRec2;
     else if (this.Param1RightOfParam2(outRec2, outRec1)) holeStateRec = outRec1;
@@ -4450,11 +5406,74 @@
         eMaxPair.OutIdx = -1;
       }
       this.DeleteFromAEL(eMaxPair);
-    } else ClipperLib.Error("DoMaxima error");
+    } else {
+      // Defensive recovery:
+      // Mixed OutIdx at a maxima should not normally occur, but it can happen with
+      // degenerate inputs or numeric edge-cases. Instead of throwing, treat both
+      // edges like line maxima: emit any pending out point(s) at the top and
+      // remove both edges from AEL. This mirrors the use_lines branch but without
+      // requiring WindDelta === 0, preventing intermittent crashes.
+      if (e.OutIdx >= 0) {
+        this.AddOutPt(e, e.Top);
+        e.OutIdx = -1;
+      }
+      this.DeleteFromAEL(e);
+      if (eMaxPair.OutIdx >= 0) {
+        this.AddOutPt(eMaxPair, e.Top);
+        eMaxPair.OutIdx = -1;
+      }
+      this.DeleteFromAEL(eMaxPair);
+      // if (typeof console !== "undefined" && console.warn) {
+      //   try {
+      //     var now = Date.now ? Date.now() : new Date().getTime();
+      //     var last = (typeof ClipperLib.__maximaWarnLastTs === "number")
+      //       ? ClipperLib.__maximaWarnLastTs
+      //       : 0;
+      //     if (typeof ClipperLib.__maximaWarnSuppressed !== "number") {
+      //       ClipperLib.__maximaWarnSuppressed = 0;
+      //     }
+      //     if (now - last >= 1000) {
+      //       var suppressed = ClipperLib.__maximaWarnSuppressed || 0;
+      //       ClipperLib.__maximaWarnLastTs = now;
+      //       ClipperLib.__maximaWarnSuppressed = 0;
+      //       var msg = "Clipper.DoMaxima: recovered from mixed OutIdx at maxima";
+      //       if (suppressed > 0) {
+      //         msg += " (suppressed " + suppressed + " similar)";
+      //       }
+      //       console.warn(msg, {
+      //         eWindDelta: e.WindDelta,
+      //         eMaxPairWindDelta: eMaxPair.WindDelta,
+      //       });
+      //     } else {
+      //       ClipperLib.__maximaWarnSuppressed++;
+      //     }
+      //   } catch (_) {}
+      // }
+    }
   };
   ClipperLib.Clipper.ReversePaths = function (polys) {
     for (var i = 0, len = polys.length; i < len; i++) polys[i].reverse();
   };
+  /**
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @description Determines if a polygon has a positive (counter-clockwise) orientation.
+   *
+   * Returns true if the polygon vertices are oriented counter-clockwise (positive area),
+   * false if clockwise (negative area). This is useful for distinguishing between
+   * outer polygons (typically counter-clockwise) and holes (typically clockwise).
+   *
+   * @param {ClipperLib.Path} poly - The polygon to test
+   * @returns {boolean} True if counter-clockwise orientation, false if clockwise
+   *
+   * @example
+   * var isCounterClockwise = ClipperLib.Clipper.Orientation(polygon);
+   * if (isCounterClockwise) {
+   *   console.log("Polygon is counter-clockwise (outer polygon)");
+   * } else {
+   *   console.log("Polygon is clockwise (likely a hole)");
+   * }
+   */
   ClipperLib.Clipper.Orientation = function (poly) {
     return ClipperLib.Clipper.Area(poly) >= 0;
   };
@@ -4930,6 +5949,34 @@
     return result;
   };
 
+  /**
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @description Tests whether a point lies inside a polygon, outside it, or on its boundary.
+   *
+   * Uses the winding number algorithm to determine point-in-polygon relationship.
+   * This robust algorithm handles complex polygons including self-intersecting ones.
+   *
+   * Based on "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos.
+   * Reference: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.88.5498&rep=rep1&type=pdf
+   *
+   * @param {ClipperLib.IntPoint} pt - Point to test
+   * @param {ClipperLib.Path} path - Polygon to test against
+   * @returns {number} 1 if point is inside, 0 if outside, -1 if on boundary
+   *
+   * @example
+   * var testPoint = new ClipperLib.IntPoint(50, 50);
+   * var polygon = [{X:0,Y:0}, {X:100,Y:0}, {X:100,Y:100}, {X:0,Y:100}];
+   *
+   * var result = ClipperLib.Clipper.PointInPolygon(testPoint, polygon);
+   * if (result === 1) {
+   *   console.log("Point is inside polygon");
+   * } else if (result === 0) {
+   *   console.log("Point is outside polygon");
+   * } else {
+   *   console.log("Point is on polygon boundary");
+   * }
+   */
   ClipperLib.Clipper.PointInPolygon = function (pt, path) {
     //returns 0 if false, +1 if true, -1 if pt ON polygon boundary
     //See "The Point in Polygon Problem for Arbitrary Polygons" by Hormann & Agathos
@@ -5194,6 +6241,30 @@
       } while (op != outrec.Pts);
     }
   };
+  /**
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @description Calculates the signed area of a polygon.
+   *
+   * Computes the area of a polygon using the shoelace formula. The result is positive for
+   * counter-clockwise oriented polygons and negative for clockwise oriented polygons.
+   * The absolute value gives the actual geometric area.
+   *
+   * @param {ClipperLib.Path} poly - The polygon to calculate area for
+   * @returns {number} Signed area - positive for counter-clockwise, negative for clockwise
+   *
+   * @example
+   * var area = ClipperLib.Clipper.Area(polygon);
+   * console.log("Polygon area:", Math.abs(area));
+   *
+   * if (area > 0) {
+   *   console.log("Counter-clockwise orientation");
+   * } else if (area < 0) {
+   *   console.log("Clockwise orientation");
+   * } else {
+   *   console.log("Degenerate polygon (no area)");
+   * }
+   */
   ClipperLib.Clipper.Area = function (poly) {
     var cnt = poly.length;
     if (cnt < 3) return 0;
@@ -5214,6 +6285,34 @@
     } while (op != outRec.Pts);
     return a * 0.5;
   };
+  /**
+   * Simplifies a single polygon by removing self-intersections and overlapping areas.
+   *
+   * This function takes a potentially complex polygon with self-intersections and
+   * converts it into one or more simple polygons. It uses the union operation
+   * internally with StrictlySimple enabled to ensure the result contains only
+   * simple (non-self-intersecting) polygons.
+   *
+   * Common uses:
+   * - Cleaning up user-drawn polygons
+   * - Processing imported polygon data that may have errors
+   * - Removing duplicate or overlapping areas
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.Path} poly - The polygon to simplify
+   * @param {ClipperLib.PolyFillType} [fillType=pftEvenOdd] - Fill rule to use
+   * @returns {ClipperLib.Paths} Array of simplified polygons
+   *
+   * @example
+   * // Simplify a self-intersecting polygon
+   * var complexPolygon = [
+   *   {X: 0, Y: 0}, {X: 100, Y: 0}, {X: 100, Y: 100},
+   *   {X: 50, Y: 50}, {X: 0, Y: 100}  // Creates self-intersection
+   * ];
+   * var simplified = ClipperLib.Clipper.SimplifyPolygon(complexPolygon);
+   * console.log("Created", simplified.length, "simple polygons");
+   */
   ClipperLib.Clipper.SimplifyPolygon = function (poly, fillType) {
     var result = new Array();
     var c = new ClipperLib.Clipper(0);
@@ -5222,6 +6321,24 @@
     c.Execute(ClipperLib.ClipType.ctUnion, result, fillType, fillType);
     return result;
   };
+  /**
+   * Simplifies multiple polygons by removing self-intersections and overlapping areas.
+   *
+   * Similar to SimplifyPolygon but operates on an array of polygons. Each polygon
+   * is processed to remove self-intersections and the entire set is unified to
+   * remove any overlaps between different polygons.
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.Paths} polys - Array of polygons to simplify
+   * @param {ClipperLib.PolyFillType} [fillType=pftEvenOdd] - Fill rule to use
+   * @returns {ClipperLib.Paths} Array of simplified polygons
+   *
+   * @example
+   * // Simplify multiple overlapping polygons
+   * var result = ClipperLib.Clipper.SimplifyPolygons(inputPolygons);
+   * console.log("Simplified to", result.length, "polygons");
+   */
   ClipperLib.Clipper.SimplifyPolygons = function (polys, fillType) {
     if (typeof fillType == "undefined")
       fillType = ClipperLib.PolyFillType.pftEvenOdd;
@@ -5232,18 +6349,68 @@
     c.Execute(ClipperLib.ClipType.ctUnion, result, fillType, fillType);
     return result;
   };
+  /**
+   * Calculates the squared distance between two points.
+   *
+   * Returns the squared Euclidean distance, which is more efficient than
+   * calculating the actual distance when you only need to compare distances
+   * or when the squared distance is sufficient for your calculations.
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.IntPoint} pt1 - First point
+   * @param {ClipperLib.IntPoint} pt2 - Second point
+   * @returns {number} Squared distance between the points
+   *
+   * @example
+   * var distSq = ClipperLib.Clipper.DistanceSqrd(point1, point2);
+   * var actualDistance = Math.sqrt(distSq);
+   *
+   * // More efficient for comparisons:
+   * if (ClipperLib.Clipper.DistanceSqrd(p1, p2) < threshold * threshold) {
+   *   console.log("Points are close enough");
+   * }
+   */
   ClipperLib.Clipper.DistanceSqrd = function (pt1, pt2) {
     var dx = pt1.X - pt2.X;
     var dy = pt1.Y - pt2.Y;
     return dx * dx + dy * dy;
   };
+  /**
+   * Calculates the squared perpendicular distance from a point to a line segment.
+   *
+   * Uses the general form line equation (Ax + By + C = 0) to compute the
+   * perpendicular distance from a point to the infinite line defined by
+   * two other points. Returns the squared distance for efficiency.
+   *
+   * Mathematical basis:
+   * - Line equation: (y¹ - y²)x + (x² - x¹)y + (y² - y¹)x¹ - (x² - x¹)y¹ = 0
+   * - Distance formula: |Ax³ + By³ + C| / √(A² + B²)
+   * - Squared distance: (Ax³ + By³ + C)² / (A² + B²)
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.IntPoint} pt - Point to measure distance from
+   * @param {ClipperLib.IntPoint} ln1 - First point defining the line
+   * @param {ClipperLib.IntPoint} ln2 - Second point defining the line
+   * @returns {number} Squared perpendicular distance to the line
+   *
+   * @see {@link http://en.wikipedia.org/wiki/Perpendicular_distance}
+   *
+   * @example
+   * var distSq = ClipperLib.Clipper.DistanceFromLineSqrd(testPoint, lineStart, lineEnd);
+   * var tolerance = 1.0; // squared tolerance
+   * if (distSq < tolerance) {
+   *   console.log("Point is close to the line");
+   * }
+   */
   ClipperLib.Clipper.DistanceFromLineSqrd = function (pt, ln1, ln2) {
-    //The equation of a line in general form (Ax + By + C = 0)
-    //given 2 points (x¹,y¹) & (x²,y²) is ...
-    //(y¹ - y²)x + (x² - x¹)y + (y² - y¹)x¹ - (x² - x¹)y¹ = 0
-    //A = (y¹ - y²); B = (x² - x¹); C = (y² - y¹)x¹ - (x² - x¹)y¹
-    //perpendicular distance of point (x³,y³) = (Ax³ + By³ + C)/Sqrt(A² + B²)
-    //see http://en.wikipedia.org/wiki/Perpendicular_distance
+    // The equation of a line in general form (Ax + By + C = 0)
+    // given 2 points (x¹,y¹) & (x²,y²) is ...
+    // (y¹ - y²)x + (x² - x¹)y + (y² - y¹)x¹ - (x² - x¹)y¹ = 0
+    // A = (y¹ - y²); B = (x² - x¹); C = (y² - y¹)x¹ - (x² - x¹)y¹
+    // perpendicular distance of point (x³,y³) = (Ax³ + By³ + C)/Sqrt(A² + B²)
+    // see http://en.wikipedia.org/wiki/Perpendicular_distance
     var A = ln1.Y - ln2.Y;
     var B = ln2.X - ln1.X;
     var C = A * ln1.X + B * ln1.Y;
@@ -5251,20 +6418,50 @@
     return (C * C) / (A * A + B * B);
   };
 
+  /**
+   * Tests if three points are nearly collinear within a distance threshold.
+   *
+   * This function determines if three points form a nearly straight line,
+   * which is used in polygon cleaning to remove unnecessary vertices.
+   * The algorithm is most accurate when the middle point (geometrically)
+   * is tested for its distance from the line formed by the other two.
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.IntPoint} pt1 - First point
+   * @param {ClipperLib.IntPoint} pt2 - Second point (often the middle point)
+   * @param {ClipperLib.IntPoint} pt3 - Third point
+   * @param {number} distSqrd - Squared distance threshold for collinearity
+   * @returns {boolean} True if points are nearly collinear within threshold
+   *
+   * @example
+   * var isCollinear = ClipperLib.Clipper.SlopesNearCollinear(
+   *   {X: 0, Y: 0}, {X: 5, Y: 1}, {X: 10, Y: 0}, 2.0
+   * );
+   * if (isCollinear) {
+   *   console.log("Middle point can be safely removed");
+   * }
+   * @private
+   */
   ClipperLib.Clipper.SlopesNearCollinear = function (pt1, pt2, pt3, distSqrd) {
-    //this function is more accurate when the point that's GEOMETRICALLY
-    //between the other 2 points is the one that's tested for distance.
-    //nb: with 'spikes', either pt1 or pt3 is geometrically between the other pts
+    // This function is more accurate when the point that's GEOMETRICALLY
+    // between the other 2 points is the one that's tested for distance.
+    // Note: with 'spikes', either pt1 or pt3 is geometrically between the other points
+    // Determine which coordinate has the larger range to improve numerical accuracy
     if (Math.abs(pt1.X - pt2.X) > Math.abs(pt1.Y - pt2.Y)) {
+      // X-coordinate has larger range - test based on X ordering
       if (pt1.X > pt2.X == pt1.X < pt3.X)
+        // pt1 is geometrically between pt2 and pt3 in X direction
         return (
           ClipperLib.Clipper.DistanceFromLineSqrd(pt1, pt2, pt3) < distSqrd
         );
       else if (pt2.X > pt1.X == pt2.X < pt3.X)
+        // pt2 is geometrically between pt1 and pt3 in X direction
         return (
           ClipperLib.Clipper.DistanceFromLineSqrd(pt2, pt1, pt3) < distSqrd
         );
       else
+        // pt3 is geometrically between pt1 and pt2 in X direction
         return (
           ClipperLib.Clipper.DistanceFromLineSqrd(pt3, pt1, pt2) < distSqrd
         );
@@ -5297,11 +6494,40 @@
     result.Idx = 0;
     return result;
   };
+  /**
+   * Removes unnecessary vertices from a polygon to simplify its representation.
+   *
+   * This function removes vertices that are:
+   * - Too close to adjacent vertices (within the distance threshold)
+   * - Nearly collinear with their neighbors (making them redundant)
+   * - Part of very small details that can be safely removed
+   *
+   * The cleaning process helps:
+   * - Reduce polygon complexity and file sizes
+   * - Improve performance of subsequent operations
+   * - Remove artifacts from digitization or precision errors
+   * - Eliminate nearly-duplicate vertices
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.Path} path - The polygon to clean
+   * @param {number} [distance=1.415] - Proximity threshold for vertex removal
+   * @returns {ClipperLib.Path} Cleaned polygon with unnecessary vertices removed
+   *
+   * @example
+   * // Clean a polygon with default tolerance (≈√2)
+   * var cleaned = ClipperLib.Clipper.CleanPolygon(messyPolygon);
+   *
+   * @example
+   * // Clean with custom tolerance
+   * var cleaned = ClipperLib.Clipper.CleanPolygon(polygon, 0.5);
+   * console.log("Removed", polygon.length - cleaned.length, "vertices");
+   */
   ClipperLib.Clipper.CleanPolygon = function (path, distance) {
     if (typeof distance == "undefined") distance = 1.415;
-    //distance = proximity in units/pixels below which vertices will be stripped.
-    //Default ~= sqrt(2) so when adjacent vertices or semi-adjacent vertices have
-    //both x & y coords within 1 unit, then the second vertex will be stripped.
+    // Distance = proximity threshold below which vertices will be stripped.
+    // Default ≈ √2 so when adjacent vertices have both X & Y coords within
+    // 1 unit of each other, the redundant vertex will be removed.
     var cnt = path.length;
     if (cnt == 0) return new Array();
     var outPts = new Array(cnt);
@@ -5348,6 +6574,25 @@
     outPts = null;
     return result;
   };
+  /**
+   * Removes unnecessary vertices from multiple polygons.
+   *
+   * Applies the CleanPolygon operation to each polygon in the input array.
+   * This is more efficient than calling CleanPolygon individually on each polygon
+   * when processing multiple polygons with the same distance tolerance.
+   *
+   * @static
+   * @memberof ClipperLib.Clipper
+   * @param {ClipperLib.Paths} polys - Array of polygons to clean
+   * @param {number} [distance=1.415] - Proximity threshold for vertex removal
+   * @returns {ClipperLib.Paths} Array of cleaned polygons
+   *
+   * @example
+   * var cleaned = ClipperLib.Clipper.CleanPolygons(inputPolygons, 1.0);
+   * var totalVerticesRemoved = inputPolygons.reduce((sum, poly) => sum + poly.length, 0) -
+   *                           cleaned.reduce((sum, poly) => sum + poly.length, 0);
+   * console.log("Removed", totalVerticesRemoved, "total vertices");
+   */
   ClipperLib.Clipper.CleanPolygons = function (polys, distance) {
     var result = new Array(polys.length);
     for (var i = 0, ilen = polys.length; i < ilen; i++)
@@ -5521,6 +6766,58 @@
     ntOpen: 1,
     ntClosed: 2,
   };
+  /**
+   * @class ClipperLib.ClipperOffset
+   * @memberof ClipperLib
+   * @description Class for performing polygon offsetting (inflate/deflate) operations.
+   *
+   * ClipperOffset creates offset polygons by moving polygon boundaries inward or outward
+   * by a specified distance. This is commonly used for:
+   * - Creating buffer zones around polygons
+   * - Tool path generation in CNC/laser cutting
+   * - Polygon morphology operations (expand/contract)
+   * - Creating outlines or borders around shapes
+   *
+   * The offsetting algorithm handles corner treatment with different join types:
+   * - Square joins create perpendicular corners
+   * - Round joins create smooth curved corners
+   * - Miter joins create sharp pointed corners (limited by miter limit)
+   *
+   * @param {number} [miterLimit=2.0] - Maximum distance for miter joins before they're squared off
+   * @param {number} [arcTolerance=0.25] - Precision of arc approximation for round joins
+   *
+   * @property {number} MiterLimit - Controls when miter joins are converted to square joins
+   * @property {number} ArcTolerance - Controls the precision of rounded join approximation
+   *
+   * @example
+   * // Create offset polygons (expand outward by 10 units)
+   * var co = new ClipperLib.ClipperOffset();
+   * var solution = new ClipperLib.Paths();
+   *
+   * // Add paths with round joins and closed polygon treatment
+   * co.AddPaths(inputPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+   *
+   * // Execute offset - positive values expand, negative values shrink
+   * co.Execute(solution, 10.0);
+   *
+   * console.log("Created", solution.length, "offset polygons");
+   *
+   * @example
+   * // Create inset polygons with sharp corners
+   * var co = new ClipperLib.ClipperOffset(4.0, 0.1); // Higher miter limit, better arc precision
+   * var insetSolution = new ClipperLib.Paths();
+   *
+   * co.AddPaths(polygons, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+   * co.Execute(insetSolution, -5.0); // Negative offset shrinks polygons
+   *
+   * @example
+   * // Offset open paths (lines) with rounded ends
+   * var co = new ClipperLib.ClipperOffset();
+   * var offsetLines = new ClipperLib.Paths();
+   *
+   * co.AddPaths(openPaths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etOpenRound);
+   * co.Execute(offsetLines, 2.0);
+   */
   ClipperLib.ClipperOffset = function (miterLimit, arcTolerance) {
     if (typeof miterLimit == "undefined") miterLimit = 2;
     if (typeof arcTolerance == "undefined")
