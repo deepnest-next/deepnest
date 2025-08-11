@@ -1,4 +1,32 @@
-'use strict';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: main/background.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: main/background.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
 
 import { NfpCache } from '../build/nfpDb.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
@@ -16,7 +44,7 @@ import { HullPolygon } from '../build/util/HullPolygon.js';
  * // Sets up: ipcRenderer, addon, path, url, fs, db
  * 
  * @performance
- * - Initialization time: <100ms
+ * - Initialization time: &lt;100ms
  * - Memory footprint: ~50MB for cache and dependencies
  * 
  * @since 1.5.6
@@ -97,7 +125,7 @@ window.onload = function () {
     var children = data.children;
     var filenames = data.filenames;
 
-    for (let i = 0; i < parts.length; i++) {
+    for (let i = 0; i &lt; parts.length; i++) {
       parts[i].rotation = rotations[i];
       parts[i].id = ids[i];
       parts[i].source = sources[i];
@@ -108,7 +136,7 @@ window.onload = function () {
     }
 
     const _sheets = JSON.parse(JSON.stringify(data.sheets));
-    for (let i = 0; i < data.sheets.length; i++) {
+    for (let i = 0; i &lt; data.sheets.length; i++) {
       _sheets[i].id = data.sheetids[i];
       _sheets[i].source = data.sheetsources[i];
       _sheets[i].children = data.sheetchildren[i];
@@ -143,16 +171,16 @@ window.onload = function () {
      * @since 1.5.6
      */
     var inpairs = function (key, p) {
-      for (let i = 0; i < p.length; i++) {
-        if (p[i].Asource == key.Asource && p[i].Bsource == key.Bsource && p[i].Arotation == key.Arotation && p[i].Brotation == key.Brotation) {
+      for (let i = 0; i &lt; p.length; i++) {
+        if (p[i].Asource == key.Asource &amp;&amp; p[i].Bsource == key.Bsource &amp;&amp; p[i].Arotation == key.Arotation &amp;&amp; p[i].Brotation == key.Brotation) {
           return true;
         }
       }
       return false;
     }
-    for (let i = 0; i < parts.length; i++) {
+    for (let i = 0; i &lt; parts.length; i++) {
       var B = parts[i];
-      for (let j = 0; j < i; j++) {
+      for (let j = 0; j &lt; i; j++) {
         var A = parts[j];
         var key = {
           A: A,
@@ -168,7 +196,7 @@ window.onload = function () {
           Arotation: A.rotation,
           Brotation: B.rotation
         }
-        if (!inpairs(key, pairs) && !db.has(doc)) {
+        if (!inpairs(key, pairs) &amp;&amp; !db.has(doc)) {
           pairs.push(key);
         }
       }
@@ -247,7 +275,7 @@ window.onload = function () {
       ClipperLib.JS.ScaleUpPath(Ac, 10000000);
       var Bc = toClipperCoordinates(B);
       ClipperLib.JS.ScaleUpPath(Bc, 10000000);
-      for (let i = 0; i < Bc.length; i++) {
+      for (let i = 0; i &lt; Bc.length; i++) {
         Bc[i].X *= -1;
         Bc[i].Y *= -1;
       }
@@ -255,16 +283,16 @@ window.onload = function () {
       var clipperNfp;
 
       var largestArea = null;
-      for (let i = 0; i < solution.length; i++) {
+      for (let i = 0; i &lt; solution.length; i++) {
         var n = toNestCoordinates(solution[i], 10000000);
         var sarea = -GeometryUtil.polygonArea(n);
-        if (largestArea === null || largestArea < sarea) {
+        if (largestArea === null || largestArea &lt; sarea) {
           clipperNfp = n;
           largestArea = sarea;
         }
       }
 
-      for (let i = 0; i < clipperNfp.length; i++) {
+      for (let i = 0; i &lt; clipperNfp.length; i++) {
         clipperNfp[i].x += B[0].x;
         clipperNfp[i].y += B[0].y;
       }
@@ -294,7 +322,7 @@ window.onload = function () {
        */
       function toClipperCoordinates(polygon) {
         var clone = [];
-        for (let i = 0; i < polygon.length; i++) {
+        for (let i = 0; i &lt; polygon.length; i++) {
           clone.push({
             X: polygon[i].x,
             Y: polygon[i].y
@@ -325,7 +353,7 @@ window.onload = function () {
        */
       function toNestCoordinates(polygon, scale) {
         var clone = [];
-        for (let i = 0; i < polygon.length; i++) {
+        for (let i = 0; i &lt; polygon.length; i++) {
           clone.push({
             x: polygon[i].X / scale,
             y: polygon[i].Y / scale
@@ -377,7 +405,7 @@ window.onload = function () {
       function rotatePolygon(polygon, degrees) {
         var rotated = [];
         var angle = degrees * Math.PI / 180;
-        for (let i = 0; i < polygon.length; i++) {
+        for (let i = 0; i &lt; polygon.length; i++) {
           var x = polygon[i].x;
           var y = polygon[i].y;
           var x1 = x * Math.cos(angle) - y * Math.sin(angle);
@@ -451,7 +479,7 @@ window.onload = function () {
 
       p.map(process).then(function (processed) {
         function getPart(source) {
-          for (let k = 0; k < parts.length; k++) {
+          for (let k = 0; k &lt; parts.length; k++) {
             if (parts[k].source == source) {
               return parts[k];
             }
@@ -459,7 +487,7 @@ window.onload = function () {
           return null;
         }
         // store processed data in cache
-        for (let i = 0; i < processed.length; i++) {
+        for (let i = 0; i &lt; processed.length; i++) {
           // returned data only contains outer nfp, we have to account for any holes separately in the synchronous portion
           // this is because the c++ addon which can process interior nfps cannot run in the worker thread
           var A = getPart(processed[i].Asource);
@@ -469,7 +497,7 @@ window.onload = function () {
 
           var j;
           if (A.children) {
-            for (let j = 0; j < A.children.length; j++) {
+            for (let j = 0; j &lt; A.children.length; j++) {
               Achildren.push(rotatePolygon(A.children[j], processed[i].Arotation));
             }
           }
@@ -479,11 +507,11 @@ window.onload = function () {
             var bbounds = GeometryUtil.getPolygonBounds(Brotated);
             var cnfp = [];
 
-            for (let j = 0; j < Achildren.length; j++) {
+            for (let j = 0; j &lt; Achildren.length; j++) {
               var cbounds = GeometryUtil.getPolygonBounds(Achildren[j]);
-              if (cbounds.width > bbounds.width && cbounds.height > bbounds.height) {
+              if (cbounds.width > bbounds.width &amp;&amp; cbounds.height > bbounds.height) {
                 var n = getInnerNfp(Achildren[j], Brotated, data.config);
-                if (n && n.length > 0) {
+                if (n &amp;&amp; n.length > 0) {
                   cnfp = cnfp.concat(n);
                 }
               }
@@ -521,13 +549,13 @@ window.onload = function () {
  * (like cutting lines), this can reduce total cutting time and improve
  * manufacturing efficiency. Particularly important for laser cutting operations.
  * 
- * @param {Array<Part>} parts - Array of all placed parts to check against
+ * @param {Array&lt;Part>} parts - Array of all placed parts to check against
  * @param {Polygon} p - Current part polygon to find merges for
  * @param {number} minlength - Minimum line length to consider (filters noise)
  * @param {number} tolerance - Distance tolerance for considering lines as merged
  * @returns {Object} Merge analysis result
  * @returns {number} returns.totalLength - Total length of merged line segments
- * @returns {Array<Object>} returns.segments - Array of merged segment details
+ * @returns {Array&lt;Object>} returns.segments - Array of merged segment details
  * 
  * @example
  * const mergeResult = mergedLength(placedParts, newPart, 0.5, 0.1);
@@ -576,11 +604,11 @@ window.onload = function () {
  * @optimization Critical for manufacturing efficiency optimization
  */
 function mergedLength(parts, p, minlength, tolerance) {
-  var minLenght2 = minlength * minlength;
+  var min2 = minlength * minlength;
   var totalLength = 0;
   var segments = [];
 
-  for (let i = 0; i < p.length; i++) {
+  for (let i = 0; i &lt; p.length; i++) {
     var A1 = p[i];
 
     if (i + 1 == p.length) {
@@ -597,7 +625,7 @@ function mergedLength(parts, p, minlength, tolerance) {
     var Ax2 = (A2.x - A1.x) * (A2.x - A1.x);
     var Ay2 = (A2.y - A1.y) * (A2.y - A1.y);
 
-    if (Ax2 + Ay2 < minLenght2) {
+    if (Ax2 + Ay2 &lt; min2) {
       continue;
     }
 
@@ -612,10 +640,10 @@ function mergedLength(parts, p, minlength, tolerance) {
     var relA2 = { x: A2.x - A1.x, y: A2.y - A1.y };
     var rotA2x = relA2.x * c - relA2.y * s;
 
-    for (let j = 0; j < parts.length; j++) {
+    for (let j = 0; j &lt; parts.length; j++) {
       var B = parts[j];
       if (B.length > 1) {
-        for (let k = 0; k < B.length; k++) {
+        for (let k = 0; k &lt; B.length; k++) {
           var B1 = B[k];
 
           if (k + 1 == B.length) {
@@ -631,7 +659,7 @@ function mergedLength(parts, p, minlength, tolerance) {
           var Bx2 = (B2.x - B1.x) * (B2.x - B1.x);
           var By2 = (B2.y - B1.y) * (B2.y - B1.y);
 
-          if (Bx2 + By2 < minLenght2) {
+          if (Bx2 + By2 &lt; min2) {
             continue;
           }
 
@@ -655,7 +683,7 @@ function mergedLength(parts, p, minlength, tolerance) {
           var max2 = Math.max(rotB1.x, rotB2.x);
 
           // not overlapping
-          if (min2 >= max1 || max2 <= min1) {
+          if (min2 >= max1 || max2 &lt;= min1) {
             continue;
           }
 
@@ -664,19 +692,19 @@ function mergedLength(parts, p, minlength, tolerance) {
           var relC2x = 0;
 
           // A is B
-          if (GeometryUtil.almostEqual(min1, min2) && GeometryUtil.almostEqual(max1, max2)) {
+          if (GeometryUtil.almostEqual(min1, min2) &amp;&amp; GeometryUtil.almostEqual(max1, max2)) {
             len = max1 - min1;
             relC1x = min1;
             relC2x = max1;
           }
           // A inside B
-          else if (min1 > min2 && max1 < max2) {
+          else if (min1 > min2 &amp;&amp; max1 &lt; max2) {
             len = max1 - min1;
             relC1x = min1;
             relC2x = max1;
           }
           // B inside A
-          else if (min2 > min1 && max2 < max1) {
+          else if (min2 > min1 &amp;&amp; max2 &lt; max1) {
             len = max2 - min2;
             relC1x = min2;
             relC2x = max2;
@@ -687,7 +715,7 @@ function mergedLength(parts, p, minlength, tolerance) {
             relC2x = Math.max(min1, min2);
           }
 
-          if (len * len > minLenght2) {
+          if (len * len > min2) {
             totalLength += len;
 
             var relC1 = { x: relC1x * c2, y: relC1x * s2 };
@@ -701,7 +729,7 @@ function mergedLength(parts, p, minlength, tolerance) {
         }
       }
 
-      if (B.children && B.children.length > 0) {
+      if (B.children &amp;&amp; B.children.length > 0) {
         var child = mergedLength(B.children, p, minlength, tolerance);
         totalLength += child.totalLength;
         segments = segments.concat(child.segments);
@@ -714,12 +742,12 @@ function mergedLength(parts, p, minlength, tolerance) {
 
 function shiftPolygon(p, shift) {
   var shifted = [];
-  for (let i = 0; i < p.length; i++) {
+  for (let i = 0; i &lt; p.length; i++) {
     shifted.push({ x: p[i].x + shift.x, y: p[i].y + shift.y, exact: p[i].exact });
   }
-  if (p.children && p.children.length) {
+  if (p.children &amp;&amp; p.children.length) {
     shifted.children = [];
-    for (let i = 0; i < p.children.length; i++) {
+    for (let i = 0; i &lt; p.children.length; i++) {
       shifted.children.push(shiftPolygon(p.children[i], shift));
     }
   }
@@ -729,7 +757,7 @@ function shiftPolygon(p, shift) {
 // jsClipper uses X/Y instead of x/y...
 function toClipperCoordinates(polygon) {
   var clone = [];
-  for (let i = 0; i < polygon.length; i++) {
+  for (let i = 0; i &lt; polygon.length; i++) {
     clone.push({
       X: polygon[i].x,
       Y: polygon[i].y
@@ -744,9 +772,9 @@ function nfpToClipperCoordinates(nfp, config) {
   var clipperNfp = [];
 
   // children first
-  if (nfp.children && nfp.children.length > 0) {
-    for (let j = 0; j < nfp.children.length; j++) {
-      if (GeometryUtil.polygonArea(nfp.children[j]) < 0) {
+  if (nfp.children &amp;&amp; nfp.children.length > 0) {
+    for (let j = 0; j &lt; nfp.children.length; j++) {
+      if (GeometryUtil.polygonArea(nfp.children[j]) &lt; 0) {
         nfp.children[j].reverse();
       }
       var childNfp = toClipperCoordinates(nfp.children[j]);
@@ -775,7 +803,7 @@ function nfpToClipperCoordinates(nfp, config) {
 // inner nfps can be an array of nfps, outer nfps are always singular
 function innerNfpToClipperCoordinates(nfp, config) {
   var clipperNfp = [];
-  for (let i = 0; i < nfp.length; i++) {
+  for (let i = 0; i &lt; nfp.length; i++) {
     var clip = nfpToClipperCoordinates(nfp[i], config);
     clipperNfp = clipperNfp.concat(clip);
   }
@@ -785,7 +813,7 @@ function innerNfpToClipperCoordinates(nfp, config) {
 
 function toNestCoordinates(polygon, scale) {
   var clone = [];
-  for (let i = 0; i < polygon.length; i++) {
+  for (let i = 0; i &lt; polygon.length; i++) {
     clone.push({
       x: polygon[i].X / scale,
       y: polygon[i].Y / scale
@@ -798,7 +826,7 @@ function toNestCoordinates(polygon, scale) {
 function getHull(polygon) {
 	// Convert the polygon points to proper Point objects for HullPolygon
 	var points = [];
-	for (let i = 0; i < polygon.length; i++) {
+	for (let i = 0; i &lt; polygon.length; i++) {
 		points.push({
 			x: polygon[i].x,
 			y: polygon[i].y
@@ -818,7 +846,7 @@ function getHull(polygon) {
 function rotatePolygon(polygon, degrees) {
   var rotated = [];
   var angle = degrees * Math.PI / 180;
-  for (let i = 0; i < polygon.length; i++) {
+  for (let i = 0; i &lt; polygon.length; i++) {
     var x = polygon[i].x;
     var y = polygon[i].y;
     var x1 = x * Math.cos(angle) - y * Math.sin(angle);
@@ -827,9 +855,9 @@ function rotatePolygon(polygon, degrees) {
     rotated.push({ x: x1, y: y1, exact: polygon[i].exact });
   }
 
-  if (polygon.children && polygon.children.length > 0) {
+  if (polygon.children &amp;&amp; polygon.children.length > 0) {
     rotated.children = [];
-    for (let j = 0; j < polygon.children.length; j++) {
+    for (let j = 0; j &lt; polygon.children.length; j++) {
       rotated.children.push(rotatePolygon(polygon.children[j], degrees));
     }
   }
@@ -841,12 +869,12 @@ function getOuterNfp(A, B, inside) {
   var nfp;
 
   /*var numpoly = A.length + B.length;
-  if(A.children && A.children.length > 0){
+  if(A.children &amp;&amp; A.children.length > 0){
     A.children.forEach(function(c){
       numpoly += c.length;
     });
   }
-  if(B.children && B.children.length > 0){
+  if(B.children &amp;&amp; B.children.length > 0){
     B.children.forEach(function(c){
       numpoly += c.length;
     });
@@ -860,7 +888,7 @@ function getOuterNfp(A, B, inside) {
   }
 
   // not found in cache
-  if (inside || (A.children && A.children.length > 0)) {
+  if (inside || (A.children &amp;&amp; A.children.length > 0)) {
     //console.log('computing minkowski: ',A.length, B.length);
     if (!A.children) {
       A.children = [];
@@ -881,7 +909,7 @@ function getOuterNfp(A, B, inside) {
     ClipperLib.JS.ScaleUpPath(Ac, 10000000);
     var Bc = toClipperCoordinates(B);
     ClipperLib.JS.ScaleUpPath(Bc, 10000000);
-    for (let i = 0; i < Bc.length; i++) {
+    for (let i = 0; i &lt; Bc.length; i++) {
       Bc[i].X *= -1;
       Bc[i].Y *= -1;
     }
@@ -891,16 +919,16 @@ function getOuterNfp(A, B, inside) {
     var clipperNfp;
 
     var largestArea = null;
-    for (let i = 0; i < solution.length; i++) {
+    for (let i = 0; i &lt; solution.length; i++) {
       var n = toNestCoordinates(solution[i], 10000000);
       var sarea = -GeometryUtil.polygonArea(n);
-      if (largestArea === null || largestArea < sarea) {
+      if (largestArea === null || largestArea &lt; sarea) {
         clipperNfp = n;
         largestArea = sarea;
       }
     }
 
-    for (let i = 0; i < clipperNfp.length; i++) {
+    for (let i = 0; i &lt; clipperNfp.length; i++) {
       clipperNfp[i].x += B[0].x;
       clipperNfp[i].y += B[0].y;
     }
@@ -921,7 +949,7 @@ function getOuterNfp(A, B, inside) {
     return null;
   }
 
-  if (!inside && typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
+  if (!inside &amp;&amp; typeof A.source !== 'undefined' &amp;&amp; typeof B.source !== 'undefined') {
     // insert into db
     doc = {
       A: A.source,
@@ -959,7 +987,7 @@ function getFrame(A) {
 }
 
 function getInnerNfp(A, B, config) {
-  if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
+  if (typeof A.source !== 'undefined' &amp;&amp; typeof B.source !== 'undefined') {
     var doc = window.db.find({ A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation }, true);
 
     if (doc) {
@@ -977,8 +1005,8 @@ function getInnerNfp(A, B, config) {
   }
 
   var holes = [];
-  if (A.children && A.children.length > 0) {
-    for (let i = 0; i < A.children.length; i++) {
+  if (A.children &amp;&amp; A.children.length > 0) {
+    for (let i = 0; i &lt; A.children.length; i++) {
       var hnfp = getOuterNfp(A.children[i], B);
       if (hnfp) {
         holes.push(hnfp);
@@ -1008,11 +1036,11 @@ function getInnerNfp(A, B, config) {
   }
 
   var f = [];
-  for (let i = 0; i < finalNfp.length; i++) {
+  for (let i = 0; i &lt; finalNfp.length; i++) {
     f.push(toNestCoordinates(finalNfp[i], config.clipperScale));
   }
 
-  if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
+  if (typeof A.source !== 'undefined' &amp;&amp; typeof B.source !== 'undefined') {
     // insert into db
     // console.log('inserting inner: ', A.source, B.source, B.rotation, f);
     var doc = {
@@ -1038,8 +1066,8 @@ function getInnerNfp(A, B, config) {
  * - NFP-based collision avoidance
  * - Adaptive sheet utilization
  * 
- * @param {Array<Sheet>} sheets - Available sheets/containers for placement
- * @param {Array<Part>} parts - Parts to be placed with rotation and metadata
+ * @param {Array&lt;Sheet>} sheets - Available sheets/containers for placement
+ * @param {Array&lt;Part>} parts - Parts to be placed with rotation and metadata
  * @param {Object} config - Placement algorithm configuration
  * @param {number} config.spacing - Minimum spacing between parts in units
  * @param {number} config.rotations - Number of discrete rotation angles (2, 4, 8)
@@ -1048,7 +1076,7 @@ function getInnerNfp(A, B, config) {
  * @param {boolean} config.mergeLines - Whether to merge overlapping line segments
  * @param {number} nestindex - Index of current nesting iteration for caching
  * @returns {Object} Placement result with fitness score and part positions
- * @returns {Array<Placement>} returns.placements - Array of placed parts with positions
+ * @returns {Array&lt;Placement>} returns.placements - Array of placed parts with positions
  * @returns {number} returns.fitness - Overall fitness score (lower = better)
  * @returns {number} returns.sheets - Number of sheets used
  * @returns {Object} returns.stats - Placement statistics and metrics
@@ -1135,7 +1163,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
   // rotate paths by given rotation
   var rotated = [];
-  for (let i = 0; i < parts.length; i++) {
+  for (let i = 0; i &lt; parts.length; i++) {
     var r = rotatePolygon(parts[i], parts[i].rotation);
     r.rotation = parts[i].rotation;
     r.source = parts[i].source;
@@ -1188,7 +1216,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
     var clipCache = [];
     //console.log('new sheet');
-    for (let i = 0; i < parts.length; i++) {
+    for (let i = 0; i &lt; parts.length; i++) {
       // console.time('placement');
       part = parts[i];
 
@@ -1196,7 +1224,7 @@ function placeParts(sheets, parts, config, nestindex) {
       var sheetNfp = null;
       // try all possible rotations until it fits
       // (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
-      for (let j = 0; j < config.rotations; j++) {
+      for (let j = 0; j &lt; config.rotations; j++) {
         sheetNfp = getInnerNfp(sheet, part, config);
 
         if (sheetNfp) {
@@ -1226,9 +1254,9 @@ function placeParts(sheets, parts, config, nestindex) {
 
       if (placed.length == 0) {
         // first placement, put it on the top left corner
-        for (let j = 0; j < sheetNfp.length; j++) {
-          for (let k = 0; k < sheetNfp[j].length; k++) {
-            if (position === null || sheetNfp[j][k].x - part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) && sheetNfp[j][k].y - part[0].y < position.y)) {
+        for (let j = 0; j &lt; sheetNfp.length; j++) {
+          for (let k = 0; k &lt; sheetNfp[j].length; k++) {
+            if (position === null || sheetNfp[j][k].x - part[0].x &lt; position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) &amp;&amp; sheetNfp[j][k].y - part[0].y &lt; position.y)) {
               position = {
                 x: sheetNfp[j][k].x - part[0].x,
                 y: sheetNfp[j][k].y - part[0].y,
@@ -1255,9 +1283,9 @@ function placeParts(sheets, parts, config, nestindex) {
         // Track the best rotation for each hole
         const holeOptimalRotations = new Map(); // Map of "parentIndex_holeIndex" -> best rotation
 
-        for (let j = 0; j < placed.length; j++) {
-          if (placed[j].children && placed[j].children.length > 0) {
-            for (let k = 0; k < placed[j].children.length; k++) {
+        for (let j = 0; j &lt; placed.length; j++) {
+          if (placed[j].children &amp;&amp; placed[j].children.length > 0) {
+            for (let k = 0; k &lt; placed[j].children.length; k++) {
               // Check if the hole is large enough for the part
               var childHole = placed[j].children[k];
               var childArea = Math.abs(GeometryUtil.polygonArea(childHole));
@@ -1268,7 +1296,7 @@ function placeParts(sheets, parts, config, nestindex) {
                 try {
                   var holePoly = [];
                   // Create proper array structure for the hole polygon
-                  for (let p = 0; p < childHole.length; p++) {
+                  for (let p = 0; p &lt; childHole.length; p++) {
                     holePoly.push({
                       x: childHole[p].x,
                       y: childHole[p].y,
@@ -1299,12 +1327,12 @@ function placeParts(sheets, parts, config, nestindex) {
 
                   // Try original rotation
                   var holeNfp = getInnerNfp(holePoly, part, config);
-                  if (holeNfp && holeNfp.length > 0) {
+                  if (holeNfp &amp;&amp; holeNfp.length > 0) {
                     bestRotationNfp = holeNfp;
                     bestFitFill = partArea / childArea;
 
-                    for (let m = 0; m < holeNfp.length; m++) {
-                      for (let n = 0; n < holeNfp[m].length; n++) {
+                    for (let m = 0; m &lt; holeNfp.length; m++) {
+                      for (let n = 0; n &lt; holeNfp[m].length; n++) {
                         rotationPlacements.push({
                           x: holeNfp[m][n].x - part[0].x + placements[j].x,
                           y: holeNfp[m][n].y - part[0].y + placements[j].y,
@@ -1330,12 +1358,12 @@ function placeParts(sheets, parts, config, nestindex) {
                     const rotatedIsWide = rotatedBounds.width > rotatedBounds.height;
                     const rotatedNfp = getInnerNfp(holePoly, rotatedPart, config);
 
-                    if (rotatedNfp && rotatedNfp.length > 0) {
+                    if (rotatedNfp &amp;&amp; rotatedNfp.length > 0) {
                       // Calculate fill ratio for this rotation
                       const rotatedFill = partArea / childArea;
 
                       // If this rotation has better orientation match or is the first valid one
-                      if ((holeIsWide === rotatedIsWide && (bestRotationNfp === null || !(holeIsWide === partIsWide))) ||
+                      if ((holeIsWide === rotatedIsWide &amp;&amp; (bestRotationNfp === null || !(holeIsWide === partIsWide))) ||
                         (bestRotationNfp === null)) {
                         bestRotationNfp = rotatedNfp;
                         bestRotation = newRotation;
@@ -1344,8 +1372,8 @@ function placeParts(sheets, parts, config, nestindex) {
                         // Clear previous placements for worse rotations
                         rotationPlacements = [];
 
-                        for (let m = 0; m < rotatedNfp.length; m++) {
-                          for (let n = 0; n < rotatedNfp[m].length; n++) {
+                        for (let m = 0; m &lt; rotatedNfp.length; m++) {
+                          for (let n = 0; n &lt; rotatedNfp[m].length; n++) {
                             rotationPlacements.push({
                               x: rotatedNfp[m][n].x - rotatedPart[0].x + placements[j].x,
                               y: rotatedNfp[m][n].y - rotatedPart[0].y + placements[j].y,
@@ -1397,16 +1425,16 @@ function placeParts(sheets, parts, config, nestindex) {
 
       // Fix hole creation by ensuring proper polygon structure
       var validHolePositions = [];
-      if (holePositions && holePositions.length > 0) {
+      if (holePositions &amp;&amp; holePositions.length > 0) {
         // Filter hole positions to only include valid ones
-        for (let j = 0; j < holePositions.length; j++) {
+        for (let j = 0; j &lt; holePositions.length; j++) {
           try {
             // Get parent and hole info
             var parentIdx = holePositions[j].parentIndex;
             var holeIdx = holePositions[j].holeIndex;
-            if (parentIdx >= 0 && parentIdx < placed.length &&
-              placed[parentIdx].children &&
-              holeIdx >= 0 && holeIdx < placed[parentIdx].children.length) {
+            if (parentIdx >= 0 &amp;&amp; parentIdx &lt; placed.length &amp;&amp;
+              placed[parentIdx].children &amp;&amp;
+              holeIdx >= 0 &amp;&amp; holeIdx &lt; placed[parentIdx].children.length) {
               validHolePositions.push(holePositions[j]);
             }
           } catch (e) {
@@ -1431,7 +1459,7 @@ function placeParts(sheets, parts, config, nestindex) {
         startindex = clipCache[clipkey].index;
       }
 
-      for (let j = startindex; j < placed.length; j++) {
+      for (let j = startindex; j &lt; placed.length; j++) {
         nfp = getOuterNfp(placed[j], part);
         // minkowski difference failed. very rare but could happen
         if (!nfp) {
@@ -1439,14 +1467,14 @@ function placeParts(sheets, parts, config, nestindex) {
           break;
         }
         // shift to placed location
-        for (let m = 0; m < nfp.length; m++) {
+        for (let m = 0; m &lt; nfp.length; m++) {
           nfp[m].x += placements[j].x;
           nfp[m].y += placements[j].y;
         }
 
-        if (nfp.children && nfp.children.length > 0) {
-          for (let n = 0; n < nfp.children.length; n++) {
-            for (let o = 0; o < nfp.children[n].length; o++) {
+        if (nfp.children &amp;&amp; nfp.children.length > 0) {
+          for (let n = 0; n &lt; nfp.children.length; n++) {
+            for (let o = 0; o &lt; nfp.children[n].length; o++) {
               nfp.children[n][o].x += placements[j].x;
               nfp.children[n][o].y += placements[j].y;
             }
@@ -1483,7 +1511,7 @@ function placeParts(sheets, parts, config, nestindex) {
       }
 
       var f = [];
-      for (let j = 0; j < finalNfp.length; j++) {
+      for (let j = 0; j &lt; finalNfp.length; j++) {
         // back to normal scale
         f.push(toNestCoordinates(finalNfp[j], config.clipperScale));
       }
@@ -1497,8 +1525,8 @@ function placeParts(sheets, parts, config, nestindex) {
       var miny = null;
       var nf, area, shiftvector;
       var allpoints = [];
-      for (let m = 0; m < placed.length; m++) {
-        for (let n = 0; n < placed[m].length; n++) {
+      for (let m = 0; m &lt; placed.length; m++) {
+        for (let n = 0; n &lt; placed[m].length; n++) {
           allpoints.push({ x: placed[m][n].x + placements[m].x, y: placed[m][n].y + placements[m].y });
         }
       }
@@ -1510,20 +1538,20 @@ function placeParts(sheets, parts, config, nestindex) {
         allbounds = GeometryUtil.getPolygonBounds(allpoints);
 
         var partpoints = [];
-        for (let m = 0; m < part.length; m++) {
+        for (let m = 0; m &lt; part.length; m++) {
           partpoints.push({ x: part[m].x, y: part[m].y });
         }
         partbounds = GeometryUtil.getPolygonBounds(partpoints);
       }
-      else if (config.placementType == 'convexhull' && allpoints.length > 0) {
+      else if (config.placementType == 'convexhull' &amp;&amp; allpoints.length > 0) {
         // Calculate the hull of all already placed parts once
         hull = getHull(allpoints);
       }
 
       // Process regular sheet positions
-      for (let j = 0; j < finalNfp.length; j++) {
+      for (let j = 0; j &lt; finalNfp.length; j++) {
         nf = finalNfp[j];
-        for (let k = 0; k < nf.length; k++) {
+        for (let k = 0; k &lt; nf.length; k++) {
           shiftvector = {
             x: nf[k].x - part[0].x,
             y: nf[k].y - part[0].y,
@@ -1559,7 +1587,7 @@ function placeParts(sheets, parts, config, nestindex) {
           else if (config.placementType == 'convexhull') {
             // Create points for the part at this candidate position
             var partPoints = [];
-            for (let m = 0; m < part.length; m++) {
+            for (let m = 0; m &lt; part.length; m++) {
               partPoints.push({
                 x: part[m].x + shiftvector.x,
                 y: part[m].y + shiftvector.y
@@ -1593,7 +1621,7 @@ function placeParts(sheets, parts, config, nestindex) {
             var shiftedpart = shiftPolygon(part, shiftvector);
             var shiftedplaced = [];
 
-            for (let m = 0; m < placed.length; m++) {
+            for (let m = 0; m &lt; placed.length; m++) {
               shiftedplaced.push(shiftPolygon(placed[m], placements[m]));
             }
 
@@ -1606,12 +1634,12 @@ function placeParts(sheets, parts, config, nestindex) {
           // Check for better placement
           if (
             minarea === null ||
-            (config.placementType == 'gravity' && (
-              rectbounds.width < minwidth ||
-              (GeometryUtil.almostEqual(rectbounds.width, minwidth) && area < minarea)
+            (config.placementType == 'gravity' &amp;&amp; (
+              rectbounds.width &lt; minwidth ||
+              (GeometryUtil.almostEqual(rectbounds.width, minwidth) &amp;&amp; area &lt; minarea)
             )) ||
-            (config.placementType != 'gravity' && area < minarea) ||
-            (GeometryUtil.almostEqual(minarea, area) && shiftvector.x < minx)
+            (config.placementType != 'gravity' &amp;&amp; area &lt; minarea) ||
+            (GeometryUtil.almostEqual(minarea, area) &amp;&amp; shiftvector.x &lt; minx)
           ) {
             // Before accepting this position, perform an overlap check
             var isOverlapping = false;
@@ -1622,7 +1650,7 @@ function placeParts(sheets, parts, config, nestindex) {
             ClipperLib.JS.ScaleUpPath(clipperPart, config.clipperScale);
 
             // Check against all placed parts
-            for (let m = 0; m < placed.length; m++) {
+            for (let m = 0; m &lt; placed.length; m++) {
               // Convert the placed part to clipper format
               var clipperPlaced = toClipperCoordinates(shiftPolygon(placed[m], placements[m]));
               ClipperLib.JS.ScaleUpPath(clipperPlaced, config.clipperScale);
@@ -1664,13 +1692,13 @@ function placeParts(sheets, parts, config, nestindex) {
 
       // Now process potential hole positions using the same placement strategies
       try {
-        if (holePositions && holePositions.length > 0) {
+        if (holePositions &amp;&amp; holePositions.length > 0) {
           // Count how many parts are already in each hole to encourage distribution
           const holeUtilization = new Map(); // Map of "parentIndex_holeIndex" -> count
           const holeAreaUtilization = new Map(); // Map of "parentIndex_holeIndex" -> used area percentage
 
           // Track which holes are being used
-          for (let m = 0; m < placements.length; m++) {
+          for (let m = 0; m &lt; placements.length; m++) {
             if (placements[m].inHole) {
               const holeKey = `${placements[m].parentIndex}_${placements[m].holeIndex}`;
               holeUtilization.set(holeKey, (holeUtilization.get(holeKey) || 0) + 1);
@@ -1698,19 +1726,19 @@ function placeParts(sheets, parts, config, nestindex) {
             const bCount = holeUtilization.get(bKey) || 0;
 
             // First priority: unused holes get top priority
-            if (aCount === 0 && bCount > 0) return -1;
-            if (bCount === 0 && aCount > 0) return 1;
+            if (aCount === 0 &amp;&amp; bCount > 0) return -1;
+            if (bCount === 0 &amp;&amp; aCount > 0) return 1;
 
             // Second priority: holes with fewer parts
-            if (aCount < bCount) return -1;
-            if (bCount < aCount) return 1;
+            if (aCount &lt; bCount) return -1;
+            if (bCount &lt; aCount) return 1;
 
             // Third priority: orientation match
-            if (a.orientationMatched && !b.orientationMatched) return -1;
-            if (!a.orientationMatched && b.orientationMatched) return 1;
+            if (a.orientationMatched &amp;&amp; !b.orientationMatched) return -1;
+            if (!a.orientationMatched &amp;&amp; b.orientationMatched) return 1;
 
             // Fourth priority: better hole fit (higher fill ratio)
-            if (a.fillRatio && b.fillRatio) {
+            if (a.fillRatio &amp;&amp; b.fillRatio) {
               if (a.fillRatio > b.fillRatio) return -1;
               if (b.fillRatio > a.fillRatio) return 1;
             }
@@ -1720,7 +1748,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
           // console.log(`Sorted hole positions. Prioritizing distribution across ${holeUtilization.size} used holes out of ${new Set(holePositions.map(h => `${h.parentIndex}_${h.holeIndex}`)).size} total holes`);
 
-          for (let j = 0; j < holePositions.length; j++) {
+          for (let j = 0; j &lt; holePositions.length; j++) {
             let holeShift = holePositions[j];
 
             // For debugging the hole's orientation
@@ -1776,7 +1804,7 @@ function placeParts(sheets, parts, config, nestindex) {
               var shiftedpart = shiftPolygon(part, holeShift);
               var shiftedplaced = [];
 
-              for (let m = 0; m < placed.length; m++) {
+              for (let m = 0; m &lt; placed.length; m++) {
                 shiftedplaced.push(shiftPolygon(placed[m], placements[m]));
               }
 
@@ -1789,9 +1817,9 @@ function placeParts(sheets, parts, config, nestindex) {
             // Check if this hole position is better than our current best position
             if (
               minarea === null ||
-              (config.placementType == 'gravity' && area < minarea) ||
-              (config.placementType != 'gravity' && area < minarea) ||
-              (GeometryUtil.almostEqual(minarea, area) && holeShift.inHole)
+              (config.placementType == 'gravity' &amp;&amp; area &lt; minarea) ||
+              (config.placementType != 'gravity' &amp;&amp; area &lt; minarea) ||
+              (GeometryUtil.almostEqual(minarea, area) &amp;&amp; holeShift.inHole)
             ) {
               // For hole positions, we need to verify it's entirely within the parent's hole
               // This is a special case where overlap is allowed, but only inside a hole
@@ -1833,7 +1861,7 @@ function placeParts(sheets, parts, config, nestindex) {
                   // If the intersection has different area than the part itself
                   // then the part is not fully contained in the hole
                   var intersectionArea = 0;
-                  for (let p = 0; p < clipSolution.length; p++) {
+                  for (let p = 0; p &lt; clipSolution.length; p++) {
                     intersectionArea += Math.abs(ClipperLib.Clipper.Area(clipSolution[p]));
                   }
 
@@ -1853,9 +1881,9 @@ function placeParts(sheets, parts, config, nestindex) {
                   // This incentivizes the algorithm to place parts efficiently inside holes
                   let contourScore = 0;
                   // Find other parts already placed in this hole
-                  for (let m = 0; m < placed.length; m++) {
-                    if (placements[m].inHole &&
-                      placements[m].parentIndex === holeShift.parentIndex &&
+                  for (let m = 0; m &lt; placed.length; m++) {
+                    if (placements[m].inHole &amp;&amp;
+                      placements[m].parentIndex === holeShift.parentIndex &amp;&amp;
                       placements[m].holeIndex === holeShift.holeIndex) {
                       // Found another part in the same hole, check proximity/contour usage
                       const p2 = placements[m];
@@ -1866,7 +1894,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
                       // If parts are close to each other (touching or nearly touching)
                       const proximityThreshold = 2.0; // proximity threshold in user units
-                      if (dx < proximityThreshold || dy < proximityThreshold) {
+                      if (dx &lt; proximityThreshold || dy &lt; proximityThreshold) {
                         // This placement uses contour of another part - give it a bonus
                         contourScore += 5.0; // This value can be tuned
                         // console.log(`Found contour alignment in hole between ${part.source} and ${placed[m].source}`);
@@ -1902,9 +1930,9 @@ function placeParts(sheets, parts, config, nestindex) {
                     // }
                     // Now apply standard sheet-like placement optimization for parts already in the hole
                     const partsInSameHole = [];
-                    for (let m = 0; m < placed.length; m++) {
-                      if (placements[m].inHole &&
-                        placements[m].parentIndex === holeShift.parentIndex &&
+                    for (let m = 0; m &lt; placed.length; m++) {
+                      if (placements[m].inHole &amp;&amp;
+                        placements[m].parentIndex === holeShift.parentIndex &amp;&amp;
                         placements[m].holeIndex === holeShift.holeIndex) {
                         partsInSameHole.push({
                           part: placed[m],
@@ -1923,7 +1951,7 @@ function placeParts(sheets, parts, config, nestindex) {
                       let alignmentCount = 0;
 
                       // Examine each part already placed in this hole
-                      for (let m = 0; m < partsInSameHole.length; m++) {
+                      for (let m = 0; m &lt; partsInSameHole.length; m++) {
                         const otherPart = shiftPolygon(partsInSameHole[m].part, partsInSameHole[m].placement);
                         const bbox2 = GeometryUtil.getPolygonBounds(otherPart);
 
@@ -1931,10 +1959,10 @@ function placeParts(sheets, parts, config, nestindex) {
                         const edgeThreshold = 2.0;
 
                         // Check all four edge alignments
-                        const leftAligned = Math.abs(bbox1.x - (bbox2.x + bbox2.width)) < edgeThreshold;
-                        const rightAligned = Math.abs((bbox1.x + bbox1.width) - bbox2.x) < edgeThreshold;
-                        const topAligned = Math.abs(bbox1.y - (bbox2.y + bbox2.height)) < edgeThreshold;
-                        const bottomAligned = Math.abs((bbox1.y + bbox1.height) - bbox2.y) < edgeThreshold;
+                        const leftAligned = Math.abs(bbox1.x - (bbox2.x + bbox2.width)) &lt; edgeThreshold;
+                        const rightAligned = Math.abs((bbox1.x + bbox1.width) - bbox2.x) &lt; edgeThreshold;
+                        const topAligned = Math.abs(bbox1.y - (bbox2.y + bbox2.height)) &lt; edgeThreshold;
+                        const bottomAligned = Math.abs((bbox1.y + bbox1.height) - bbox2.y) &lt; edgeThreshold;
 
                         if (leftAligned || rightAligned || topAligned || bottomAligned) {
                           // Score based on alignment length (better packing)
@@ -1970,7 +1998,7 @@ function placeParts(sheets, parts, config, nestindex) {
                   }
 
                   // Normal overlap check with other parts (excluding the parent)
-                  for (let m = 0; m < placed.length; m++) {
+                  for (let m = 0; m &lt; placed.length; m++) {
                     // Skip check against parent part, as we've already verified hole containment
                     if (m === holeShift.parentIndex) continue;
 
@@ -2047,7 +2075,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
       // send placement progress signal
       var placednum = placed.length;
-      for (let j = 0; j < allplacements.length; j++) {
+      for (let j = 0; j &lt; allplacements.length; j++) {
         placednum += allplacements[j].sheetplacements.length;
       }
       //console.log(placednum, totalnum);
@@ -2059,14 +2087,14 @@ function placeParts(sheets, parts, config, nestindex) {
     fitness += (minwidth / sheetarea) + minarea;
     //}
 
-    for (let i = 0; i < placed.length; i++) {
+    for (let i = 0; i &lt; placed.length; i++) {
       var index = parts.indexOf(placed[i]);
       if (index >= 0) {
         parts.splice(index, 1);
       }
     }
 
-    if (placements && placements.length > 0) {
+    if (placements &amp;&amp; placements.length > 0) {
       allplacements.push({ sheet: sheet.source, sheetid: sheet.id, sheetplacements: placements });
     }
     else {
@@ -2081,7 +2109,7 @@ function placeParts(sheets, parts, config, nestindex) {
   // there were parts that couldn't be placed
   // scale this value high - we really want to get all the parts in, even at the cost of opening new sheets
   console.log('UNPLACED PARTS', parts.length, 'of', totalnum);
-  for (let i = 0; i < parts.length; i++) {
+  for (let i = 0; i &lt; parts.length; i++) {
     // console.log(`Fitness before unplaced penalty: ${fitness}`);
     const penalty = 100000000 * ((Math.abs(GeometryUtil.polygonArea(parts[i])) * 100) / totalsheetarea);
     // console.log(`Penalty for unplaced part ${parts[i].source}: ${penalty}`);
@@ -2091,11 +2119,11 @@ function placeParts(sheets, parts, config, nestindex) {
 
   // Enhance fitness calculation to encourage more efficient hole usage
   // This rewards more efficient use of material by placing parts in holes
-  for (let i = 0; i < allplacements.length; i++) {
+  for (let i = 0; i &lt; allplacements.length; i++) {
     const placements = allplacements[i].sheetplacements;
     // First pass: identify all parts placed in holes
     const partsInHoles = [];
-    for (let j = 0; j < placements.length; j++) {
+    for (let j = 0; j &lt; placements.length; j++) {
       if (placements[j].inHole === true) {
         // Find the corresponding part to calculate its area
         const partIndex = j;
@@ -2116,11 +2144,11 @@ function placeParts(sheets, parts, config, nestindex) {
     }
     // Second pass: apply additional fitness rewards for parts placed on contours of other parts within holes
     // This incentivizes the algorithm to stack parts efficiently within holes
-    for (let j = 0; j < partsInHoles.length; j++) {
+    for (let j = 0; j &lt; partsInHoles.length; j++) {
       const part = partsInHoles[j];
-      for (let k = 0; k < partsInHoles.length; k++) {
-        if (j !== k &&
-          part.parentIndex === partsInHoles[k].parentIndex &&
+      for (let k = 0; k &lt; partsInHoles.length; k++) {
+        if (j !== k &amp;&amp;
+          part.parentIndex === partsInHoles[k].parentIndex &amp;&amp;
           part.holeIndex === partsInHoles[k].holeIndex) {
           // Calculate distances between parts to see if they're using each other's contours
           const p1 = placements[part.index];
@@ -2133,7 +2161,7 @@ function placeParts(sheets, parts, config, nestindex) {
           // If parts are close to each other (touching or nearly touching)
           // within configurable threshold - can be adjusted based on your specific needs
           const proximityThreshold = 2.0; // proximity threshold in user units
-          if (dx < proximityThreshold || dy < proximityThreshold) {
+          if (dx &lt; proximityThreshold || dy &lt; proximityThreshold) {
             // Award extra fitness for parts efficiently placed near each other in the same hole
             // This encourages the algorithm to place parts on contours of other parts
             fitness -= (part.area / totalsheetarea) * 0.01; // Additional 50% bonus
@@ -2161,9 +2189,9 @@ function placeParts(sheets, parts, config, nestindex) {
  * needed for hole-fitting optimization. Provides statistics for determining
  * which parts are suitable candidates for hole placement.
  * 
- * @param {Array<Sheet>} sheets - Array of sheet objects with potential holes
+ * @param {Array&lt;Sheet>} sheets - Array of sheet objects with potential holes
  * @returns {Object} Comprehensive hole analysis data
- * @returns {Array<Object>} returns.holes - Array of hole information objects
+ * @returns {Array&lt;Object>} returns.holes - Array of hole information objects
  * @returns {number} returns.totalHoleArea - Sum of all hole areas
  * @returns {number} returns.averageHoleArea - Average hole area for threshold calculations
  * @returns {number} returns.count - Total number of holes found
@@ -2177,7 +2205,7 @@ function placeParts(sheets, parts, config, nestindex) {
  * // Use analysis for part categorization
  * const holeAnalysis = analyzeSheetHoles(sheets);
  * const threshold = holeAnalysis.averageHoleArea * 0.8; // 80% of average
- * const smallParts = parts.filter(p => getPartArea(p) < threshold);
+ * const smallParts = parts.filter(p => getPartArea(p) &lt; threshold);
  * 
  * @algorithm
  * 1. Iterate through all sheets and their children (holes)
@@ -2188,7 +2216,7 @@ function placeParts(sheets, parts, config, nestindex) {
  * @performance
  * - Time Complexity: O(h) where h is total number of holes
  * - Space Complexity: O(h) for hole metadata storage
- * - Typical Runtime: <10ms for most sheet configurations
+ * - Typical Runtime: &lt;10ms for most sheet configurations
  * 
  * @hole_detection_criteria
  * - Holes are detected as sheet.children arrays
@@ -2210,10 +2238,10 @@ function analyzeSheetHoles(sheets) {
   let totalHoleArea = 0;
 
   // Analyze each sheet
-  for (let i = 0; i < sheets.length; i++) {
+  for (let i = 0; i &lt; sheets.length; i++) {
     const sheet = sheets[i];
-    if (sheet.children && sheet.children.length > 0) {
-      for (let j = 0; j < sheet.children.length; j++) {
+    if (sheet.children &amp;&amp; sheet.children.length > 0) {
+      for (let j = 0; j &lt; sheet.children.length; j++) {
         const hole = sheet.children[j];
         const holeArea = Math.abs(GeometryUtil.polygonArea(hole));
         const holeBounds = GeometryUtil.getPolygonBounds(hole);
@@ -2252,13 +2280,13 @@ function analyzeSheetHoles(sheets) {
  * enables the advanced hole-in-hole optimization that significantly reduces
  * material waste by utilizing otherwise unusable hole space.
  * 
- * @param {Array<Part>} parts - Array of part objects to analyze
+ * @param {Array&lt;Part>} parts - Array of part objects to analyze
  * @param {number} averageHoleArea - Average hole area from sheet analysis
  * @param {Object} config - Configuration object with hole detection settings
  * @param {number} config.holeAreaThreshold - Minimum area to consider as hole candidate
  * @returns {Object} Categorized parts for optimized placement
- * @returns {Array<Part>} returns.mainParts - Large parts that should be placed first
- * @returns {Array<Part>} returns.holeCandidates - Small parts that can fit in holes
+ * @returns {Array&lt;Part>} returns.mainParts - Large parts that should be placed first
+ * @returns {Array&lt;Part>} returns.holeCandidates - Small parts that can fit in holes
  * 
  * @example
  * const { mainParts, holeCandidates } = analyzeParts(parts, 1000, { holeAreaThreshold: 500 });
@@ -2278,7 +2306,7 @@ function analyzeSheetHoles(sheets) {
  * 
  * @categorization_criteria
  * - **Main Parts**: Large parts or parts with holes, placed first
- * - **Hole Candidates**: Small parts (area < holeAreaThreshold)
+ * - **Hole Candidates**: Small parts (area &lt; holeAreaThreshold)
  * - Parts with holes get priority in main parts regardless of size
  * - Size threshold is configurable based on available hole space
  * 
@@ -2309,10 +2337,10 @@ function analyzeParts(parts, averageHoleArea, config) {
   const partsWithHoles = [];
 
   // First pass: identify parts with holes
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i].children && parts[i].children.length > 0) {
+  for (let i = 0; i &lt; parts.length; i++) {
+    if (parts[i].children &amp;&amp; parts[i].children.length > 0) {
       const partHoles = [];
-      for (let j = 0; j < parts[i].children.length; j++) {
+      for (let j = 0; j &lt; parts[i].children.length; j++) {
         const hole = parts[i].children[j];
         const holeArea = Math.abs(GeometryUtil.polygonArea(hole));
         const holeBounds = GeometryUtil.getPolygonBounds(hole);
@@ -2344,32 +2372,32 @@ function analyzeParts(parts, averageHoleArea, config) {
   // console.log(`Found ${partsWithHoles.length} parts with holes`);
 
   // Second pass: check which parts fit into other parts' holes
-  for (let i = 0; i < parts.length; i++) {
+  for (let i = 0; i &lt; parts.length; i++) {
     const part = parts[i];
     const partMatches = [];
 
     // Check if this part fits into holes of other parts
-    for (let j = 0; j < partsWithHoles.length; j++) {
+    for (let j = 0; j &lt; partsWithHoles.length; j++) {
       const partWithHoles = partsWithHoles[j];
       if (part.id === partWithHoles.id) continue; // Skip self
 
-      for (let k = 0; k < partWithHoles.analyzedHoles.length; k++) {
+      for (let k = 0; k &lt; partWithHoles.analyzedHoles.length; k++) {
         const hole = partWithHoles.analyzedHoles[k];
 
         // Check if part fits in this hole (with or without rotation)
-        const fitsNormally = part.bounds.width < hole.width * 0.98 &&
-          part.bounds.height < hole.height * 0.98 &&
-          part.bounds.area < hole.area * 0.95;
+        const fitsNormally = part.bounds.width &lt; hole.width * 0.98 &amp;&amp;
+          part.bounds.height &lt; hole.height * 0.98 &amp;&amp;
+          part.bounds.area &lt; hole.area * 0.95;
 
-        const fitsRotated = part.bounds.height < hole.width * 0.98 &&
-          part.bounds.width < hole.height * 0.98 &&
-          part.bounds.area < hole.area * 0.95;
+        const fitsRotated = part.bounds.height &lt; hole.width * 0.98 &amp;&amp;
+          part.bounds.width &lt; hole.height * 0.98 &amp;&amp;
+          part.bounds.area &lt; hole.area * 0.95;
 
         if (fitsNormally || fitsRotated) {
           partMatches.push({
             partId: partWithHoles.id,
             holeIndex: k,
-            requiresRotation: !fitsNormally && fitsRotated,
+            requiresRotation: !fitsNormally &amp;&amp; fitsRotated,
             fitRatio: part.bounds.area / hole.area
           });
         }
@@ -2377,8 +2405,8 @@ function analyzeParts(parts, averageHoleArea, config) {
     }
 
     // Determine if part is a hole candidate
-    const isSmallEnough = part.bounds.area < config.holeAreaThreshold ||
-      part.bounds.area < averageHoleArea * 0.7;
+    const isSmallEnough = part.bounds.area &lt; config.holeAreaThreshold ||
+      part.bounds.area &lt; averageHoleArea * 0.7;
 
     if (partMatches.length > 0 || isSmallEnough) {
       part.holeMatches = partMatches;
@@ -2391,15 +2419,15 @@ function analyzeParts(parts, averageHoleArea, config) {
 
   // Prioritize order of main parts - parts with holes that others fit into go first
   mainParts.sort((a, b) => {
-    const aHasMatches = holeCandidates.some(p => p.holeMatches &&
+    const aHasMatches = holeCandidates.some(p => p.holeMatches &amp;&amp;
       p.holeMatches.some(match => match.partId === a.id));
 
-    const bHasMatches = holeCandidates.some(p => p.holeMatches &&
+    const bHasMatches = holeCandidates.some(p => p.holeMatches &amp;&amp;
       p.holeMatches.some(match => match.partId === b.id));
 
     // First priority: parts with holes that other parts fit into
-    if (aHasMatches && !bHasMatches) return -1;
-    if (!aHasMatches && bHasMatches) return 1;
+    if (aHasMatches &amp;&amp; !bHasMatches) return -1;
+    if (!aHasMatches &amp;&amp; bHasMatches) return 1;
 
     // Second priority: larger parts first
     return b.bounds.area - a.bounds.area;
@@ -2407,15 +2435,15 @@ function analyzeParts(parts, averageHoleArea, config) {
 
   // For hole candidates, prioritize parts that fit into holes of parts in mainParts
   holeCandidates.sort((a, b) => {
-    const aFitsInMainPart = a.holeMatches && a.holeMatches.some(match =>
+    const aFitsInMainPart = a.holeMatches &amp;&amp; a.holeMatches.some(match =>
       mainParts.some(mp => mp.id === match.partId));
 
-    const bFitsInMainPart = b.holeMatches && b.holeMatches.some(match =>
+    const bFitsInMainPart = b.holeMatches &amp;&amp; b.holeMatches.some(match =>
       mainParts.some(mp => mp.id === match.partId));
 
     // Priority to parts that fit in holes of main parts
-    if (aFitsInMainPart && !bFitsInMainPart) return -1;
-    if (!aFitsInMainPart && bFitsInMainPart) return 1;
+    if (aFitsInMainPart &amp;&amp; !bFitsInMainPart) return -1;
+    if (!aFitsInMainPart &amp;&amp; bFitsInMainPart) return 1;
 
     // Then by number of matches
     const aMatchCount = a.holeMatches ? a.holeMatches.length : 0;
@@ -2433,3 +2461,26 @@ function analyzeParts(parts, averageHoleArea, config) {
 function alert(message) {
   console.log('alert: ', message);
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
