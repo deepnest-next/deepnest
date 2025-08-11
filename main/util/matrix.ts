@@ -1,4 +1,5 @@
 import { Point } from "./point.js";
+import { DEG_TO_RAD } from "./constants.js";
 
 interface Transformation {
   matrix6(): Array<number>;
@@ -37,7 +38,7 @@ class Rotate implements Transformation {
     this.type = "rotate";
   }
   matrix6() {
-    const rad = (this.angle * Math.PI) / 180;
+    const rad = this.angle * DEG_TO_RAD;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     return [cos, sin, -sin, cos, 0, 0];
@@ -51,7 +52,7 @@ class SkewX implements Transformation {
     this.type = "skewx";
   }
   matrix6() {
-    return [1, 0, Math.tan((this.angle * Math.PI) / 180), 1, 0, 0];
+    return [1, 0, Math.tan(this.angle * DEG_TO_RAD), 1, 0, 0];
   }
 }
 class SkewY implements Transformation {
@@ -62,7 +63,7 @@ class SkewY implements Transformation {
     this.type = "skewy";
   }
   matrix6() {
-    return [1, Math.tan((this.angle * Math.PI) / 180), 0, 1, 0, 0];
+    return [1, Math.tan(this.angle * DEG_TO_RAD), 0, 1, 0, 0];
   }
 }
 class ArbitraryMatrix implements Transformation {

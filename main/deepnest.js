@@ -5,11 +5,13 @@
 
 import { Point } from '../build/util/point.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import { Polygon } from '../build/util/polygon.js';
+import { DEFAULT_CLIPPER_SCALE } from '../build/util/constants.js';
 
 const { simplifyPolygon: simplifyPoly } = require("@deepnest/svg-preprocessor");
 
 var config = {
-  clipperScale: 10000000,
+  clipperScale: DEFAULT_CLIPPER_SCALE,
   curveTolerance: 0.3,
   spacing: 0,
   rotations: 4,
@@ -119,6 +121,11 @@ export class DeepNest {
   };
 
   getHull(polygon) {
+    if (polygon instanceof Polygon) {
+      var hullPolygon = HullPolygon.hull(polygon);
+      return hullPolygon ? hullPolygon.toArray() : null;
+    }
+    
     var points = [];
     for (let i = 0; i < polygon.length; i++) {
       points.push({
@@ -131,7 +138,7 @@ export class DeepNest {
     if (!hullpoints) {
       return null;
     }
-    return hullpoints;
+    return hullpoints instanceof Polygon ? hullpoints.toArray() : hullpoints;
   };
 
   // use RDP simplification, then selectively offset
@@ -330,9 +337,9 @@ export class DeepNest {
 
     //if(straightened){
     var Ac = toClipperCoordinates(offset);
-    ClipperLib.JS.ScaleUpPath(Ac, 10000000);
+    ClipperLib.JS.ScaleUpPath(Ac, DEFAULT_CLIPPER_SCALE);
     var Bc = toClipperCoordinates(polygon);
-    ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+    ClipperLib.JS.ScaleUpPath(Bc, DEFAULT_CLIPPER_SCALE);
 
     var combined = new ClipperLib.Paths();
     var clipper = new ClipperLib.Clipper();
@@ -351,7 +358,7 @@ export class DeepNest {
     ) {
       var largestArea = null;
       for (var i = 0; i < combined.length; i++) {
-        var n = toNestCoordinates(combined[i], 10000000);
+        var n = toNestCoordinates(combined[i], DEFAULT_CLIPPER_SCALE);
         var sarea = -GeometryUtil.polygonArea(n);
         if (largestArea === null || largestArea < sarea) {
           offset = n;
