@@ -5,6 +5,7 @@
 
 import { Point } from '../build/util/point.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import * as GeometryUtil from '../build/util/geometryutil.js';
 
 const { simplifyPolygon: simplifyPoly } = require("@deepnest/svg-preprocessor");
 
