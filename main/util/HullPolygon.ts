@@ -1,9 +1,10 @@
 // based on https://d3js.org/d3-polygon/ Version 1.0.2.
 
 import { Point } from "./point.js";
+import { Polygon } from "./polygon.js";
 
-// Type definition for a polygon (array of points)
-type Polygon = Point[];
+// Type definition for a polygon (array of points) - keeping for backwards compatibility
+type PolygonArray = Point[];
 
 // Type for points with index used in hull calculation
 interface IndexedPoint {
@@ -19,7 +20,11 @@ export class HullPolygon {
   /**
    * Returns the signed area of the specified polygon.
    */
-  public static area(polygon: Polygon): number {
+  public static area(polygon: Polygon | PolygonArray): number {
+    if (polygon instanceof Polygon) {
+      return polygon.area();
+    }
+    
     let i = -1;
     const n = polygon.length;
     let a: Point;
@@ -38,7 +43,11 @@ export class HullPolygon {
   /**
    * Returns the centroid of the specified polygon.
    */
-  public static centroid(polygon: Polygon): Point {
+  public static centroid(polygon: Polygon | PolygonArray): Point {
+    if (polygon instanceof Polygon) {
+      return polygon.centroid();
+    }
+    
     let i = -1;
     const n = polygon.length;
     let x = 0;
@@ -62,11 +71,12 @@ export class HullPolygon {
 
   /**
    * Returns the convex hull of the specified points.
-   * The returned hull is represented as an array of points
+   * The returned hull is represented as a new Polygon
    * arranged in counterclockwise order.
    */
-  public static hull(points: Polygon): Polygon | null {
-    const n = points.length;
+  public static hull(points: Polygon | PolygonArray): Polygon | null {
+    const pointArray = points instanceof Polygon ? points.points : points;
+    const n = pointArray.length;
     if (n < 3) return null;
 
     let i: number;
@@ -75,8 +85,8 @@ export class HullPolygon {
 
     for (i = 0; i < n; ++i) {
       sortedPoints[i] = {
-        x: points[i].x,
-        y: points[i].y,
+        x: pointArray[i].x,
+        y: pointArray[i].y,
         index: i,
       };
     }
@@ -99,26 +109,31 @@ export class HullPolygon {
     const skipRight =
       lowerIndexes[lowerIndexes.length - 1] ===
       upperIndexes[upperIndexes.length - 1];
-    const hull: Polygon = [];
+    const hullPoints: Point[] = [];
 
     // Add upper hull in right-to-left order.
     // Then add lower hull in left-to-right order.
     for (i = upperIndexes.length - 1; i >= 0; --i)
-      hull.push(points[sortedPoints[upperIndexes[i]].index]);
+      hullPoints.push(pointArray[sortedPoints[upperIndexes[i]].index]);
     for (
       i = skipLeft ? 1 : 0;
       i < lowerIndexes.length - (skipRight ? 1 : 0);
       ++i
     )
-      hull.push(points[sortedPoints[lowerIndexes[i]].index]);
+      hullPoints.push(pointArray[sortedPoints[lowerIndexes[i]].index]);
 
-    return hull;
+    return new Polygon(hullPoints);
   }
 
   /**
    * Returns true if and only if the specified point is inside the specified polygon.
    */
-  public static contains(polygon: Polygon, point: Point): boolean {
+  public static contains(polygon: Polygon | PolygonArray, point: Point): boolean {
+    if (polygon instanceof Polygon) {
+      const result = polygon.contains(point);
+      return result === true; // convert null to false
+    }
+    
     const n = polygon.length;
     let p = polygon[n - 1];
     const x = point.x;
@@ -145,7 +160,11 @@ export class HullPolygon {
   /**
    * Returns the length of the perimeter of the specified polygon.
    */
-  public static length(polygon: Polygon): number {
+  public static length(polygon: Polygon | PolygonArray): number {
+    if (polygon instanceof Polygon) {
+      return polygon.perimeter();
+    }
+    
     let i = -1;
     const n = polygon.length;
     let b = polygon[n - 1];
