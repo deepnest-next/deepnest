@@ -1,0 +1,884 @@
+=== DEBUG LOG STARTED 2025-07-10T14:01:03.846Z ===
+[2025-07-10T14:01:03.846Z] Debug logging initialized
+[2025-07-10T14:01:05.670Z] Background-start event received, processing data...
+[2025-07-10T14:01:05.670Z] Data contains: 1 parts
+[2025-07-10T14:01:05.671Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:05.671Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:05.672Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:05.672Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.672Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.673Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:05.674Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:05.674Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:05.674Z] WATCH 
+[2025-07-10T14:01:05.674Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:05.675Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:05.675Z] placeParts completed, placement result: success
+[2025-07-10T14:01:05.762Z] Background-start event received, processing data...
+[2025-07-10T14:01:05.763Z] Data contains: 1 parts
+[2025-07-10T14:01:05.763Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:05.763Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:05.763Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:05.763Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.763Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.764Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:05.764Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:05.764Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:05.764Z] WATCH 
+[2025-07-10T14:01:05.764Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:05.764Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:05.764Z] placeParts completed, placement result: success
+[2025-07-10T14:01:05.869Z] Background-start event received, processing data...
+[2025-07-10T14:01:05.869Z] Data contains: 1 parts
+[2025-07-10T14:01:05.869Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:05.869Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:05.869Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:05.869Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.869Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.870Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:05.870Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:05.870Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:05.870Z] WATCH 
+[2025-07-10T14:01:05.870Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:05.870Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:05.870Z] placeParts completed, placement result: success
+[2025-07-10T14:01:05.961Z] Background-start event received, processing data...
+[2025-07-10T14:01:05.961Z] Data contains: 1 parts
+[2025-07-10T14:01:05.961Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:05.961Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:05.961Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:05.961Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.961Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:05.962Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:05.962Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:05.962Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:05.962Z] WATCH 
+[2025-07-10T14:01:05.962Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:05.962Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:05.963Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.061Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.061Z] Data contains: 1 parts
+[2025-07-10T14:01:06.061Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.062Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.062Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.062Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.062Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.062Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.062Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.063Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.063Z] WATCH 
+[2025-07-10T14:01:06.063Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.063Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.063Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.161Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.162Z] Data contains: 1 parts
+[2025-07-10T14:01:06.162Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.162Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.162Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.162Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.163Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.163Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.163Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.163Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.163Z] WATCH 
+[2025-07-10T14:01:06.164Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.164Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.164Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.262Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.262Z] Data contains: 1 parts
+[2025-07-10T14:01:06.262Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.262Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.262Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.262Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.263Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.263Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.263Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.263Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.263Z] WATCH 
+[2025-07-10T14:01:06.263Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.263Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.264Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.361Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.361Z] Data contains: 1 parts
+[2025-07-10T14:01:06.361Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.362Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.362Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.362Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.362Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.362Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.362Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.362Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.363Z] WATCH 
+[2025-07-10T14:01:06.363Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.363Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.363Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.462Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.462Z] Data contains: 1 parts
+[2025-07-10T14:01:06.462Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.462Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.463Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.463Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.463Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.463Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.463Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.463Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.463Z] WATCH 
+[2025-07-10T14:01:06.464Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.464Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.464Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.565Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.565Z] Data contains: 1 parts
+[2025-07-10T14:01:06.565Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.565Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.565Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.565Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.566Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.566Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.566Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.566Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.566Z] WATCH 
+[2025-07-10T14:01:06.566Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.566Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.567Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.668Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.668Z] Data contains: 1 parts
+[2025-07-10T14:01:06.669Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.669Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.669Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.669Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.669Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.669Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.669Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.670Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.670Z] WATCH 
+[2025-07-10T14:01:06.670Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.670Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.670Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.768Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.769Z] Data contains: 1 parts
+[2025-07-10T14:01:06.769Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.769Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.769Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.769Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.769Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.770Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.770Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.770Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.770Z] WATCH 
+[2025-07-10T14:01:06.770Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.770Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.770Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.868Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.869Z] Data contains: 1 parts
+[2025-07-10T14:01:06.869Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.869Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.869Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.869Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.869Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.870Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.870Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.870Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.870Z] WATCH 
+[2025-07-10T14:01:06.870Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.870Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.870Z] placeParts completed, placement result: success
+[2025-07-10T14:01:06.961Z] Background-start event received, processing data...
+[2025-07-10T14:01:06.961Z] Data contains: 1 parts
+[2025-07-10T14:01:06.961Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:06.961Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:06.962Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:06.962Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.962Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:06.962Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:06.962Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:06.962Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:06.963Z] WATCH 
+[2025-07-10T14:01:06.963Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:06.963Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:06.963Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.061Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.061Z] Data contains: 1 parts
+[2025-07-10T14:01:07.061Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.061Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.061Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.062Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.062Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.062Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.062Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.062Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.062Z] WATCH 
+[2025-07-10T14:01:07.062Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.063Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.063Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.161Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.161Z] Data contains: 1 parts
+[2025-07-10T14:01:07.161Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.161Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.161Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.162Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.162Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.162Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.162Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.162Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.162Z] WATCH 
+[2025-07-10T14:01:07.162Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.163Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.163Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.266Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.266Z] Data contains: 1 parts
+[2025-07-10T14:01:07.267Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.267Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.267Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.267Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.267Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.267Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.267Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.267Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.268Z] WATCH 
+[2025-07-10T14:01:07.268Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.268Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.268Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.361Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.361Z] Data contains: 1 parts
+[2025-07-10T14:01:07.361Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.362Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.362Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.362Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.362Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.362Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.362Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.362Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.362Z] WATCH 
+[2025-07-10T14:01:07.363Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.363Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.363Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.469Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.469Z] Data contains: 1 parts
+[2025-07-10T14:01:07.469Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.469Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.469Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.469Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.470Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.470Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.470Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.470Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.470Z] WATCH 
+[2025-07-10T14:01:07.470Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.470Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.470Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.562Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.562Z] Data contains: 1 parts
+[2025-07-10T14:01:07.562Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.562Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.562Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.563Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.563Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.563Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.563Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.563Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.563Z] WATCH 
+[2025-07-10T14:01:07.563Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.564Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.564Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.669Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.669Z] Data contains: 1 parts
+[2025-07-10T14:01:07.669Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.669Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.669Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.669Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.670Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.670Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.670Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.670Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.670Z] WATCH 
+[2025-07-10T14:01:07.670Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.670Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.670Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.761Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.761Z] Data contains: 1 parts
+[2025-07-10T14:01:07.761Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.761Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.761Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.762Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.762Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.762Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.762Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.762Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.762Z] WATCH 
+[2025-07-10T14:01:07.762Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.762Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.763Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.862Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.862Z] Data contains: 1 parts
+[2025-07-10T14:01:07.862Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.862Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.862Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.863Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.863Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.863Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.863Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.863Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.863Z] WATCH 
+[2025-07-10T14:01:07.863Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.864Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.864Z] placeParts completed, placement result: success
+[2025-07-10T14:01:07.961Z] Background-start event received, processing data...
+[2025-07-10T14:01:07.961Z] Data contains: 1 parts
+[2025-07-10T14:01:07.962Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:07.962Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:07.962Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:07.962Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.962Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:07.962Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:07.962Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:07.962Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:07.963Z] WATCH 
+[2025-07-10T14:01:07.963Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:07.963Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:07.963Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.062Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.062Z] Data contains: 1 parts
+[2025-07-10T14:01:08.062Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.062Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.063Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.063Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.063Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.063Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.063Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.063Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.063Z] WATCH 
+[2025-07-10T14:01:08.064Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.064Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.064Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.169Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.169Z] Data contains: 1 parts
+[2025-07-10T14:01:08.169Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.169Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.169Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.169Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.170Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.170Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.170Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.170Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.170Z] WATCH 
+[2025-07-10T14:01:08.170Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.170Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.171Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.268Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.269Z] Data contains: 1 parts
+[2025-07-10T14:01:08.269Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.269Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.269Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.269Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.269Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.269Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.269Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.270Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.270Z] WATCH 
+[2025-07-10T14:01:08.270Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.270Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.270Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.361Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.361Z] Data contains: 1 parts
+[2025-07-10T14:01:08.362Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.362Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.362Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.362Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.362Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.362Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.362Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.362Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.362Z] WATCH 
+[2025-07-10T14:01:08.363Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.363Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.363Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.469Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.469Z] Data contains: 1 parts
+[2025-07-10T14:01:08.469Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.469Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.469Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.470Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.470Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.470Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.470Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.470Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.470Z] WATCH 
+[2025-07-10T14:01:08.470Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.470Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.470Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.561Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.561Z] Data contains: 1 parts
+[2025-07-10T14:01:08.561Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.561Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.561Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.562Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.562Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.562Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.562Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.562Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.562Z] WATCH 
+[2025-07-10T14:01:08.562Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.562Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.563Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.661Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.661Z] Data contains: 1 parts
+[2025-07-10T14:01:08.661Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.661Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.661Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.661Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.662Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.662Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.662Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.662Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.662Z] WATCH 
+[2025-07-10T14:01:08.662Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.662Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.662Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.766Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.767Z] Data contains: 1 parts
+[2025-07-10T14:01:08.767Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.767Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.767Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.767Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.767Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.767Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.768Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.768Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.768Z] WATCH 
+[2025-07-10T14:01:08.768Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.768Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.768Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.868Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.869Z] Data contains: 1 parts
+[2025-07-10T14:01:08.869Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.869Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.869Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.869Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.869Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.869Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.870Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.870Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.870Z] WATCH 
+[2025-07-10T14:01:08.870Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.870Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.870Z] placeParts completed, placement result: success
+[2025-07-10T14:01:08.968Z] Background-start event received, processing data...
+[2025-07-10T14:01:08.968Z] Data contains: 1 parts
+[2025-07-10T14:01:08.968Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:08.969Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:08.969Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:08.969Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.969Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:08.969Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:08.969Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:08.969Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:08.970Z] WATCH 
+[2025-07-10T14:01:08.970Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:08.970Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:08.970Z] placeParts completed, placement result: success
+[2025-07-10T14:01:09.061Z] Background-start event received, processing data...
+[2025-07-10T14:01:09.061Z] Data contains: 1 parts
+[2025-07-10T14:01:09.061Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:09.061Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:09.061Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:09.062Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:09.062Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:09.062Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:09.062Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:09.062Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:09.062Z] WATCH 
+[2025-07-10T14:01:09.062Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:09.062Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:09.062Z] placeParts completed, placement result: success
+[2025-07-10T14:01:10.061Z] Background-start event received, processing data...
+[2025-07-10T14:01:10.061Z] Data contains: 1 parts
+[2025-07-10T14:01:10.062Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:10.062Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:10.062Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:10.062Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:10.062Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:10.062Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:10.062Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:10.063Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:10.063Z] WATCH 
+[2025-07-10T14:01:10.063Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:10.063Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:10.063Z] placeParts completed, placement result: success
+[2025-07-10T14:01:11.055Z] Background-start event received, processing data...
+[2025-07-10T14:01:11.055Z] Data contains: 1 parts
+[2025-07-10T14:01:11.056Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:11.056Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:11.056Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:11.056Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:11.056Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:11.056Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:11.056Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:11.057Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:11.057Z] WATCH 
+[2025-07-10T14:01:11.057Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:11.057Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:11.057Z] placeParts completed, placement result: success
+[2025-07-10T14:01:12.053Z] Background-start event received, processing data...
+[2025-07-10T14:01:12.053Z] Data contains: 1 parts
+[2025-07-10T14:01:12.053Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:12.053Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:12.054Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:12.054Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:12.054Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:12.054Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:12.054Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:12.054Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:12.054Z] WATCH 
+[2025-07-10T14:01:12.054Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:12.054Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:12.055Z] placeParts completed, placement result: success
+[2025-07-10T14:01:13.060Z] Background-start event received, processing data...
+[2025-07-10T14:01:13.060Z] Data contains: 1 parts
+[2025-07-10T14:01:13.060Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:13.060Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:13.060Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:13.060Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:13.061Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:13.061Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:13.061Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:13.061Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:13.061Z] WATCH 
+[2025-07-10T14:01:13.061Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:13.061Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:13.061Z] placeParts completed, placement result: success
+[2025-07-10T14:01:13.858Z] Background-start event received, processing data...
+[2025-07-10T14:01:13.858Z] Data contains: 1 parts
+[2025-07-10T14:01:13.858Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:13.858Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:13.858Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:13.858Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:13.858Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:13.859Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:13.859Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:13.859Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:13.859Z] WATCH 
+[2025-07-10T14:01:13.859Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:13.859Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:13.859Z] placeParts completed, placement result: success
+[2025-07-10T14:01:13.961Z] Background-start event received, processing data...
+[2025-07-10T14:01:13.961Z] Data contains: 1 parts
+[2025-07-10T14:01:13.962Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:13.962Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:13.962Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:13.962Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:13.962Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:13.962Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:13.962Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:13.963Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:13.963Z] WATCH 
+[2025-07-10T14:01:13.963Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:13.963Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:13.963Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.061Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.061Z] Data contains: 1 parts
+[2025-07-10T14:01:14.061Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.062Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.062Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.062Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.062Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.062Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.062Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.062Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.063Z] WATCH 
+[2025-07-10T14:01:14.063Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.063Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.063Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.164Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.164Z] Data contains: 1 parts
+[2025-07-10T14:01:14.164Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.164Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.165Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.165Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.165Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.165Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.165Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.165Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.165Z] WATCH 
+[2025-07-10T14:01:14.166Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.166Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.166Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.269Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.269Z] Data contains: 1 parts
+[2025-07-10T14:01:14.269Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.269Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.270Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.270Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.270Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.270Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.270Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.270Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.271Z] WATCH 
+[2025-07-10T14:01:14.271Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.271Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.271Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.361Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.361Z] Data contains: 1 parts
+[2025-07-10T14:01:14.362Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.362Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.362Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.362Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.362Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.362Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.362Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.362Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.363Z] WATCH 
+[2025-07-10T14:01:14.363Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.363Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.363Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.463Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.463Z] Data contains: 1 parts
+[2025-07-10T14:01:14.464Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.464Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.464Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.464Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.464Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.464Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.464Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.464Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.464Z] WATCH 
+[2025-07-10T14:01:14.465Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.465Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.465Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.561Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.561Z] Data contains: 1 parts
+[2025-07-10T14:01:14.561Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.561Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.562Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.562Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.562Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.562Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.562Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.562Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.562Z] WATCH 
+[2025-07-10T14:01:14.563Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.563Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.563Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.661Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.662Z] Data contains: 1 parts
+[2025-07-10T14:01:14.662Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.662Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.662Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.662Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.662Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.662Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.662Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.663Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.663Z] WATCH 
+[2025-07-10T14:01:14.663Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.663Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.663Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.769Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.769Z] Data contains: 1 parts
+[2025-07-10T14:01:14.769Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.769Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.769Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.769Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.770Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.770Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.770Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.770Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.770Z] WATCH 
+[2025-07-10T14:01:14.770Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.770Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.770Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.861Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.861Z] Data contains: 1 parts
+[2025-07-10T14:01:14.862Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.862Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.862Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.862Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.862Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.862Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.862Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.862Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.863Z] WATCH 
+[2025-07-10T14:01:14.863Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.863Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.863Z] placeParts completed, placement result: success
+[2025-07-10T14:01:14.969Z] Background-start event received, processing data...
+[2025-07-10T14:01:14.969Z] Data contains: 1 parts
+[2025-07-10T14:01:14.969Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:14.969Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:14.969Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:14.970Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.970Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:14.970Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:14.970Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:14.970Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:14.970Z] WATCH 
+[2025-07-10T14:01:14.970Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:14.971Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:14.971Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.063Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.063Z] Data contains: 1 parts
+[2025-07-10T14:01:15.064Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.064Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.064Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.064Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.064Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.064Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.064Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.064Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.065Z] WATCH 
+[2025-07-10T14:01:15.065Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.065Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.065Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.161Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.161Z] Data contains: 1 parts
+[2025-07-10T14:01:15.161Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.161Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.162Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.162Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.162Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.162Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.162Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.162Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.162Z] WATCH 
+[2025-07-10T14:01:15.163Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.163Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.163Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.264Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.264Z] Data contains: 1 parts
+[2025-07-10T14:01:15.265Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.265Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.265Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.265Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.265Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.265Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.265Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.265Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.265Z] WATCH 
+[2025-07-10T14:01:15.266Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.266Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.266Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.369Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.369Z] Data contains: 1 parts
+[2025-07-10T14:01:15.369Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.370Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.370Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.370Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.370Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.370Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.370Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.370Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.370Z] WATCH 
+[2025-07-10T14:01:15.371Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.371Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.371Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.467Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.467Z] Data contains: 1 parts
+[2025-07-10T14:01:15.467Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.467Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.467Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.468Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.468Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.468Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.468Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.468Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.468Z] WATCH 
+[2025-07-10T14:01:15.468Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.469Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.469Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.569Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.569Z] Data contains: 1 parts
+[2025-07-10T14:01:15.569Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.569Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.570Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.570Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.570Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.570Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.570Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.570Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.570Z] WATCH 
+[2025-07-10T14:01:15.570Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.570Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.571Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.669Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.669Z] Data contains: 1 parts
+[2025-07-10T14:01:15.669Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.669Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.670Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.670Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.670Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.670Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.670Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.670Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.670Z] WATCH 
+[2025-07-10T14:01:15.671Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.671Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.671Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.763Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.764Z] Data contains: 1 parts
+[2025-07-10T14:01:15.764Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.764Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.764Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.764Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.764Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.764Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.764Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.764Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.765Z] WATCH 
+[2025-07-10T14:01:15.765Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.765Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.765Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.869Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.869Z] Data contains: 1 parts
+[2025-07-10T14:01:15.870Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.870Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.870Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.870Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.870Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.870Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.871Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.871Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.871Z] WATCH 
+[2025-07-10T14:01:15.871Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.871Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.871Z] placeParts completed, placement result: success
+[2025-07-10T14:01:15.964Z] Background-start event received, processing data...
+[2025-07-10T14:01:15.964Z] Data contains: 1 parts
+[2025-07-10T14:01:15.965Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:15.965Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:15.965Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:15.965Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.965Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:15.965Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:15.965Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:15.965Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:15.965Z] WATCH 
+[2025-07-10T14:01:15.966Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:15.966Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:15.966Z] placeParts completed, placement result: success
+[2025-07-10T14:01:16.069Z] Background-start event received, processing data...
+[2025-07-10T14:01:16.069Z] Data contains: 1 parts
+[2025-07-10T14:01:16.069Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:16.069Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:16.070Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:16.070Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:16.070Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:16.070Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:16.070Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:16.070Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:16.070Z] WATCH 
+[2025-07-10T14:01:16.071Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:16.071Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:16.071Z] placeParts completed, placement result: success
+[2025-07-10T14:01:16.165Z] Background-start event received, processing data...
+[2025-07-10T14:01:16.165Z] Data contains: 1 parts
+[2025-07-10T14:01:16.165Z] Created 0 NFP pairs for processing
+[2025-07-10T14:01:16.165Z] About to call placeParts with 1 parts and 1 sheets
+[2025-07-10T14:01:16.166Z] PlaceParts started with 1 parts and 1 sheets
+[2025-07-10T14:01:16.166Z] First part dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:16.166Z] First sheet dimensions: 2834.6456693 x 2834.6456693
+[2025-07-10T14:01:16.166Z] === PROCESSING SHEET 0 bounds: {"x":0,"y":0,"width":2834.6456693,"height":2834.6456693} area: 8035216.070481245
+[2025-07-10T14:01:16.166Z] Processing new sheet, current parts remaining: 0
+[2025-07-10T14:01:16.166Z] UNPLACED PARTS 0 of 1
+[2025-07-10T14:01:16.166Z] WATCH 
+[2025-07-10T14:01:16.166Z] Utilisation of the sheet(s): 0.00%
+[2025-07-10T14:01:16.167Z] Fitness calculation resulted in NaN, using fallback value
+[2025-07-10T14:01:16.167Z] placeParts completed, placement result: success

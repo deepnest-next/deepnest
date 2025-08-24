@@ -1572,12 +1572,31 @@
         return null;
       }
 
+      // Calculate NFP corners
+      var nfpMinX = minAx - minBx + B[0].x;
+      var nfpMaxX = maxAx - maxBx + B[0].x;
+      var nfpMinY = minAy - minBy + B[0].y;
+      var nfpMaxY = maxAy - maxBy + B[0].y;
+
+      // Handle exact fit case where NFP would be degenerate
+      if (_almostEqual(nfpMinX, nfpMaxX) && _almostEqual(nfpMinY, nfpMaxY)) {
+        // Part exactly fits - return a single point NFP
+        return [
+          [
+            { x: nfpMinX, y: nfpMinY },
+            { x: nfpMinX + TOL, y: nfpMinY },
+            { x: nfpMinX + TOL, y: nfpMinY + TOL },
+            { x: nfpMinX, y: nfpMinY + TOL },
+          ],
+        ];
+      }
+
       return [
         [
-          { x: minAx - minBx + B[0].x, y: minAy - minBy + B[0].y },
-          { x: maxAx - maxBx + B[0].x, y: minAy - minBy + B[0].y },
-          { x: maxAx - maxBx + B[0].x, y: maxAy - maxBy + B[0].y },
-          { x: minAx - minBx + B[0].x, y: maxAy - maxBy + B[0].y },
+          { x: nfpMinX, y: nfpMinY },
+          { x: nfpMaxX, y: nfpMinY },
+          { x: nfpMaxX, y: nfpMaxY },
+          { x: nfpMinX, y: nfpMaxY },
         ],
       ];
     },
@@ -1588,6 +1607,14 @@
     noFitPolygon: function (A, B, inside, searchEdges) {
       if (!A || A.length < 3 || !B || B.length < 3) {
         return null;
+      }
+
+      // Use optimized rectangle algorithm for rectangular bins (interior NFP only)
+      if (!inside && this.isRectangle(A)) {
+        var rectangleNfp = this.noFitPolygonRectangle(A, B);
+        if (rectangleNfp) {
+          return rectangleNfp;
+        }
       }
 
       A.offsetx = 0;
