@@ -11,6 +11,7 @@ import { appendFile, mkdir, readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "path";
 import { DeepNestConfig, NestingResult } from "../index";
+import { DEFAULT_CLIPPER_SCALE } from "../main/util/constants.js";
 
 // !process.env.CI && test.use({ launchOptions: { slowMo: 500 } });
 
@@ -112,7 +113,7 @@ test("Nest", async ({}, testInfo) => {
     });
     expect(deepNestConfig).toMatchObject({
       ...sharedConfig,
-      clipperScale: 10000000,
+      clipperScale: DEFAULT_CLIPPER_SCALE,
     });
     await mainWindow.locator("#home_tab").click();
   });
