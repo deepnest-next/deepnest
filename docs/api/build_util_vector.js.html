@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: build/util/vector.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: build/util/vector.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/** Floating point comparison tolerance for vector calculations */
+const TOL = Math.pow(10, -9); // Floating point error is likely to be above 1 epsilon
+/**
+ * Compares two floating point numbers for approximate equality.
+ *
+ * @param a - First number to compare
+ * @param b - Second number to compare
+ * @param tolerance - Optional tolerance value (defaults to TOL)
+ * @returns True if the numbers are approximately equal within the tolerance
+ */
+function _almostEqual(a, b, tolerance) {
+    if (!tolerance) {
+        tolerance = TOL;
+    }
+    return Math.abs(a - b) &lt; tolerance;
+}
+/**
+ * Represents a 2D vector with dx and dy components.
+ * Used for geometric calculations, transformations, and physics simulations.
+ *
+ * @example
+ * ```typescript
+ * const velocity = new Vector(10, 5);
+ * const normalized = velocity.normalized();
+ * const dotProduct = velocity.dot(new Vector(1, 0));
+ * ```
+ */
+export class Vector {
+    /** The x component of the vector */
+    dx;
+    /** The y component of the vector */
+    dy;
+    /**
+     * Creates a new Vector instance.
+     *
+     * @param dx - The x component of the vector
+     * @param dy - The y component of the vector
+     *
+     * @example
+     * ```typescript
+     * const rightVector = new Vector(1, 0);
+     * const upVector = new Vector(0, 1);
+     * const diagonal = new Vector(1, 1);
+     * ```
+     */
+    constructor(dx, dy) {
+        this.dx = dx;
+        this.dy = dy;
+    }
+    /**
+     * Calculates the dot product of this vector and another vector.
+     * The dot product is useful for calculating angles and projections.
+     *
+     * @param other - The other vector to calculate dot product with
+     * @returns The dot product (scalar value)
+     *
+     * @example
+     * ```typescript
+     * const v1 = new Vector(3, 4);
+     * const v2 = new Vector(1, 0);
+     * const dot = v1.dot(v2); // 3
+     *
+     * // Check if vectors are perpendicular
+     * const perpendicular = v1.dot(new Vector(-4, 3)) === 0; // true
+     * ```
+     */
+    dot(other) {
+        return this.dx * other.dx + this.dy * other.dy;
+    }
+    /**
+     * Calculates the squared length (magnitude) of this vector.
+     * More efficient than length() when you only need to compare magnitudes.
+     *
+     * @returns The squared length of the vector
+     *
+     * @example
+     * ```typescript
+     * const vector = new Vector(3, 4);
+     * const squaredLen = vector.squaredLength(); // 25
+     * ```
+     */
+    squaredLength() {
+        return this.dx * this.dx + this.dy * this.dy;
+    }
+    /**
+     * Calculates the length (magnitude) of this vector.
+     *
+     * @returns The length of the vector
+     *
+     * @example
+     * ```typescript
+     * const vector = new Vector(3, 4);
+     * const length = vector.length(); // 5
+     * ```
+     */
+    length() {
+        return Math.sqrt(this.squaredLength());
+    }
+    /**
+     * Creates a new vector by scaling this vector by a factor.
+     *
+     * @param scale - The scaling factor
+     * @returns A new Vector scaled by the given factor
+     *
+     * @example
+     * ```typescript
+     * const vector = new Vector(2, 3);
+     * const doubled = vector.scaled(2); // Vector(4, 6)
+     * const reversed = vector.scaled(-1); // Vector(-2, -3)
+     * ```
+     */
+    scaled(scale) {
+        return new Vector(this.dx * scale, this.dy * scale);
+    }
+    /**
+     * Creates a unit vector (length = 1) pointing in the same direction as this vector.
+     * Returns the same vector instance if it's already normalized to avoid unnecessary computation.
+     *
+     * @returns A new Vector with length 1, or the same vector if already normalized
+     *
+     * @example
+     * ```typescript
+     * const vector = new Vector(3, 4);
+     * const unit = vector.normalized(); // Vector(0.6, 0.8)
+     * console.log(unit.length()); // 1
+     *
+     * // Already normalized vector returns itself
+     * const alreadyUnit = new Vector(1, 0);
+     * const stillUnit = alreadyUnit.normalized(); // Same instance
+     * ```
+     */
+    normalized() {
+        const sqLen = this.squaredLength();
+        if (_almostEqual(sqLen, 1)) {
+            return this; // given vector was already a unit vector
+        }
+        const len = Math.sqrt(sqLen);
+        return new Vector(this.dx / len, this.dy / len);
+    }
+}
+//# sourceMappingURL=vector.js.map</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
