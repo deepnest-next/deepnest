@@ -1,4 +1,32 @@
-/*!
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: svgparser.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: svgparser.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
  * SvgParser
  * A library to convert an SVG string to parse-able segments for CAD/CAM use
  * Licensed under the MIT license
@@ -60,8 +88,8 @@ export class SvgParser {
 	 * 
 	 * @property {SVGDocument} svg - Parsed SVG document object
 	 * @property {SVGElement} svgRoot - Root SVG element of the document
-	 * @property {Array<string>} allowedElements - Whitelisted SVG elements for import
-	 * @property {Array<string>} polygonElements - Elements that can be converted to polygons
+	 * @property {Array&lt;string>} allowedElements - Whitelisted SVG elements for import
+	 * @property {Array&lt;string>} polygonElements - Elements that can be converted to polygons
 	 * @property {Object} conf - Parser configuration object
 	 * @property {number} conf.tolerance - Bezier curve approximation tolerance (default: 2)
 	 * @property {number} conf.toleranceSvg - SVG unit handling fudge factor (default: 0.01)
@@ -78,10 +106,10 @@ export class SvgParser {
 		/** @type {SVGElement} Root SVG element of the document */
 		this.svgRoot;
 
-		/** @type {Array<string>} Elements that can be imported safely */
+		/** @type {Array&lt;string>} Elements that can be imported safely */
 		this.allowedElements = ['svg','circle','ellipse','path','polygon','polyline','rect','image','line'];
 
-		/** @type {Array<string>} Elements that can be converted to polygons */
+		/** @type {Array&lt;string>} Elements that can be converted to polygons */
 		this.polygonElements = ['svg','circle','ellipse','path','polygon','polyline','rect'];
 
 		/** @type {Object} Parser configuration settings */
@@ -191,7 +219,7 @@ export class SvgParser {
 		}
 
 		// small hack. inkscape svgs opened and saved in illustrator will fail from a lack of an inkscape xmlns
-		if(/inkscape/.test(svgString) && !/xmlns:inkscape/.test(svgString)){
+		if(/inkscape/.test(svgString) &amp;&amp; !/xmlns:inkscape/.test(svgString)){
 			svgString = svgString.replace(/xmlns=/i, ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns=');
 		}
 
@@ -233,7 +261,7 @@ export class SvgParser {
 			width = width.trim();
 			viewBox = viewBox.trim().split(/[\s,]+/);
 
-			if(!width || viewBox.length < 4){
+			if(!width || viewBox.length &lt; 4){
 				return this.svgRoot;
 			}
 
@@ -408,7 +436,7 @@ export class SvgParser {
 		if(!this.dirPath){
 			return false;
 		}
-		for(var i=0; i<svg.children.length; i++){
+		for(var i=0; i&lt;svg.children.length; i++){
 			var e = svg.children[i];
 			if(e.tagName == 'image'){
 				var relpath = e.getAttribute('href');
@@ -426,12 +454,12 @@ export class SvgParser {
 	getCoincident(path, list, tolerance){
 		var index = list.indexOf(path);
 
-		if(index < 0 || index == list.length-1){
+		if(index &lt; 0 || index == list.length-1){
 			return null;
 		}
 
 		var coincident = [];
-		for(var i=index+1; i<list.length; i++){
+		for(var i=index+1; i&lt;list.length; i++){
 			var c = list[i];
 
 			if(GeometryUtil.almostEqualPoints(path.endpoints.start, c.endpoints.start, tolerance)){
@@ -516,7 +544,7 @@ export class SvgParser {
 	 */
 	mergeLines(root, tolerance){
 
-		/*for(var i=0; i<root.children.length; i++){
+		/*for(var i=0; i&lt;root.children.length; i++){
 			var p = root.children[i];
 			if(!this.isClosed(p)){
 				this.reverseOpenPath(p);
@@ -525,14 +553,14 @@ export class SvgParser {
 
 		return false;*/
 		var openpaths = [];
-		for(var i=0; i<root.children.length; i++){
+		for(var i=0; i&lt;root.children.length; i++){
 			var p = root.children[i];
 			if(!this.isClosed(p, tolerance)){
 				openpaths.push(p);
 			}
 			else if(p.tagName == 'path'){
 				var lastCommand = p.pathSegList.getItem(p.pathSegList.numberOfItems-1).pathSegTypeAsLetter;
-				if(lastCommand != 'z' && lastCommand != 'Z'){
+				if(lastCommand != 'z' &amp;&amp; lastCommand != 'Z'){
 					// endpoints are actually far apart
 					p.pathSegList.appendItem(p.createSVGPathSegClosePath());
 				}
@@ -540,13 +568,13 @@ export class SvgParser {
 		}
 
 		// record endpoints
-		for(i=0; i<openpaths.length; i++){
+		for(i=0; i&lt;openpaths.length; i++){
 			var p = openpaths[i];
 
 			p.endpoints = this.getEndpoints(p);
 		}
 
-		for(i=0; i<openpaths.length; i++){
+		for(i=0; i&lt;openpaths.length; i++){
 			var p = openpaths[i];
 			var c = this.getCoincident(p, openpaths, tolerance);
 
@@ -587,7 +615,7 @@ export class SvgParser {
 
 				if(this.isClosed(merged, tolerance)){
 					var lastCommand = merged.pathSegList.getItem(merged.pathSegList.numberOfItems-1).pathSegTypeAsLetter;
-					if(lastCommand != 'z' && lastCommand != 'Z'){
+					if(lastCommand != 'z' &amp;&amp; lastCommand != 'Z'){
 						// endpoints are actually far apart
 						// console.log(merged);
 						merged.pathSegList.appendItem(merged.createSVGPathSegClosePath());
@@ -685,7 +713,7 @@ export class SvgParser {
 
 		var merge = function(lines){
 			var count = 0;
-			for(var i=0; i<lines.length; i++){
+			for(var i=0; i&lt;lines.length; i++){
 				var A1 = {
 					x: parseFloat(lines[i].getAttribute('x1')),
 					y: parseFloat(lines[i].getAttribute('y1'))
@@ -699,7 +727,7 @@ export class SvgParser {
 				var Ax2 = (A2.x-A1.x)*(A2.x-A1.x);
 				var Ay2 = (A2.y-A1.y)*(A2.y-A1.y);
 
-				if(Ax2+Ay2 < min2){
+				if(Ax2+Ay2 &lt; min2){
 					continue;
 				}
 
@@ -714,7 +742,7 @@ export class SvgParser {
 				var relA2 = {x: A2.x-A1.x, y: A2.y-A1.y};
 				var rotA2x = relA2.x * c - relA2.y * s;
 
-				for(var j=i+1; j<lines.length; j++){
+				for(var j=i+1; j&lt;lines.length; j++){
 
 					var B1 = {
 						x: parseFloat(lines[j].getAttribute('x1')),
@@ -729,7 +757,7 @@ export class SvgParser {
 					var Bx2 = (B2.x-B1.x)*(B2.x-B1.x);
 					var By2 = (B2.y-B1.y)*(B2.y-B1.y);
 
-					if(Bx2+By2 < min2){
+					if(Bx2+By2 &lt; min2){
 						continue;
 					}
 
@@ -753,7 +781,7 @@ export class SvgParser {
 					var max2 = Math.max(rotB1.x, rotB2.x);
 
 					// not overlapping
-					if(min2 > max1 || max2 < min1){
+					if(min2 > max1 || max2 &lt; min1){
 						continue;
 					}
 
@@ -762,21 +790,21 @@ export class SvgParser {
 					var relC2x = 0;
 
 					// A is B
-					if(GeometryUtil.almostEqual(min1, min2, tolerance) && GeometryUtil.almostEqual(max1, max2, tolerance)){
+					if(GeometryUtil.almostEqual(min1, min2, tolerance) &amp;&amp; GeometryUtil.almostEqual(max1, max2, tolerance)){
 						lines.splice(j,1);
 						j--;
 						count++;
 						continue;
 					}
 					// A inside B
-					else if(min1 > min2 && max1 < max2){
+					else if(min1 > min2 &amp;&amp; max1 &lt; max2){
 						lines.splice(i,1);
 						i--;
 						count++;
 						break;
 					}
 					// B inside A
-					else if(min2 > min1 && max2 < max1){
+					else if(min2 > min1 &amp;&amp; max2 &lt; max1){
 						lines.splice(j,1);
 						i--;
 						count++;
@@ -824,12 +852,12 @@ export class SvgParser {
 		}
 
 		paths = Array.prototype.slice.call(root.children);
-		for(var i=0; i<paths.length; i++){
+		for(var i=0; i&lt;paths.length; i++){
 			if(paths[i].tagName == 'line'){
 				root.removeChild(paths[i]);
 			}
 		}
-		for(i=0; i<linelist.length; i++){
+		for(i=0; i&lt;linelist.length; i++){
 			root.appendChild(linelist[i]);
 		}
 	}
@@ -840,7 +868,7 @@ export class SvgParser {
 
 		var lines = [];
 		var addLine = function(x1, y1, x2, y2){
-			if(x1==x2 && y1==y2){
+			if(x1==x2 &amp;&amp; y1==y2){
 				return;
 			}
 			var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -851,14 +879,14 @@ export class SvgParser {
 			root.appendChild(line);
 		}
 
-		for(var i=0; i<paths.length; i++){
+		for(var i=0; i&lt;paths.length; i++){
 			var path = paths[i];
 			if(path.tagName == 'polyline' || path.tagName == 'polygon'){
-				if(path.points.length < 2){
+				if(path.points.length &lt; 2){
 					continue;
 				}
 
-				for(var j=0; j<path.points.length-1; j++){
+				for(var j=0; j&lt;path.points.length-1; j++){
 					var p1 = path.points[j];
 					var p2 = path.points[j+1];
 					addLine(p1.x, p1.y, p2.x, p2.y);
@@ -902,7 +930,7 @@ export class SvgParser {
 		var split = [];
 
 		var addLine = function(x1, y1, x2, y2){
-			if(x1==x2 && y1==y2){
+			if(x1==x2 &amp;&amp; y1==y2){
 				return;
 			}
 			var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -915,7 +943,7 @@ export class SvgParser {
 
 		var x=0, y=0, x0=0, y0=0, x1=0, y1=0, x2=0, y2=0, prevx=0, prevy=0;
 
-		for(var i=0; i<seglist.numberOfItems; i++){
+		for(var i=0; i&lt;seglist.numberOfItems; i++){
 			var command = seglist.getItem(i).pathSegTypeAsLetter;
 			var s = seglist.getItem(i);
 
@@ -963,13 +991,13 @@ export class SvgParser {
 		}
 		else if(path.tagName == 'polyline'){
 			var points = [];
-			for(var i=0; i<path.points.length; i++){
+			for(var i=0; i&lt;path.points.length; i++){
 				points.push(path.points[i]);
 			}
 
 			points = points.reverse();
 			path.points.clear();
-			for(i=0; i<points.length; i++){
+			for(i=0; i&lt;points.length; i++){
 				path.points.appendItem(points[i]);
 			}
 		}
@@ -984,7 +1012,7 @@ export class SvgParser {
 
 			var x=0, y=0, x0=0, y0=0, x1=0, y1=0, x2=0, y2=0, prevx=0, prevy=0, prevx1=0, prevy1=0, prevx2=0, prevy2=0;
 
-			for(var i=0; i<seglist.numberOfItems; i++){
+			for(var i=0; i&lt;seglist.numberOfItems; i++){
 				var s = seglist.getItem(i);
 				var command = s.pathSegTypeAsLetter;
 
@@ -1019,7 +1047,7 @@ export class SvgParser {
 					// Quadratic Beziers
 					case 'T':
 					// implicit control point
-					if(i > 0 && /[QqTt]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
+					if(i > 0 &amp;&amp; /[QqTt]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
 						x1 = prevx + (prevx-prevx1);
 						y1 = prevy + (prevy-prevy1);
 					}
@@ -1031,7 +1059,7 @@ export class SvgParser {
 						reversed.push( y1, x1, 'Q', y, x );
 					break;
 					case 'S':
-						if(i > 0 && /[CcSs]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
+						if(i > 0 &amp;&amp; /[CcSs]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
 							x1 = prevx + (prevx-prevx2);
 							y1 = prevy + (prevy-prevy2);
 						}
@@ -1071,12 +1099,12 @@ export class SvgParser {
 			}
 
 			if(p.tagName == 'polyline'){
-				if(p.points.length < 2){
+				if(p.points.length &lt; 2){
 					return null;
 				}
 				pa = svg.createElementNS('http://www.w3.org/2000/svg', 'path');
 				pa.pathSegList.appendItem(pa.createSVGPathSegMovetoAbs(p.points[0].x,p.points[0].y));
-				for(var i=1; i<p.points.length; i++){
+				for(var i=1; i&lt;p.points.length; i++){
 					pa.pathSegList.appendItem(pa.createSVGPathSegLinetoAbs(p.points[i].x,p.points[i].y));
 				}
 				return pa;
@@ -1113,7 +1141,7 @@ export class SvgParser {
 		patha.pathSegList.appendItem(patha.createSVGPathSegLinetoAbs(m1.x,m1.y));
 
 		//seglist.removeItem(0);
-		for(var i=1; i<seglist.numberOfItems; i++){
+		for(var i=1; i&lt;seglist.numberOfItems; i++){
 			patha.pathSegList.appendItem(seglist.getItem(i));
 		}
 
@@ -1131,7 +1159,7 @@ export class SvgParser {
 	isClosed(p, tolerance){
 		var openElements = ['line', 'polyline', 'path'];
 
-		if(openElements.indexOf(p.tagName) < 0){
+		if(openElements.indexOf(p.tagName) &lt; 0){
 			// things like rect, circle etc are by definition closed shapes
 			return true;
 		}
@@ -1143,7 +1171,7 @@ export class SvgParser {
 		if(p.tagName == 'polyline'){
 			// a 2-points polyline cannot be closed.
 			// return false to ensures that the polyline is further processed
-			if(p.points.length < 3){
+			if(p.points.length &lt; 3){
 				return false;
 			}
 			var first = {
@@ -1156,7 +1184,7 @@ export class SvgParser {
 				y: p.points[p.points.length-1].y
 			};
 
-			if(GeometryUtil.almostEqual(first.x,last.x, tolerance || this.conf.toleranceSvg) && GeometryUtil.almostEqual(first.y,last.y, tolerance || this.conf.toleranceSvg)){
+			if(GeometryUtil.almostEqual(first.x,last.x, tolerance || this.conf.toleranceSvg) &amp;&amp; GeometryUtil.almostEqual(first.y,last.y, tolerance || this.conf.toleranceSvg)){
 				return true;
 			}
 			else{
@@ -1165,7 +1193,7 @@ export class SvgParser {
 			// path can be closed if it touches itself at some point
 			/*for(var j=p.points.length-1; j>0; j--){
 				var current = p.points[j];
-				if(GeometryUtil.almostEqual(first.x,current.x, tolerance || this.conf.toleranceSvg) && GeometryUtil.almostEqual(first.y,current.y, tolerance || this.conf.toleranceSvg)){
+				if(GeometryUtil.almostEqual(first.x,current.x, tolerance || this.conf.toleranceSvg) &amp;&amp; GeometryUtil.almostEqual(first.y,current.y, tolerance || this.conf.toleranceSvg)){
 					return true;
 				}
 			}
@@ -1174,7 +1202,7 @@ export class SvgParser {
 		}
 
 		if(p.tagName == 'path'){
-			for(var j=0; j<p.pathSegList.numberOfItems; j++){
+			for(var j=0; j&lt;p.pathSegList.numberOfItems; j++){
 				var c = p.pathSegList.getItem(j);
 				if(c.pathSegTypeAsLetter == 'z' || c.pathSegTypeAsLetter == 'Z'){
 					return true;
@@ -1185,7 +1213,7 @@ export class SvgParser {
 			if(!test){
 				return false;
 			}
-			if(test.length < 2){
+			if(test.length &lt; 2){
 				return true;
 			}
 			var first = test[0];
@@ -1230,9 +1258,9 @@ export class SvgParser {
 	 * // Returns first and last vertex of polygonified path
 	 * 
 	 * @element_types_supported
-	 * - **Line**: `<line>` → Direct attribute extraction (x1,y1) to (x2,y2)
-	 * - **Polyline**: `<polyline>` → First to last point from points array
-	 * - **Path**: `<path>` → First to last vertex after polygonification
+	 * - **Line**: `&lt;line>` → Direct attribute extraction (x1,y1) to (x2,y2)
+	 * - **Polyline**: `&lt;polyline>` → First to last point from points array
+	 * - **Path**: `&lt;path>` → First to last vertex after polygonification
 	 * 
 	 * @algorithm
 	 * 1. **Type Detection**: Identify SVG element type
@@ -1321,7 +1349,7 @@ export class SvgParser {
 		var seglist = path.pathSegList;
 		var x=0, y=0, x0=0, y0=0, x1=0, y1=0, x2=0, y2=0;
 
-		for(var i=0; i<seglist.numberOfItems; i++){
+		for(var i=0; i&lt;seglist.numberOfItems; i++){
 			var command = seglist.getItem(i).pathSegTypeAsLetter;
 			var s = seglist.getItem(i);
 
@@ -1457,7 +1485,7 @@ export class SvgParser {
 
 		var transform, scale, rotate;
 
-		if(transformString && transformString.length > 0){
+		if(transformString &amp;&amp; transformString.length > 0){
 			var transform = this.transformParse(transformString);
 		}
 
@@ -1476,11 +1504,11 @@ export class SvgParser {
 		if(element.tagName == 'g' || element.tagName == 'svg' || element.tagName == 'defs'){
 			element.removeAttribute('transform');
 			var children = Array.prototype.slice.call(element.children);
-			for(var i=0; i<children.length; i++){
+			for(var i=0; i&lt;children.length; i++){
 				this.applyTransform(children[i], transformString, skipClosed, dxfFlag);
 			}
 		}
-		else if(transform && !transform.isIdentity()){
+		else if(transform &amp;&amp; !transform.isIdentity()){
 			switch(element.tagName){
 				case 'ellipse':
 					if(skipClosed){
@@ -1509,7 +1537,7 @@ export class SvgParser {
 					element = path;
 
 				case 'path':
-					if(skipClosed && this.isClosed(element)){
+					if(skipClosed &amp;&amp; this.isClosed(element)){
 						element.setAttribute('transform', transformString);
 						return;
 					}
@@ -1518,7 +1546,7 @@ export class SvgParser {
 					var prevx = 0;
 					var prevy = 0;
 
-					for(var i=0; i<seglist.numberOfItems; i++){
+					for(var i=0; i&lt;seglist.numberOfItems; i++){
 						var s = seglist.getItem(i);
 						var command = s.pathSegTypeAsLetter;
 
@@ -1546,7 +1574,7 @@ export class SvgParser {
 							s = seglist.getItem(i);
 						}
 
-						if('x' in s && 'y' in s){
+						if('x' in s &amp;&amp; 'y' in s){
 							var transformed = transform.calc(new Point(s.x, s.y));
 							prevx = s.x;
 							prevy = s.y;
@@ -1554,12 +1582,12 @@ export class SvgParser {
 							s.x = transformed.x;
 							s.y = transformed.y;
 						}
-						if('x1' in s && 'y1' in s){
+						if('x1' in s &amp;&amp; 'y1' in s){
 							var transformed = transform.calc(new Point(s.x1, s.y1));
 							s.x1 = transformed.x;
 							s.y1 = transformed.y;
 						}
-						if('x2' in s && 'y2' in s){
+						if('x2' in s &amp;&amp; 'y2' in s){
 							var transformed = transform.calc(new Point(s.x2, s.y2));
 							s.x2 = transformed.x;
 							s.y2 = transformed.y;
@@ -1639,7 +1667,7 @@ export class SvgParser {
 					var prevx = 0;
 					var prevy = 0;
 
-					for(var i=0; i<seglist.numberOfItems; i++){
+					for(var i=0; i&lt;seglist.numberOfItems; i++){
 						var s = seglist.getItem(i);
 						var command = s.pathSegTypeAsLetter;
 
@@ -1659,7 +1687,7 @@ export class SvgParser {
 							s = seglist.getItem(i);
 						}
 
-						if('x' in s && 'y' in s){
+						if('x' in s &amp;&amp; 'y' in s){
 							var transformed = transform.calc(new Point(s.x, s.y));
 							prevx = s.x;
 							prevy = s.y;
@@ -1667,12 +1695,12 @@ export class SvgParser {
 							s.x = transformed.x;
 							s.y = transformed.y;
 						}
-						if('x1' in s && 'y1' in s){
+						if('x1' in s &amp;&amp; 'y1' in s){
 							var transformed = transform.calc(new Point(s.x1, s.y1));
 							s.x1 = transformed.x;
 							s.y1 = transformed.y;
 						}
-						if('x2' in s && 'y2' in s){
+						if('x2' in s &amp;&amp; 'y2' in s){
 							var transformed = transform.calc(new Point(s.x2, s.y2));
 							s.x2 = transformed.x;
 							s.y2 = transformed.y;
@@ -1714,7 +1742,7 @@ export class SvgParser {
 					polygon.points.appendItem(p4);
 
 					// OnShape exports a rectangle at position 0/0, drop it
-					if (p1.x === 0 && p1.y === 0) {
+					if (p1.x === 0 &amp;&amp; p1.y === 0) {
 						polygon.points.clear();
 					}
 
@@ -1728,11 +1756,11 @@ export class SvgParser {
 
 				case 'polygon':
 				case 'polyline':
-					if(skipClosed && this.isClosed(element)){
+					if(skipClosed &amp;&amp; this.isClosed(element)){
 						element.setAttribute('transform', transformString);
 						return;
 					}
-					for(var i=0; i<element.points.length; i++){
+					for(var i=0; i&lt;element.points.length; i++){
 						var point = element.points[i];
 						var transformed = transform.calc(new Point(point.x, point.y));
 						point.x = transformed.x;
@@ -1747,11 +1775,11 @@ export class SvgParser {
 
 	// bring all child elements to the top level
 	flatten(element){
-		for(var i=0; i<element.children.length; i++){
+		for(var i=0; i&lt;element.children.length; i++){
 			this.flatten(element.children[i]);
 		}
 
-		if(element.tagName != 'svg' && element.parentElement){
+		if(element.tagName != 'svg' &amp;&amp; element.parentElement){
 			while(element.children.length > 0){
 				element.parentElement.appendChild(element.children[0]);
 			}
@@ -1759,7 +1787,7 @@ export class SvgParser {
 	}
 
 	// remove all elements with tag name not in the whitelist
-	// use this to remove <text>, <g> etc that don't represent shapes
+	// use this to remove &lt;text>, &lt;g> etc that don't represent shapes
 	filter(whitelist, element){
 		if(!whitelist || whitelist.length == 0){
 			throw Error('invalid whitelist');
@@ -1767,11 +1795,11 @@ export class SvgParser {
 
 		element = element || this.svgRoot;
 
-		for(var i=0; i<element.children.length; i++){
+		for(var i=0; i&lt;element.children.length; i++){
 			this.filter(whitelist, element.children[i]);
 		}
 
-		if(element.children.length == 0 && whitelist.indexOf(element.tagName) < 0){
+		if(element.children.length == 0 &amp;&amp; whitelist.indexOf(element.tagName) &lt; 0){
 			element.parentElement.removeChild(element);
 		}
 	}
@@ -1791,7 +1819,7 @@ export class SvgParser {
 
 		var lastM = 0;
 		for(var i=seglist.numberOfItems-1; i>=0; i--){
-			if(i > 0 && seglist.getItem(i).pathSegTypeAsLetter == 'M' || seglist.getItem(i).pathSegTypeAsLetter == 'm'){
+			if(i > 0 &amp;&amp; seglist.getItem(i).pathSegTypeAsLetter == 'M' || seglist.getItem(i).pathSegTypeAsLetter == 'm'){
 				lastM = i;
 				break;
 			}
@@ -1801,7 +1829,7 @@ export class SvgParser {
 			return false; // only 1 M command, no need to split
 		}
 
-		for(i=0; i<seglist.numberOfItems; i++){
+		for(i=0; i&lt;seglist.numberOfItems; i++){
 			var s = seglist.getItem(i);
 			var command = s.pathSegTypeAsLetter;
 			if(command == 'M' || command == 'm'){
@@ -1837,7 +1865,7 @@ export class SvgParser {
 		}
 
 		var addedPaths = [];
-		for(i=0; i<paths.length; i++){
+		for(i=0; i&lt;paths.length; i++){
 			// don't add trivial paths from sequential M commands
 			if(paths[i].pathSegList.numberOfItems > 1){
 				path.parentElement.insertBefore(paths[i], path);
@@ -1854,7 +1882,7 @@ export class SvgParser {
 	recurse(element, func){
 		// only operate on original DOM tree, ignore any children that are added. Avoid infinite loops
 		var children = Array.prototype.slice.call(element.children);
-		for(var i=0; i<children.length; i++){
+		for(var i=0; i&lt;children.length; i++){
 			this.recurse(children[i], func);
 		}
 
@@ -1870,7 +1898,7 @@ export class SvgParser {
 	 * linear segments suitable for collision detection and nesting algorithms.
 	 * 
 	 * @param {SVGElement} element - SVG element to convert to polygon representation
-	 * @returns {Array<Point>} Array of point objects with x,y coordinates
+	 * @returns {Array&lt;Point>} Array of point objects with x,y coordinates
 	 * 
 	 * @example
 	 * // Convert rectangle to polygon
@@ -1891,12 +1919,12 @@ export class SvgParser {
 	 * // Results in linear approximation of curves and arcs
 	 * 
 	 * @element_types_supported
-	 * - **Rectangle**: `<rect>` → 4-point polygon
-	 * - **Circle**: `<circle>` → Multi-point circular approximation
-	 * - **Ellipse**: `<ellipse>` → Multi-point elliptical approximation
-	 * - **Polygon**: `<polygon>` → Direct point extraction
-	 * - **Polyline**: `<polyline>` → Direct point extraction
-	 * - **Path**: `<path>` → Complex curve-to-polygon conversion
+	 * - **Rectangle**: `&lt;rect>` → 4-point polygon
+	 * - **Circle**: `&lt;circle>` → Multi-point circular approximation
+	 * - **Ellipse**: `&lt;ellipse>` → Multi-point elliptical approximation
+	 * - **Polygon**: `&lt;polygon>` → Direct point extraction
+	 * - **Polyline**: `&lt;polyline>` → Direct point extraction
+	 * - **Path**: `&lt;path>` → Complex curve-to-polygon conversion
 	 * 
 	 * @approximation_algorithm
 	 * For curved elements (circles, ellipses):
@@ -1948,7 +1976,7 @@ export class SvgParser {
 		switch(element.tagName){
 			case 'polygon':
 			case 'polyline':
-				for(i=0; i<element.points.length; i++){
+				for(i=0; i&lt;element.points.length; i++){
 					poly.push({
 						x: element.points[i].x,
 						y: element.points[i].y
@@ -1986,12 +2014,12 @@ export class SvgParser {
 				// num is the smallest number of segments required to approximate the circle to the given tolerance
 				var num = Math.ceil((2*Math.PI)/Math.acos(1 - (this.conf.tolerance/radius)));
 
-				if(num < 12){
+				if(num &lt; 12){
 					num = 12;
 				}
 
 				// Ensure we create a complete polygon by going full circle
-				for(var i=0; i<=num; i++){
+				for(var i=0; i&lt;=num; i++){
 					var theta = i * ( (2*Math.PI) / num);
 					var point = {};
 					point.x = radius*Math.cos(theta) + cx;
@@ -2011,11 +2039,11 @@ export class SvgParser {
 
 				var num = Math.ceil((2*Math.PI)/Math.acos(1 - (this.conf.tolerance/maxradius)));
 
-				if(num < 12){
+				if(num &lt; 12){
 					num = 12;
 				}
 
-				for(var i=0; i<=num; i++){
+				for(var i=0; i&lt;=num; i++){
 					var theta = i * ( (2*Math.PI) / num);
 					var point = {};
 					point.x = rx*Math.cos(theta) + cx;
@@ -2030,7 +2058,7 @@ export class SvgParser {
 		}
 
 		// do not include last point if coincident with starting point
-		while(poly.length > 0 && GeometryUtil.almostEqual(poly[0].x,poly[poly.length-1].x, this.conf.toleranceSvg) && GeometryUtil.almostEqual(poly[0].y,poly[poly.length-1].y, this.conf.toleranceSvg)){
+		while(poly.length > 0 &amp;&amp; GeometryUtil.almostEqual(poly[0].x,poly[poly.length-1].x, this.conf.toleranceSvg) &amp;&amp; GeometryUtil.almostEqual(poly[0].y,poly[poly.length-1].y, this.conf.toleranceSvg)){
 			poly.pop();
 		}
 
@@ -2046,7 +2074,7 @@ export class SvgParser {
 	 * approximations suitable for geometric operations and collision detection.
 	 * 
 	 * @param {SVGPathElement} path - SVG path element to convert to polygon
-	 * @returns {Array<Point>} Array of point objects representing polygon vertices
+	 * @returns {Array&lt;Point>} Array of point objects representing polygon vertices
 	 * 
 	 * @example
 	 * // Convert simple path to polygon
@@ -2137,7 +2165,7 @@ export class SvgParser {
 
 		var x=0, y=0, x0=0, y0=0, x1=0, y1=0, x2=0, y2=0, prevx=0, prevy=0, prevx1=0, prevy1=0, prevx2=0, prevy2=0;
 
-		for(var i=0; i<seglist.numberOfItems; i++){
+		for(var i=0; i&lt;seglist.numberOfItems; i++){
 			var s = seglist.getItem(i);
 			var command = s.pathSegTypeAsLetter;
 
@@ -2185,7 +2213,7 @@ export class SvgParser {
 				case 't':
 				case 'T':
 				// implicit control point
-				if(i > 0 && /[QqTt]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
+				if(i > 0 &amp;&amp; /[QqTt]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
 					x1 = prevx + (prevx-prevx1);
 					y1 = prevy + (prevy-prevy1);
 				}
@@ -2197,7 +2225,7 @@ export class SvgParser {
 				case 'Q':
 					var pointlist = GeometryUtil.QuadraticBezier.linearize({x: prevx, y: prevy}, {x: x, y: y}, {x: x1, y: y1}, this.conf.tolerance);
 					pointlist.shift(); // firstpoint would already be in the poly
-					for(var j=0; j<pointlist.length; j++){
+					for(var j=0; j&lt;pointlist.length; j++){
 						var point = {};
 						point.x = pointlist[j].x;
 						point.y = pointlist[j].y;
@@ -2206,7 +2234,7 @@ export class SvgParser {
 				break;
 				case 's':
 				case 'S':
-					if(i > 0 && /[CcSs]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
+					if(i > 0 &amp;&amp; /[CcSs]/.test(seglist.getItem(i-1).pathSegTypeAsLetter)){
 						x1 = prevx + (prevx-prevx2);
 						y1 = prevy + (prevy-prevy2);
 					}
@@ -2218,7 +2246,7 @@ export class SvgParser {
 				case 'C':
 					var pointlist = GeometryUtil.CubicBezier.linearize({x: prevx, y: prevy}, {x: x, y: y}, {x: x1, y: y1}, {x: x2, y: y2}, this.conf.tolerance);
 					pointlist.shift(); // firstpoint would already be in the poly
-					for(var j=0; j<pointlist.length; j++){
+					for(var j=0; j&lt;pointlist.length; j++){
 						var point = {};
 						point.x = pointlist[j].x;
 						point.y = pointlist[j].y;
@@ -2230,7 +2258,7 @@ export class SvgParser {
 					var pointlist = GeometryUtil.Arc.linearize({x: prevx, y: prevy}, {x: x, y: y}, s.r1, s.r2, s.angle, s.largeArcFlag,s.sweepFlag, this.conf.tolerance);
 					pointlist.shift();
 
-					for(var j=0; j<pointlist.length; j++){
+					for(var j=0; j&lt;pointlist.length; j++){
 						var point = {};
 						point.x = pointlist[j].x;
 						point.y = pointlist[j].y;
@@ -2246,3 +2274,26 @@ export class SvgParser {
 		return poly;
 	};
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="SvgParser.html">SvgParser</a></li></ul><h3>Global</h3><ul><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:34:33 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: DeepNest</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: DeepNest</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>DeepNest<span class="signature">(eventEmitter)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>Main nesting engine class that handles SVG import, part extraction, and genetic algorithm optimization.</p>
+<p>The DeepNest class orchestrates the entire nesting process from SVG parsing through
+optimization to final placement generation. It manages part libraries, genetic algorithm
+parameters, and provides callbacks for progress monitoring and result display.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="DeepNest"><span class="type-signature"></span>new DeepNest<span class="signature">(eventEmitter)</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Creates a new DeepNest instance.</p>
+    
+
+
+
+<div class="description">
+    <p>Creates a new DeepNest instance.</p>
+<p>Initializes the nesting engine with empty part libraries, default configuration,
+and sets up event handling for progress monitoring and user interaction.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>eventEmitter</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">EventEmitter</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Node.js EventEmitter for IPC communication</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line48">line 48</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Basic usage
+const deepnest = new DeepNest(eventEmitter);
+const parts = deepnest.importsvg('parts.svg', './files/', svgContent, 1.0, false);
+deepnest.start(sheets, (progress) => console.log(progress));</code></pre>
+
+    <pre class="prettyprint"><code>// Advanced configuration
+const deepnest = new DeepNest(eventEmitter);
+deepnest.config({ rotations: 8, populationSize: 50, mutationRate: 15 });
+const parts = deepnest.importsvg('complex-parts.svg', './files/', svgContent, 1.0, false);
+deepnest.start(sheets, progressCallback, displayCallback);</code></pre>
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="DeepNest.html">DeepNest</a></dt>
+            <dd>Creates a new DeepNest instance.</dd>
+        </dl>
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="GA"><span class="type-signature"></span>GA<span class="type-signature"> :GeneticAlgorithm|null</span></h4>
+
+
+<p class="summary"><p>Genetic algorithm optimizer instance</p>.</p>
+
+
+
+<div class="description">
+    <p>Genetic algorithm optimizer instance</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">GeneticAlgorithm</span>
+|
+
+<span class="param-type">null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line83">line 83</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="displayCallback"><span class="type-signature"></span>displayCallback<span class="type-signature"> :function|null</span></h4>
+
+
+<p class="summary"><p>Callback function for result display</p>.</p>
+
+
+
+<div class="description">
+    <p>Callback function for result display</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">function</span>
+|
+
+<span class="param-type">null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line92">line 92</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="eventEmitter"><span class="type-signature"></span>eventEmitter<span class="type-signature"> :EventEmitter</span></h4>
+
+
+<p class="summary"><p>Node.js EventEmitter for IPC communication</p>.</p>
+
+
+
+<div class="description">
+    <p>Node.js EventEmitter for IPC communication</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">EventEmitter</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line98">line 98</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="imports"><span class="type-signature"></span>imports<span class="type-signature"> :Array.&lt;{filename: string, svg: SVGElement}></span></h4>
+
+
+<p class="summary"><p>List of imported SVG files</p>.</p>
+
+
+
+<div class="description">
+    <p>List of imported SVG files</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;{filename: string, svg: SVGElement}></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line71">line 71</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="nests"><span class="type-signature"></span>nests<span class="type-signature"> :Array.&lt;Nest></span></h4>
+
+
+<p class="summary"><p>Running list of placement results and fitness scores</p>.</p>
+
+
+
+<div class="description">
+    <p>Running list of placement results and fitness scores</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;Nest></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line95">line 95</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="parts"><span class="type-signature"></span>parts<span class="type-signature"> :Array.&lt;Part></span></h4>
+
+
+<p class="summary"><p>List of all extracted parts with metadata and geometry</p>.</p>
+
+
+
+<div class="description">
+    <p>List of all extracted parts with metadata and geometry</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;Part></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line74">line 74</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="partsTree"><span class="type-signature"></span>partsTree<span class="type-signature"> :Array.&lt;Polygon></span></h4>
+
+
+<p class="summary"><p>Pure polygonal representation used during nesting</p>.</p>
+
+
+
+<div class="description">
+    <p>Pure polygonal representation used during nesting</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Array.&lt;Polygon></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line77">line 77</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="progressCallback"><span class="type-signature"></span>progressCallback<span class="type-signature"> :function|null</span></h4>
+
+
+<p class="summary"><p>Callback function for progress updates</p>.</p>
+
+
+
+<div class="description">
+    <p>Callback function for progress updates</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">function</span>
+|
+
+<span class="param-type">null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line89">line 89</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="workerTimer"><span class="type-signature"></span>workerTimer<span class="type-signature"> :number|null</span></h4>
+
+
+<p class="summary"><p>Timer ID for background worker operations</p>.</p>
+
+
+
+<div class="description">
+    <p>Timer ID for background worker operations</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">number</span>
+|
+
+<span class="param-type">null</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line86">line 86</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="working"><span class="type-signature"></span>working<span class="type-signature"> :boolean</span></h4>
+
+
+<p class="summary"><p>Flag indicating if nesting operation is currently running</p>.</p>
+
+
+
+<div class="description">
+    <p>Flag indicating if nesting operation is currently running</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line80">line 80</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getHull"><span class="type-signature"></span>getHull<span class="signature">(polygon)</span><span class="type-signature"> &rarr; {Polygon|null}</span></h4>
+    
+
+    
+    <p class="summary">Computes the convex hull of a polygon using Graham's scan algorithm.</p>
+    
+
+
+
+<div class="description">
+    <p>Computes the convex hull of a polygon using Graham's scan algorithm.</p>
+<p>Calculates the smallest convex polygon that contains all vertices of the
+input polygon. Used for collision detection optimization, bounding box
+calculations, and simplifying complex shapes for faster NFP computation.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>polygon</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Polygon</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Input polygon as array of points</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line299">line 299</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="HullPolygon.html#.hull">HullPolygon.hull</a> for underlying algorithm implementation</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Convex hull as array of points in counterclockwise order, or null if insufficient points</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Polygon</span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Get convex hull for collision detection
+const complexPart = [{x: 0, y: 0}, {x: 10, y: 5}, {x: 5, y: 10}, {x: 2, y: 3}];
+const hull = deepnest.getHull(complexPart);
+console.log(`Hull has ${hull.length} vertices`); // Simplified shape</code></pre>
+
+    <pre class="prettyprint"><code>// Use hull for fast bounding checks
+const partHull = deepnest.getHull(part.polygon);
+const containerHull = deepnest.getHull(container.polygon);
+if (!isHullOverlapping(partHull, containerHull)) {
+  // Skip expensive NFP calculation
+  return null;
+}</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="importsvg"><span class="type-signature"></span>importsvg<span class="signature">(filename, dirpath, svgstring, scalingFactor, dxfFlag)</span><span class="type-signature"> &rarr; {Array.&lt;Part>}</span></h4>
+    
+
+    
+    <p class="summary">Imports and processes an SVG file for nesting operations.</p>
+    
+
+
+
+<div class="description">
+    <p>Imports and processes an SVG file for nesting operations.</p>
+<p>Parses SVG content, applies scaling transformations, extracts geometric parts,
+and adds them to the parts library. Handles both regular SVG files and DXF
+imports with appropriate preprocessing for CAD compatibility.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>filename</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Name of the SVG file being imported</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>dirpath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Directory path containing the SVG file</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>svgstring</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Raw SVG content as string</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>scalingFactor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Absolute scaling factor to apply (1.0 = no scaling)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>dxfFlag</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>True if importing from DXF, enables special preprocessing</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>1.5.6</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line139">line 139</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>If SVG parsing fails or contains invalid geometry</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of extracted parts with geometry and metadata</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Part></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Import standard SVG file
+const parts = deepnest.importsvg(
+  'laser-parts.svg',
+  './designs/',
+  svgContent,
+  1.0,
+  false
+);
+console.log(`Imported ${parts.length} parts`);</code></pre>
+
+    <pre class="prettyprint"><code>// Import DXF file with scaling
+const parts = deepnest.importsvg(
+  'cad-parts.dxf',
+  './cad/',
+  dxfContent,
+  0.1,  // Scale down from mm to inches
+  true  // Enable DXF preprocessing
+);</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="renderPoints"><span class="type-signature"></span>renderPoints<span class="signature">(points, svg, highlight<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Renders an array of points as SVG circle elements for debugging visualization.</p>
+    
+
+
+
+<div class="description">
+    <p>Renders an array of points as SVG circle elements for debugging visualization.</p>
+<p>Creates visual markers at specific coordinate points. Commonly used for
+debugging contact points in NFP calculations, visualizing transformation
+results, and marking critical vertices during geometric operations.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>points</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="Point.html">Point</a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Array of points to visualize</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>svg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>SVG container element to append circles to</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>highlight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Optional CSS class name for styling</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line243">line 243</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Mark contact points during NFP calculation
+const contactPoints = findContactPoints(polyA, polyB);
+deepnest.renderPoints(contactPoints, debugSvg, 'contact-points');</code></pre>
+
+    <pre class="prettyprint"><code>// Visualize transformation results
+const transformedPoints = applyMatrix(originalPoints, matrix);
+deepnest.renderPoints(transformedPoints, svgElement, 'transformed');</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="renderPolygon"><span class="type-signature"></span>renderPolygon<span class="signature">(poly, svg, highlight<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+    <p class="summary">Renders a polygon as an SVG polyline element for debugging and visualization.</p>
+    
+
+
+
+<div class="description">
+    <p>Renders a polygon as an SVG polyline element for debugging and visualization.</p>
+<p>Creates a visual representation of a polygon by connecting all vertices
+with line segments. Useful for debugging nesting algorithms, visualizing
+No-Fit Polygons, and displaying intermediate calculation results.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>poly</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Polygon</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Array of points representing polygon vertices</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>svg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">SVGElement</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>SVG container element to append the polyline to</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>highlight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Optional CSS class name for styling</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="main_deepnest.js.html">main/deepnest.js</a>, <a href="main_deepnest.js.html#line198">line 198</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Render a simple rectangle for debugging
+const rect = [
+  {x: 0, y: 0}, {x: 100, y: 0}, 
+  {x: 100, y: 50}, {x: 0, y: 50}
+];
+deepnest.renderPolygon(rect, svgElement, 'debug-polygon');</code></pre>
+
+    <pre class="prettyprint"><code>// Visualize NFP calculation result
+const nfp = calculateNFP(partA, partB);
+if (nfp) {
+  deepnest.renderPolygon(nfp, debugSvg, 'nfp-highlight');
+}</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DeepNest.html">DeepNest</a></li><li><a href="HullPolygon.html">HullPolygon</a></li><li><a href="NfpCache.html">NfpCache</a></li><li><a href="Point.html">Point</a></li><li><a href="SvgParser.html">SvgParser</a></li><li><a href="Vector.html">Vector</a></li></ul><h3>Global</h3><ul><li><a href="global.html#TOL">TOL</a></li><li><a href="global.html#_almostEqual">_almostEqual</a></li><li><a href="global.html#analyzeParts">analyzeParts</a></li><li><a href="global.html#analyzeSheetHoles">analyzeSheetHoles</a></li><li><a href="global.html#loadPresetList">loadPresetList</a></li><li><a href="global.html#mergedLength">mergedLength</a></li><li><a href="global.html#placeParts">placeParts</a></li><li><a href="global.html#ready">ready</a></li><li><a href="global.html#saveJSON">saveJSON</a></li><li><a href="global.html#updateForm">updateForm</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 10 2025 20:46:29 GMT+0200 (Mitteleuropäische Sommerzeit)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

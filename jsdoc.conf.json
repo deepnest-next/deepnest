@@ -1,0 +1,39 @@
+{
+  "source": {
+    "include": [
+      "./main/",
+      "./build/",
+      "./README.md"
+    ],
+    "exclude": [
+      "./node_modules/",
+      "./tests/",
+      "./main/font/",
+      "./main/util/_unused/"
+    ],
+    "includePattern": "\\.(js)$",
+    "excludePattern": "(test|spec)\\.js$"
+  },
+  "sourceType": "module",
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc", "closure"]
+  },
+  "plugins": [
+    "plugins/markdown",
+    "plugins/summarize"
+  ],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "opts": {
+    "destination": "./docs/api/",
+    "recurse": true,
+    "readme": "./README.md"
+  },
+  "markdown": {
+    "parser": "gfm",
+    "hardwrap": false
+  }
+}
