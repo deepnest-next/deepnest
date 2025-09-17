@@ -8,6 +8,7 @@ import '../build/util/domparser.js';
 // Dependencies
 import { Matrix } from '../build/util/matrix.js';
 import { Point } from '../build/util/point.js';
+import * as GeometryUtil from '../build/util/geometryutil.js';
 
 export class SvgParser {
 	constructor(){
