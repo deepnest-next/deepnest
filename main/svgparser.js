@@ -8,6 +8,7 @@ import '../build/util/domparser.js';
 // Dependencies
 import { Matrix } from '../build/util/matrix.js';
 import { Point } from '../build/util/point.js';
+import { Polygon } from '../build/util/polygon.js';
 
 export class SvgParser {
 	constructor(){
@@ -1454,7 +1455,9 @@ export class SvgParser {
 			poly.pop();
 		}
 
-		return poly;
+		// Convert points to Point instances and create Polygon
+		var points = poly.map(p => new Point(p.x, p.y));
+		return new Polygon(points);
 	};
 
 	polygonifyPath(path){
