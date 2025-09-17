@@ -2,6 +2,8 @@
 
 import { NfpCache } from '../build/nfpDb.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import { Polygon } from '../build/util/polygon.js';
+import { DEFAULT_CLIPPER_SCALE } from '../build/util/constants.js';
 
 window.onload = function () {
   const { ipcRenderer } = require('electron');
@@ -91,9 +93,9 @@ window.onload = function () {
       var clipper = new ClipperLib.Clipper();
 
       var Ac = toClipperCoordinates(A);
-      ClipperLib.JS.ScaleUpPath(Ac, 10000000);
+      ClipperLib.JS.ScaleUpPath(Ac, DEFAULT_CLIPPER_SCALE);
       var Bc = toClipperCoordinates(B);
-      ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+      ClipperLib.JS.ScaleUpPath(Bc, DEFAULT_CLIPPER_SCALE);
       for (let i = 0; i < Bc.length; i++) {
         Bc[i].X *= -1;
         Bc[i].Y *= -1;
@@ -103,7 +105,7 @@ window.onload = function () {
 
       var largestArea = null;
       for (let i = 0; i < solution.length; i++) {
-        var n = toNestCoordinates(solution[i], 10000000);
+        var n = toNestCoordinates(solution[i], DEFAULT_CLIPPER_SCALE);
         var sarea = -GeometryUtil.polygonArea(n);
         if (largestArea === null || largestArea < sarea) {
           clipperNfp = n;
@@ -482,6 +484,11 @@ function toNestCoordinates(polygon, scale) {
 };
 
 function getHull(polygon) {
+	if (polygon instanceof Polygon) {
+		var hullPolygon = HullPolygon.hull(polygon);
+		return hullPolygon ? hullPolygon.toArray() : polygon.toArray();
+	}
+	
 	// Convert the polygon points to proper Point objects for HullPolygon
 	var points = [];
 	for (let i = 0; i < polygon.length; i++) {
@@ -498,10 +505,33 @@ function getHull(polygon) {
 		return polygon;
 	}
 
-	return hullpoints;
+	return hullpoints instanceof Polygon ? hullpoints.toArray() : hullpoints;
 }
 
 function rotatePolygon(polygon, degrees) {
+  if (polygon instanceof Polygon) {
+    var rotated = polygon.rotate(degrees);
+    var rotatedArray = rotated.toArray();
+    
+    // Preserve exact property from original points
+    var originalPoints = polygon.toArray();
+    for (let i = 0; i < rotatedArray.length && i < originalPoints.length; i++) {
+      if (originalPoints[i].exact) {
+        rotatedArray[i].exact = originalPoints[i].exact;
+      }
+    }
+    
+    // Handle children if they exist
+    if (polygon.children && polygon.children.length > 0) {
+      rotatedArray.children = [];
+      for (let j = 0; j < polygon.children.length; j++) {
+        rotatedArray.children.push(rotatePolygon(polygon.children[j], degrees));
+      }
+    }
+    
+    return rotatedArray;
+  }
+  
   var rotated = [];
   var angle = degrees * Math.PI / 180;
   for (let i = 0; i < polygon.length; i++) {
@@ -564,9 +594,9 @@ function getOuterNfp(A, B, inside) {
     // console.time('clipper');
 
     var Ac = toClipperCoordinates(A);
-    ClipperLib.JS.ScaleUpPath(Ac, 10000000);
+    ClipperLib.JS.ScaleUpPath(Ac, DEFAULT_CLIPPER_SCALE);
     var Bc = toClipperCoordinates(B);
-    ClipperLib.JS.ScaleUpPath(Bc, 10000000);
+    ClipperLib.JS.ScaleUpPath(Bc, DEFAULT_CLIPPER_SCALE);
     for (let i = 0; i < Bc.length; i++) {
       Bc[i].X *= -1;
       Bc[i].Y *= -1;
@@ -578,7 +608,7 @@ function getOuterNfp(A, B, inside) {
 
     var largestArea = null;
     for (let i = 0; i < solution.length; i++) {
-      var n = toNestCoordinates(solution[i], 10000000);
+      var n = toNestCoordinates(solution[i], DEFAULT_CLIPPER_SCALE);
       var sarea = -GeometryUtil.polygonArea(n);
       if (largestArea === null || largestArea < sarea) {
         clipperNfp = n;

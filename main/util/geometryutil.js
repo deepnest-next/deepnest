@@ -6,11 +6,20 @@
 
 (function (root) {
   "use strict";
+  
+  // Import the new Polygon class - will be available if polygon.js is loaded
+  const Polygon = root.Polygon;
+
+  // Import constants from centralized constants file
+  const constants = root.DEEPNEST_CONSTANTS || {};
+  const GEOMETRIC_TOLERANCE = constants.GEOMETRIC_TOLERANCE || Math.pow(10, -9);
+  const DEG_TO_RAD = constants.DEG_TO_RAD || (Math.PI / 180);
+  const RAD_TO_DEG = constants.RAD_TO_DEG || (180 / Math.PI);
 
   // private shared variables/methods
 
-  // floating point comparison tolerance
-  var TOL = Math.pow(10, -9); // Floating point error is likely to be above 1 epsilon
+  // floating point comparison tolerance (use centralized constant)
+  var TOL = GEOMETRIC_TOLERANCE;
 
   function _almostEqual(a, b, tolerance) {
     if (!tolerance) {
@@ -27,11 +36,11 @@
   }
 
   function _degreesToRadians(angle) {
-    return angle * (Math.PI / 180);
+    return angle * DEG_TO_RAD;
   }
 
   function _radiansToDegrees(angle) {
-    return angle * (180 / Math.PI);
+    return angle * RAD_TO_DEG;
   }
 
   // normalize vector into a unit vector
@@ -551,6 +560,10 @@
 
     // returns the rectangular bounding box of the given polygon
     getPolygonBounds: function (polygon) {
+      if (polygon instanceof Polygon) {
+        return polygon.bounds();
+      }
+      
       if (!polygon || polygon.length < 3) {
         return null;
       }
@@ -584,6 +597,10 @@
 
     // return true if point is in the polygon, false if outside, and null if exactly on a point or edge
     pointInPolygon: function (point, polygon, tolerance) {
+      if (polygon instanceof Polygon) {
+        return polygon.contains(point, tolerance);
+      }
+      
       if (!polygon || polygon.length < 3) {
         return null;
       }
@@ -633,6 +650,10 @@
     // returns the area of the polygon, assuming no self-intersections
     // a negative area indicates counter-clockwise winding direction
     polygonArea: function (polygon) {
+      if (polygon instanceof Polygon) {
+        return polygon.area();
+      }
+      
       var area = 0;
       var i, j;
       for (i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -1503,6 +1524,10 @@
     },
 
     isRectangle: function (poly, tolerance) {
+      if (poly instanceof Polygon) {
+        return poly.isRectangle(tolerance);
+      }
+      
       var bb = this.getPolygonBounds(poly);
       tolerance = tolerance || TOL;
 
@@ -2106,8 +2131,18 @@
     },
 
     rotatePolygon: function (polygon, angle) {
+      if (polygon instanceof Polygon) {
+        var rotated = polygon.rotate(angle);
+        var bounds = rotated.bounds();
+        rotated.x = bounds.x;
+        rotated.y = bounds.y;
+        rotated.width = bounds.width;
+        rotated.height = bounds.height;
+        return rotated;
+      }
+      
       var rotated = [];
-      angle = (angle * Math.PI) / 180;
+      angle = angle * DEG_TO_RAD;
       for (var i = 0; i < polygon.length; i++) {
         var x = polygon[i].x;
         var y = polygon[i].y;

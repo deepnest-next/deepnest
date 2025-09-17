@@ -8,6 +8,8 @@ import '../build/util/domparser.js';
 // Dependencies
 import { Matrix } from '../build/util/matrix.js';
 import { Point } from '../build/util/point.js';
+import { Polygon } from '../build/util/polygon.js';
+import { RAD_TO_DEG, TWO_PI } from '../build/util/constants.js';
 
 export class SvgParser {
 	constructor(){
@@ -969,7 +971,7 @@ export class SvgParser {
 		var tarray = transform.toArray();
 
 		// decompose affine matrix to rotate, scale components (translate is just the 3rd column)
-		var rotate = Math.atan2(tarray[1], tarray[3])*180/Math.PI;
+		var rotate = Math.atan2(tarray[1], tarray[3]) * RAD_TO_DEG;
 		var scale = Math.hypot(tarray[0],tarray[2]);
 
 		if(element.tagName == 'g' || element.tagName == 'svg' || element.tagName == 'defs'){
@@ -1404,7 +1406,7 @@ export class SvgParser {
 				var cy = parseFloat(element.getAttribute('cy'));
 
 				// num is the smallest number of segments required to approximate the circle to the given tolerance
-				var num = Math.ceil((2*Math.PI)/Math.acos(1 - (this.conf.tolerance/radius)));
+				var num = Math.ceil(TWO_PI / Math.acos(1 - (this.conf.tolerance/radius)));
 
 				if(num < 12){
 					num = 12;
@@ -1412,7 +1414,7 @@ export class SvgParser {
 
 				// Ensure we create a complete polygon by going full circle
 				for(var i=0; i<=num; i++){
-					var theta = i * ( (2*Math.PI) / num);
+					var theta = i * (TWO_PI / num);
 					var point = {};
 					point.x = radius*Math.cos(theta) + cx;
 					point.y = radius*Math.sin(theta) + cy;
@@ -1429,14 +1431,14 @@ export class SvgParser {
 				var cx = parseFloat(element.getAttribute('cx'));
 				var cy = parseFloat(element.getAttribute('cy'));
 
-				var num = Math.ceil((2*Math.PI)/Math.acos(1 - (this.conf.tolerance/maxradius)));
+				var num = Math.ceil(TWO_PI / Math.acos(1 - (this.conf.tolerance/maxradius)));
 
 				if(num < 12){
 					num = 12;
 				}
 
 				for(var i=0; i<=num; i++){
-					var theta = i * ( (2*Math.PI) / num);
+					var theta = i * (TWO_PI / num);
 					var point = {};
 					point.x = rx*Math.cos(theta) + cx;
 					point.y = ry*Math.sin(theta) + cy;
@@ -1454,7 +1456,9 @@ export class SvgParser {
 			poly.pop();
 		}
 
-		return poly;
+		// Convert points to Point instances and create Polygon
+		var points = poly.map(p => new Point(p.x, p.y));
+		return new Polygon(points);
 	};
 
 	polygonifyPath(path){
