@@ -1,0 +1,38 @@
+{
+  "name": "deepnest-frontend",
+  "version": "1.0.0",
+  "description": "Modern SolidJS frontend for Deepnest with internationalization",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "i18next": "25.3.2",
+    "i18next-browser-languagedetector": "8.2.0",
+    "immer": "^10.0.0",
+    "solid-js": "1.9.7"
+  },
+  "devDependencies": {
+    "@solidjs/testing-library": "^0.8.10",
+    "@tailwindcss/vite": "^4.1.11",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "24.0.13",
+    "@vitest/ui": "^3.2.4",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.1.11",
+    "terser": "^5.43.1",
+    "typescript": "5.8.3",
+    "vite": "7.0.4",
+    "vite-plugin-solid": "2.11.7",
+    "vitest": "^3.2.4"
+  }
+}

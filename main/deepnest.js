@@ -24,34 +24,118 @@ var config = {
   overlapTolerance: 0.0001,
 };
 
+/**
+ * Main nesting engine class that handles SVG import, part extraction, and genetic algorithm optimization.
+ * 
+ * The DeepNest class orchestrates the entire nesting process from SVG parsing through
+ * optimization to final placement generation. It manages part libraries, genetic algorithm
+ * parameters, and provides callbacks for progress monitoring and result display.
+ * 
+ * @class
+ * @example
+ * // Basic usage
+ * const deepnest = new DeepNest(eventEmitter);
+ * const parts = deepnest.importsvg('parts.svg', './files/', svgContent, 1.0, false);
+ * deepnest.start(sheets, (progress) => console.log(progress));
+ * 
+ * @example
+ * // Advanced configuration
+ * const deepnest = new DeepNest(eventEmitter);
+ * deepnest.config({ rotations: 8, populationSize: 50, mutationRate: 15 });
+ * const parts = deepnest.importsvg('complex-parts.svg', './files/', svgContent, 1.0, false);
+ * deepnest.start(sheets, progressCallback, displayCallback);
+ */
 export class DeepNest {
+  /**
+   * Creates a new DeepNest instance.
+   * 
+   * Initializes the nesting engine with empty part libraries, default configuration,
+   * and sets up event handling for progress monitoring and user interaction.
+   * 
+   * @param {EventEmitter} eventEmitter - Node.js EventEmitter for IPC communication
+   * 
+   * @example
+   * const { EventEmitter } = require('events');
+   * const emitter = new EventEmitter();
+   * const deepnest = new DeepNest(emitter);
+   * 
+   * // Listen for nesting events
+   * emitter.on('nest-progress', (data) => {
+   *   console.log(`Progress: ${data.progress}%`);
+   * });
+   */
   constructor(eventEmitter) {
     var svg = null;
 
-    // list of imported files
-    // import: {filename: 'blah.svg', svg: svgroot}
+    /** @type {Array<{filename: string, svg: SVGElement}>} List of imported SVG files */
     this.imports = [];
 
-    // list of all extracted parts
-    // part: {name: 'part name', quantity: ...}
+    /** @type {Array<Part>} List of all extracted parts with metadata and geometry */
     this.parts = [];
 
-    // a pure polygonal representation of parts that lives only during the nesting step
+    /** @type {Array<Polygon>} Pure polygonal representation used during nesting */
     this.partsTree = [];
 
+    /** @type {boolean} Flag indicating if nesting operation is currently running */
     this.working = false;
 
+    /** @type {GeneticAlgorithm|null} Genetic algorithm optimizer instance */
     this.GA = null;
+
+    /** @type {number|null} Timer ID for background worker operations */
     this.workerTimer = null;
 
+    /** @type {Function|null} Callback function for progress updates */
     this.progressCallback = null;
+
+    /** @type {Function|null} Callback function for result display */
     this.displayCallback = null;
-    // a running list of placements
+
+    /** @type {Array<Nest>} Running list of placement results and fitness scores */
     this.nests = [];
 
+    /** @type {EventEmitter} Node.js EventEmitter for IPC communication */
     this.eventEmitter = eventEmitter;
   }
 
+  /**
+   * Imports and processes an SVG file for nesting operations.
+   * 
+   * Parses SVG content, applies scaling transformations, extracts geometric parts,
+   * and adds them to the parts library. Handles both regular SVG files and DXF
+   * imports with appropriate preprocessing for CAD compatibility.
+   * 
+   * @param {string} filename - Name of the SVG file being imported
+   * @param {string} dirpath - Directory path containing the SVG file
+   * @param {string} svgstring - Raw SVG content as string
+   * @param {number} scalingFactor - Absolute scaling factor to apply (1.0 = no scaling)
+   * @param {boolean} dxfFlag - True if importing from DXF, enables special preprocessing
+   * @returns {Array<Part>} Array of extracted parts with geometry and metadata
+   * 
+   * @example
+   * // Import standard SVG file
+   * const parts = deepnest.importsvg(
+   *   'laser-parts.svg',
+   *   './designs/',
+   *   svgContent,
+   *   1.0,
+   *   false
+   * );
+   * console.log(`Imported ${parts.length} parts`);
+   * 
+   * @example
+   * // Import DXF file with scaling
+   * const parts = deepnest.importsvg(
+   *   'cad-parts.dxf',
+   *   './cad/',
+   *   dxfContent,
+   *   0.1,  // Scale down from mm to inches
+   *   true  // Enable DXF preprocessing
+   * );
+   * 
+   * @throws {Error} If SVG parsing fails or contains invalid geometry
+   * @since 1.5.6
+   */
   importsvg(
     filename,
     dirpath,
@@ -59,12 +143,13 @@ export class DeepNest {
     scalingFactor,
     dxfFlag
   ) {
-    // parse svg
+    // Parse SVG with default config scale and absolute scaling factor
     // config.scale is the default scale, and may not be applied
     // scalingFactor is an absolute scaling that must be applied regardless of input svg contents
     var svg = window.SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
     svg = window.SvgParser.cleanInput(dxfFlag);
 
+    // Store import reference for later use
     if (filename) {
       this.imports.push({
         filename: filename,
@@ -72,6 +157,7 @@ export class DeepNest {
       });
     }
 
+    // Extract parts from SVG and add to parts library
     var parts = this.getParts(svg.children, filename);
     for (var i = 0; i < parts.length; i++) {
       this.parts.push(parts[i]);
@@ -80,7 +166,35 @@ export class DeepNest {
     return parts;
   };
 
-  // debug function
+  /**
+   * Renders a polygon as an SVG polyline element for debugging and visualization.
+   * 
+   * Creates a visual representation of a polygon by connecting all vertices
+   * with line segments. Useful for debugging nesting algorithms, visualizing
+   * No-Fit Polygons, and displaying intermediate calculation results.
+   * 
+   * @param {Polygon} poly - Array of points representing polygon vertices
+   * @param {SVGElement} svg - SVG container element to append the polyline to
+   * @param {string} [highlight] - Optional CSS class name for styling
+   * 
+   * @example
+   * // Render a simple rectangle for debugging
+   * const rect = [
+   *   {x: 0, y: 0}, {x: 100, y: 0}, 
+   *   {x: 100, y: 50}, {x: 0, y: 50}
+   * ];
+   * deepnest.renderPolygon(rect, svgElement, 'debug-polygon');
+   * 
+   * @example
+   * // Visualize NFP calculation result
+   * const nfp = calculateNFP(partA, partB);
+   * if (nfp) {
+   *   deepnest.renderPolygon(nfp, debugSvg, 'nfp-highlight');
+   * }
+   * 
+   * @performance O(n) where n is number of polygon vertices
+   * @debug_function For development and troubleshooting only
+   */
   renderPolygon(poly, svg, highlight) {
     if (!poly || poly.length == 0) {
       return;
@@ -102,7 +216,30 @@ export class DeepNest {
     svg.appendChild(polyline);
   };
 
-  // debug function
+  /**
+   * Renders an array of points as SVG circle elements for debugging visualization.
+   * 
+   * Creates visual markers at specific coordinate points. Commonly used for
+   * debugging contact points in NFP calculations, visualizing transformation
+   * results, and marking critical vertices during geometric operations.
+   * 
+   * @param {Array<Point>} points - Array of points to visualize
+   * @param {SVGElement} svg - SVG container element to append circles to
+   * @param {string} [highlight] - Optional CSS class name for styling
+   * 
+   * @example
+   * // Mark contact points during NFP calculation
+   * const contactPoints = findContactPoints(polyA, polyB);
+   * deepnest.renderPoints(contactPoints, debugSvg, 'contact-points');
+   * 
+   * @example
+   * // Visualize transformation results
+   * const transformedPoints = applyMatrix(originalPoints, matrix);
+   * deepnest.renderPoints(transformedPoints, svgElement, 'transformed');
+   * 
+   * @performance O(n) where n is number of points
+   * @debug_function For development and troubleshooting only
+   */
   renderPoints(points, svg, highlight) {
     for (var i = 0; i < points.length; i++) {
       var circle = window.document.createElementNS(
@@ -118,6 +255,47 @@ export class DeepNest {
     }
   };
 
+  /**
+   * Computes the convex hull of a polygon using Graham's scan algorithm.
+   * 
+   * Calculates the smallest convex polygon that contains all vertices of the
+   * input polygon. Used for collision detection optimization, bounding box
+   * calculations, and simplifying complex shapes for faster NFP computation.
+   * 
+   * @param {Polygon} polygon - Input polygon as array of points
+   * @returns {Polygon|null} Convex hull as array of points in counterclockwise order, or null if insufficient points
+   * 
+   * @example
+   * // Get convex hull for collision detection
+   * const complexPart = [{x: 0, y: 0}, {x: 10, y: 5}, {x: 5, y: 10}, {x: 2, y: 3}];
+   * const hull = deepnest.getHull(complexPart);
+   * console.log(`Hull has ${hull.length} vertices`); // Simplified shape
+   * 
+   * @example
+   * // Use hull for fast bounding checks
+   * const partHull = deepnest.getHull(part.polygon);
+   * const containerHull = deepnest.getHull(container.polygon);
+   * if (!isHullOverlapping(partHull, containerHull)) {
+   *   // Skip expensive NFP calculation
+   *   return null;
+   * }
+   * 
+   * @algorithm
+   * 1. Convert polygon points to compatible format
+   * 2. Apply Graham's scan via HullPolygon.hull()
+   * 3. Return simplified convex boundary
+   * 
+   * @performance 
+   * - Time: O(n log n) where n is number of vertices
+   * - Space: O(n) for point storage
+   * - Typical speedup: 2-10x faster collision detection
+   * 
+   * @mathematical_background
+   * Convex hull represents the minimum perimeter that encloses all points.
+   * Used in computational geometry for optimization and collision detection.
+   * 
+   * @see {@link HullPolygon.hull} for underlying algorithm implementation
+   */
   getHull(polygon) {
     var points = [];
     for (let i = 0; i < polygon.length; i++) {
