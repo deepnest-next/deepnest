@@ -1289,7 +1289,7 @@ export class DeepNest {
           filenames[j] = filename;
         }
 
-        this.eventEmitter.send("background-start", {
+        let send = {
           index: i,
           sheets: sheets,
           sheetids: sheetids,
@@ -1301,7 +1301,9 @@ export class DeepNest {
           sources: sources,
           children: children,
           filenames: filenames,
-        });
+        }
+        console.log("background-start", send);
+        this.eventEmitter.send("background-start", send);
         running++;
       }
     }
