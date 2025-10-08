@@ -168,11 +168,19 @@ window.onload = function () {
       var c = window.db.getStats();
       // console.log('nfp cached:', c);
       // console.log()
+      try { console.log(`DBG sync[start] index=${index} sheets=${data.sheets.length} parts=${parts.length}`); } catch (e) {}
       ipcRenderer.send('test', [data.sheets, parts, data.config, index]);
-      var placement = placeParts(data.sheets, parts, data.config, index);
-
-      placement.index = data.index;
-      ipcRenderer.send('background-response', placement);
+      try {
+        var placement = placeParts(data.sheets, parts, data.config, index);
+        placement.index = data.index;
+        try { console.log(`DBG sync[send] index=${index} sheetsUsed=${placement.placements.length} fitness=${placement.fitness}`); } catch (e) {}
+        ipcRenderer.send('background-response', placement);
+      } catch (err) {
+        console.log('DBG sync[error]', err && err.message ? err.message : err);
+        var fallback = { placements: [], fitness: Number.MAX_SAFE_INTEGER, area: 0, totalarea: 0, mergedLength: 0, utilisation: 0, error: (err && err.message) || 'unknown' };
+        fallback.index = data.index;
+        ipcRenderer.send('background-response', fallback);
+      }
     }
 
     // console.time('Total');
@@ -714,6 +722,149 @@ function getInnerNfp(A, B, config) {
   return f;
 }
 
+// Compute feasible placement region for placing part B inside a specific hole of a placed parent
+// Behaves like the outer-sheet flow: union of obstacles (already placed in the hole) then difference with the hole NFP
+function getFinalNfpWithinHole(holeNfp, holePoly, B, parentIndex, holeIndex, placed, placements, config) {
+  if (!holeNfp || holeNfp.length === 0) {
+    return null;
+  }
+
+  // Build union of obstacle NFPS for parts already placed in the same hole
+  var combinedNfp = new ClipperLib.Paths();
+  var clipper = new ClipperLib.Clipper();
+
+  for (let m = 0; m < placed.length; m++) {
+    if (!placements[m]) continue;
+    var pl = placements[m];
+    if (pl.inHole === true && pl.parentIndex === parentIndex && pl.holeIndex === holeIndex) {
+      var nfpObs = getOuterNfp(placed[m], B);
+      if (!nfpObs) {
+        continue;
+      }
+
+      // shift obstacle nfp to its placed location
+      for (let t = 0; t < nfpObs.length; t++) {
+        nfpObs[t].x += pl.x;
+        nfpObs[t].y += pl.y;
+      }
+      if (nfpObs.children && nfpObs.children.length > 0) {
+        for (let t = 0; t < nfpObs.children.length; t++) {
+          for (let u = 0; u < nfpObs.children[t].length; u++) {
+            nfpObs.children[t][u].x += pl.x;
+            nfpObs.children[t][u].y += pl.y;
+          }
+        }
+      }
+
+      var clipperNfpObs = nfpToClipperCoordinates(nfpObs, config);
+      clipper.AddPaths(clipperNfpObs, ClipperLib.PolyType.ptSubject, true);
+    }
+  }
+
+  var unionedObstacles = new ClipperLib.Paths();
+  // Union may legitimately have no subjects if no parts are in the hole yet
+  clipper.Execute(ClipperLib.ClipType.ctUnion, unionedObstacles, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+
+  // Convert the hole-internal NFP to clipper coords and shift to absolute (sheet) coordinates using parent placement
+  var clipperHoleNfp = innerNfpToClipperCoordinates(holeNfp, config);
+  var parentPlacement = placements[parentIndex] || { x: 0, y: 0 };
+  if (parentPlacement && (parentPlacement.x || parentPlacement.y)) {
+    const sx = parentPlacement.x * config.clipperScale;
+    const sy = parentPlacement.y * config.clipperScale;
+    for (let i = 0; i < clipperHoleNfp.length; i++) {
+      for (let j = 0; j < clipperHoleNfp[i].length; j++) {
+        clipperHoleNfp[i][j].X += sx;
+        clipperHoleNfp[i][j].Y += sy;
+      }
+    }
+  }
+
+  // finalNfp = holeNfp - union(obstacles)
+  var finalNfp = new ClipperLib.Paths();
+  clipper = new ClipperLib.Clipper();
+  if (unionedObstacles.length > 0) {
+    clipper.AddPaths(unionedObstacles, ClipperLib.PolyType.ptClip, true);
+  }
+  clipper.AddPaths(clipperHoleNfp, ClipperLib.PolyType.ptSubject, true);
+
+  if (!clipper.Execute(ClipperLib.ClipType.ctDifference, finalNfp, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftNonZero)) {
+    // fallback to the original hole nfp if clipping fails
+    return holeNfp;
+  }
+
+  if (!finalNfp || finalNfp.length === 0) {
+    return null;
+  }
+
+  var f = [];
+  for (let i = 0; i < finalNfp.length; i++) {
+    f.push(toNestCoordinates(finalNfp[i], config.clipperScale));
+  }
+
+  return f;
+}
+
+// Densify feasible anchor positions inside a hole's feasible NFP region by sampling a grid
+// nfpPolys are absolute coordinates (sheet space). Returns array of {x,y,rotation,orientationMatched,fillRatio}
+function densifyHoleAnchors(nfpPolys, partOrRotated, stepX, stepY, orientationMatched, rotation, fillRatio, maxCandidates) {
+  const candidates = [];
+  if (!nfpPolys || nfpPolys.length === 0) return candidates;
+  const sx = Math.max(1e-6, stepX);
+  const sy = Math.max(1e-6, stepY);
+  const maxC = Math.max(0, maxCandidates || 600);
+
+  // offset from part anchor (index 0) to its bounding box origin
+  const bounds = GeometryUtil.getPolygonBounds(partOrRotated);
+  const anchorOffsetX = partOrRotated[0].x - bounds.x;
+  const anchorOffsetY = partOrRotated[0].y - bounds.y;
+
+  // simple dedupe by rounding to 1e-6
+  const seen = new Set();
+  function pushCandidate(x, y) {
+    const key = (Math.round(x * 1e6) + ':' + Math.round(y * 1e6));
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push({
+      x: x - partOrRotated[0].x,
+      y: y - partOrRotated[0].y,
+      rotation: rotation,
+      orientationMatched: !!orientationMatched,
+      fillRatio: fillRatio
+    });
+  }
+
+  // staggered grid starts to break alignment patterns
+  const starts = [
+    { ox: 0, oy: 0 },
+    { ox: 0.5 * sx, oy: 0 },
+    { ox: 0, oy: 0.5 * sy },
+    { ox: 0.5 * sx, oy: 0.5 * sy }
+  ];
+
+  outer: for (let idx = 0; idx < nfpPolys.length; idx++) {
+    const poly = nfpPolys[idx];
+    if (!poly || poly.length < 3) continue;
+    const pb = GeometryUtil.getPolygonBounds(poly);
+    if (!pb) continue;
+    for (const st of starts) {
+      // iterate top-left to bottom-right
+      for (let y = pb.y + st.oy + anchorOffsetY; y <= pb.y + pb.height - (bounds.height - anchorOffsetY) + 1e-6; y += sy) {
+        for (let x = pb.x + st.ox + anchorOffsetX; x <= pb.x + pb.width - (bounds.width - anchorOffsetX) + 1e-6; x += sx) {
+          // test that anchor point (part[0] aligned) lies inside feasible region
+          // Since NFP regions describe valid anchor positions, we check the anchor point itself
+          const inside = GeometryUtil.pointInPolygon({ x: x, y: y }, poly);
+          if (inside === true) {
+            pushCandidate(x, y);
+            if (candidates.length >= maxC) break outer;
+          }
+        }
+      }
+    }
+  }
+
+  return candidates;
+}
+
 function placeParts(sheets, parts, config, nestindex) {
   if (!sheets) {
     return null;
@@ -727,6 +878,14 @@ function placeParts(sheets, parts, config, nestindex) {
   // total length of merged lines
   var totalMerged = 0;
 
+  // Debug entry snapshot
+  try {
+    console.log(`DBG placeParts[start] sheets=${sheets.length} parts=${parts.length} placementType=${config.placementType} rotations=${config.rotations} spacing=${config.spacing}`);
+  } catch (e) {}
+
+  // map: part id -> absolute area (rotation/translation invariant)
+  var partAreaById = new Map();
+
   // rotate paths by given rotation
   var rotated = [];
   for (let i = 0; i < parts.length; i++) {
@@ -735,6 +894,13 @@ function placeParts(sheets, parts, config, nestindex) {
     r.source = parts[i].source;
     r.id = parts[i].id;
     r.filename = parts[i].filename;
+
+    try {
+      partAreaById.set(r.id, Math.abs(GeometryUtil.polygonArea(r)));
+    } catch (e) {
+      // ignore area calc issues; default to 0
+      partAreaById.set(r.id, 0);
+    }
 
     rotated.push(r);
   }
@@ -769,12 +935,18 @@ function placeParts(sheets, parts, config, nestindex) {
   var part;
 
   while (parts.length > 0) {
+    // debug counters for this sheet
+    let dbg_c_sheetNfpNull = 0;
+    let dbg_c_finalNfpEmpty = 0;
+    let dbg_c_holePositions = 0;
 
     var placed = [];
     var placements = [];
 
     // open a new sheet
+    var remainingBefore = sheets.length;
     var sheet = sheets.shift();
+    try { console.log(`DBG sheet[open] id=${sheet && sheet.id} source=${sheet && sheet.source} remainingBefore=${remainingBefore}`); } catch (e) {}
     var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
     totalsheetarea += sheetarea;
 
@@ -813,6 +985,7 @@ function placeParts(sheets, parts, config, nestindex) {
       }
       // part unplaceable, skip
       if (!sheetNfp || sheetNfp.length == 0) {
+        dbg_c_sheetNfpNull++;
         continue;
       }
 
@@ -846,72 +1019,108 @@ function placeParts(sheets, parts, config, nestindex) {
       // Check for holes in already placed parts where this part might fit
       var holePositions = [];
       try {
+        if (config.enableHolePlacement === false) {
+          // skip hole placement entirely if disabled
+          throw new Error('hole-placement-disabled');
+        }
         // Track the best rotation for each hole
         const holeOptimalRotations = new Map(); // Map of "parentIndex_holeIndex" -> best rotation
 
         for (let j = 0; j < placed.length; j++) {
+          // If hole-in-hole placement is disabled, skip holes from parents that are already in a hole
+          if (config.enableHoleInHolePlacement === false && placements[j] && placements[j].inHole) {
+            continue;
+          }
           if (placed[j].children && placed[j].children.length > 0) {
             for (let k = 0; k < placed[j].children.length; k++) {
-              // Check if the hole is large enough for the part
+              // Candidate hole
               var childHole = placed[j].children[k];
               var childArea = Math.abs(GeometryUtil.polygonArea(childHole));
               var partArea = Math.abs(GeometryUtil.polygonArea(part));
 
-              // Only consider holes that are larger than the part
-              if (childArea > partArea * 1.1) { // 10% buffer for placement
-                try {
-                  var holePoly = [];
-                  // Create proper array structure for the hole polygon
-                  for (let p = 0; p < childHole.length; p++) {
-                    holePoly.push({
-                      x: childHole[p].x,
-                      y: childHole[p].y,
-                      exact: childHole[p].exact || false
-                    });
-                  }
+              // Only try parts in holes if they are smaller than the hole or match exactly (within tolerance)
+              try {
+                var holePoly = [];
+                // Create proper array structure for the hole polygon
+                for (let p = 0; p < childHole.length; p++) {
+                  holePoly.push({
+                    x: childHole[p].x,
+                    y: childHole[p].y,
+                    exact: childHole[p].exact || false
+                  });
+                }
 
-                  // Add polygon metadata
-                  holePoly.source = placed[j].source + "_hole_" + k;
-                  holePoly.rotation = 0;
-                  holePoly.children = [];
+                // Add polygon metadata (include parent's rotation in source to avoid stale cache across different rotations)
+                var parentRot = (placements[j] && typeof placements[j].rotation === 'number') ? placements[j].rotation : (placed[j].rotation || 0);
+                holePoly.source = placed[j].source + "_hole_" + k + "_r" + (Math.round(((parentRot % 360) + 360) % 360));
+                holePoly.rotation = 0;
+                holePoly.children = [];
 
+                // Get dimensions of the hole and part to match orientations
+                const holeBounds = GeometryUtil.getPolygonBounds(holePoly);
+                const partBounds = GeometryUtil.getPolygonBounds(part);
 
-                  // Get dimensions of the hole and part to match orientations
-                  const holeBounds = GeometryUtil.getPolygonBounds(holePoly);
-                  const partBounds = GeometryUtil.getPolygonBounds(part);
+                const dimTol = 1e-6; // small geometric tolerance
+                const areaTol = childArea * 0.001; // 0.1% area tolerance for "exact" match
+                const fitsByBounds = (
+                  (partBounds.width <= holeBounds.width + dimTol && partBounds.height <= holeBounds.height + dimTol) ||
+                  (partBounds.height <= holeBounds.width + dimTol && partBounds.width <= holeBounds.height + dimTol)
+                );
+                const fitsByArea = partArea <= (childArea + areaTol);
+                if (!fitsByBounds || !fitsByArea) {
+                  continue; // part is larger than the hole and not an exact match
+                }
 
-                  // Determine if the hole is wider than it is tall
-                  const holeIsWide = holeBounds.width > holeBounds.height;
-                  const partIsWide = partBounds.width > partBounds.height;
+                // Determine if the hole is wider than it is tall
+                const holeIsWide = holeBounds.width > holeBounds.height;
+                const partIsWide = partBounds.width > partBounds.height;
 
+                // Try part with current rotation
+                let bestRotationNfp = null;
+                let bestRotation = part.rotation;
+                let bestFitFill = 0;
+                let rotationPlacements = [];
 
-                  // Try part with current rotation
-                  let bestRotationNfp = null;
-                  let bestRotation = part.rotation;
-                  let bestFitFill = 0;
-                  let rotationPlacements = [];
-
-                  // Try original rotation
+                  // Try original rotation, using hole as a mini-sheet (subtract already placed parts in the same hole)
                   var holeNfp = getInnerNfp(holePoly, part, config);
-                  if (holeNfp && holeNfp.length > 0) {
-                    bestRotationNfp = holeNfp;
+                  var holeFinalNfp = getFinalNfpWithinHole(holeNfp, holePoly, part, j, k, placed, placements, config);
+                  if (holeFinalNfp && holeFinalNfp.length > 0) {
+                    bestRotationNfp = holeFinalNfp;
                     bestFitFill = partArea / childArea;
 
-                    for (let m = 0; m < holeNfp.length; m++) {
-                      for (let n = 0; n < holeNfp[m].length; n++) {
+                    for (let m = 0; m < holeFinalNfp.length; m++) {
+                      for (let n = 0; n < holeFinalNfp[m].length; n++) {
                         rotationPlacements.push({
-                          x: holeNfp[m][n].x - part[0].x + placements[j].x,
-                          y: holeNfp[m][n].y - part[0].y + placements[j].y,
+                          x: holeFinalNfp[m][n].x - part[0].x,
+                          y: holeFinalNfp[m][n].y - part[0].y,
                           rotation: part.rotation,
                           orientationMatched: (holeIsWide === partIsWide),
                           fillRatio: bestFitFill
                         });
                       }
                     }
+
+                    // Densify by sampling inside feasible NFP regions (grid-based)
+                    const denseA = densifyHoleAnchors(
+                      holeFinalNfp,
+                      part,
+                      Math.max(1e-6, partBounds.width),
+                      Math.max(1e-6, partBounds.height),
+                      (holeIsWide === partIsWide),
+                      part.rotation,
+                      bestFitFill,
+                      800
+                    );
+                    for (const d of denseA) rotationPlacements.push(d);
                   }
 
-                  // Try up to 4 different rotations to find the best fit for this hole
-                  const rotationsToTry = [90, 180, 270];
+                  // Try additional rotations based on user's allowed rotations (exclude the current rotation)
+                  const rotationsToTry = [];
+                  const allowed = Math.max(1, parseInt(config.rotations || 1, 10));
+                  const step = 360 / allowed;
+                  for (let t = 1; t < allowed; t++) {
+                    rotationsToTry.push(t * step);
+                  }
                   for (let rot of rotationsToTry) {
                     let newRotation = (part.rotation + rot) % 360;
                     const rotatedPart = rotatePolygon(part, newRotation);
@@ -921,8 +1130,17 @@ function placeParts(sheets, parts, config, nestindex) {
                     rotatedPart.filename = part.filename;
 
                     const rotatedBounds = GeometryUtil.getPolygonBounds(rotatedPart);
+                    // Bounds check for rotated orientation as well
+                    const rotatedFitsBounds = (
+                      (rotatedBounds.width <= holeBounds.width + dimTol && rotatedBounds.height <= holeBounds.height + dimTol) ||
+                      (rotatedBounds.height <= holeBounds.width + dimTol && rotatedBounds.width <= holeBounds.height + dimTol)
+                    );
+                    if (!rotatedFitsBounds) {
+                      continue;
+                    }
                     const rotatedIsWide = rotatedBounds.width > rotatedBounds.height;
-                    const rotatedNfp = getInnerNfp(holePoly, rotatedPart, config);
+                    const rotatedNfpRaw = getInnerNfp(holePoly, rotatedPart, config);
+                    const rotatedNfp = getFinalNfpWithinHole(rotatedNfpRaw, holePoly, rotatedPart, j, k, placed, placements, config);
 
                     if (rotatedNfp && rotatedNfp.length > 0) {
                       // Calculate fill ratio for this rotation
@@ -941,14 +1159,27 @@ function placeParts(sheets, parts, config, nestindex) {
                         for (let m = 0; m < rotatedNfp.length; m++) {
                           for (let n = 0; n < rotatedNfp[m].length; n++) {
                             rotationPlacements.push({
-                              x: rotatedNfp[m][n].x - rotatedPart[0].x + placements[j].x,
-                              y: rotatedNfp[m][n].y - rotatedPart[0].y + placements[j].y,
+                              x: rotatedNfp[m][n].x - rotatedPart[0].x,
+                              y: rotatedNfp[m][n].y - rotatedPart[0].y,
                               rotation: newRotation,
                               orientationMatched: (holeIsWide === rotatedIsWide),
                               fillRatio: bestFitFill
                             });
                           }
                         }
+
+                        // Densify by sampling inside feasible NFP regions (grid-based) for rotated case
+                        const denseR = densifyHoleAnchors(
+                          rotatedNfp,
+                          rotatedPart,
+                          Math.max(1e-6, rotatedBounds.width),
+                          Math.max(1e-6, rotatedBounds.height),
+                          (holeIsWide === rotatedIsWide),
+                          newRotation,
+                          bestFitFill,
+                          800
+                        );
+                        for (const d of denseR) rotationPlacements.push(d);
                       }
                     }
                   }
@@ -976,10 +1207,9 @@ function placeParts(sheets, parts, config, nestindex) {
                       });
                     }
                   }
-                } catch (e) {
-                  // console.log('Error processing hole:', e);
-                  // Continue with next hole
-                }
+              } catch (e) {
+                // console.log('Error processing hole:', e);
+                // Continue with next hole
               }
             }
           }
@@ -1008,6 +1238,7 @@ function placeParts(sheets, parts, config, nestindex) {
           }
         }
         holePositions = validHolePositions;
+        try { dbg_c_holePositions += holePositions.length; } catch (e) {}
         // console.log(`Found ${holePositions.length} valid hole positions for part ${part.source}`);
       }
 
@@ -1052,7 +1283,7 @@ function placeParts(sheets, parts, config, nestindex) {
       }
 
       if (error || !clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-        // console.log('clipper error', error);
+        try { console.log('DBG clipper[union][error]', { error, placedCount: placed.length }); } catch (e) {}
         continue;
       }
 
@@ -1069,10 +1300,12 @@ function placeParts(sheets, parts, config, nestindex) {
       clipper.AddPaths(clipperSheetNfp, ClipperLib.PolyType.ptSubject, true);
 
       if (!clipper.Execute(ClipperLib.ClipType.ctDifference, finalNfp, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftNonZero)) {
+        try { console.log('DBG clipper[difference][error]', { combinedNfpLen: combinedNfp.length, sheetNfpLen: clipperSheetNfp.length }); } catch (e) {}
         continue;
       }
 
       if (!finalNfp || finalNfp.length == 0) {
+        dbg_c_finalNfpEmpty++;
         continue;
       }
 
@@ -1385,6 +1618,8 @@ function placeParts(sheets, parts, config, nestindex) {
               minarea === null ||
               (config.placementType == 'gravity' && area < minarea) ||
               (config.placementType != 'gravity' && area < minarea) ||
+              // Always prefer a valid hole placement over an outer-sheet placement
+              (position && !position.inHole) ||
               (GeometryUtil.almostEqual(minarea, area) && holeShift.inHole)
             ) {
               // For hole positions, we need to verify it's entirely within the parent's hole
@@ -1398,7 +1633,12 @@ function placeParts(sheets, parts, config, nestindex) {
                 // Shift the hole based on parent's placement
                 var shiftedHole = shiftPolygon(hole, placements[holeShift.parentIndex]);
                 // Create a shifted version of the current part based on proposed position
-                var shiftedPart = shiftPolygon(part, holeShift);
+                var partForCheck = part;
+                if (typeof holeShift.rotation === 'number' && !GeometryUtil.almostEqual(holeShift.rotation, part.rotation)) {
+                  var deltaRot = ((holeShift.rotation - part.rotation) % 360 + 360) % 360;
+                  partForCheck = rotatePolygon(part, deltaRot);
+                }
+                var shiftedPart = shiftPolygon(partForCheck, holeShift);
 
                 // Check if the part is contained within this hole using a different approach
                 // We'll do this by reversing the hole (making it a polygon) and checking if
@@ -1568,7 +1808,12 @@ function placeParts(sheets, parts, config, nestindex) {
                     // Skip check against parent part, as we've already verified hole containment
                     if (m === holeShift.parentIndex) continue;
 
-                    var clipperPlaced = toClipperCoordinates(shiftPolygon(placed[m], placements[m]));
+                    var placedForCheck = placed[m];
+                    if (typeof placements[m].rotation === 'number' && !GeometryUtil.almostEqual(placements[m].rotation, placed[m].rotation)) {
+                      var dRot = ((placements[m].rotation - placed[m].rotation) % 360 + 360) % 360;
+                      placedForCheck = rotatePolygon(placed[m], dRot);
+                    }
+                    var clipperPlaced = toClipperCoordinates(shiftPolygon(placedForCheck, placements[m]));
                     ClipperLib.JS.ScaleUpPath(clipperPlaced, config.clipperScale);
 
                     clipSolution = new ClipperLib.Paths();
@@ -1629,6 +1874,16 @@ function placeParts(sheets, parts, config, nestindex) {
           // Mark the relationship to prevent overlap checks between them in future placements
           position.parentId = parentPart.id;
         }
+        // Ensure the actual geometry matches the chosen rotation
+        if (typeof position.rotation === 'number' && !GeometryUtil.almostEqual(position.rotation, part.rotation)) {
+          var deltaRotPlace = ((position.rotation - part.rotation) % 360 + 360) % 360;
+          var rotatedPlaced = rotatePolygon(part, deltaRotPlace);
+          rotatedPlaced.rotation = position.rotation;
+          rotatedPlaced.source = part.source;
+          rotatedPlaced.id = part.id;
+          rotatedPlaced.filename = part.filename;
+          part = rotatedPlaced;
+        }
         placed.push(part);
         placements.push(position);
         if (position.mergedLength) {
@@ -1660,11 +1915,18 @@ function placeParts(sheets, parts, config, nestindex) {
       }
     }
 
+    try { console.log(`DBG sheet[done] id=${sheet && sheet.id} placed=${placements.length} partsRemaining=${parts.length} counters: sheetNfpNull=${dbg_c_sheetNfpNull} finalNfpEmpty=${dbg_c_finalNfpEmpty} holePositionsTotal=${dbg_c_holePositions}`); } catch (e) {}
     if (placements && placements.length > 0) {
       allplacements.push({ sheet: sheet.source, sheetid: sheet.id, sheetplacements: placements });
     }
     else {
-      break; // something went wrong
+      // If nothing placed on this sheet, try the next sheet instead of aborting outright
+      if (sheets.length > 0) {
+        try { console.log(`DBG sheet[empty] id=${sheet && sheet.id} -> advancing to next sheet; remaining=${sheets.length}`); } catch (e) {}
+        continue;
+      } else {
+        break; // no more sheets to try
+      }
     }
 
     if (sheets.length == 0) {
@@ -1675,6 +1937,13 @@ function placeParts(sheets, parts, config, nestindex) {
   // there were parts that couldn't be placed
   // scale this value high - we really want to get all the parts in, even at the cost of opening new sheets
   console.log('UNPLACED PARTS', parts.length, 'of', totalnum);
+  try {
+    let totPl = 0;
+    for (let i = 0; i < allplacements.length; i++) {
+      totPl += (allplacements[i].sheetplacements || []).length;
+    }
+    console.log(`DBG fitness[begin] sheetsUsed=${allplacements.length} totalPlacements=${totPl}`);
+  } catch (e) {}
   for (let i = 0; i < parts.length; i++) {
     // console.log(`Fitness before unplaced penalty: ${fitness}`);
     const penalty = 100000000 * ((Math.abs(GeometryUtil.polygonArea(parts[i])) * 100) / totalsheetarea);
@@ -1683,66 +1952,78 @@ function placeParts(sheets, parts, config, nestindex) {
     // console.log(`Fitness after unplaced penalty: ${fitness}`);
   }
 
-  // Enhance fitness calculation to encourage more efficient hole usage
-  // This rewards more efficient use of material by placing parts in holes
-  for (let i = 0; i < allplacements.length; i++) {
-    const placements = allplacements[i].sheetplacements;
-    // First pass: identify all parts placed in holes
-    const partsInHoles = [];
-    for (let j = 0; j < placements.length; j++) {
-      if (placements[j].inHole === true) {
-        // Find the corresponding part to calculate its area
-        const partIndex = j;
-        if (partIndex >= 0) {
-          // Add this part to our tracked list of parts in holes
-          partsInHoles.push({
-            index: j,
-            parentIndex: placements[j].parentIndex,
-            holeIndex: placements[j].holeIndex,
-            area: Math.abs(GeometryUtil.polygonArea(placed[partIndex])) * 2
-          });
-          // Base reward for any part placed in a hole
-          // console.log(`Part ${placed[partIndex].source} placed in hole of part ${placed[placements[j].parentIndex].source}`);
-          // console.log(`Part area: ${Math.abs(GeometryUtil.polygonArea(placed[partIndex]))}, Hole area: ${Math.abs(GeometryUtil.polygonArea(placed[placements[j].parentIndex]))}`);
-          fitness -= (Math.abs(GeometryUtil.polygonArea(placed[partIndex])) / totalsheetarea / 100);
+  try {
+    // Enhance fitness calculation to encourage more efficient hole usage
+    // This rewards more efficient use of material by placing parts in holes
+    for (let i = 0; i < allplacements.length; i++) {
+      const placements = allplacements[i].sheetplacements;
+      // First pass: identify all parts placed in holes
+      const partsInHoles = [];
+      for (let j = 0; j < placements.length; j++) {
+        if (placements[j].inHole === true) {
+          // Find the corresponding part to calculate its area
+          const partIndex = j;
+          if (partIndex >= 0) {
+            // Add this part to our tracked list of parts in holes
+            partsInHoles.push({
+              index: j,
+              parentIndex: placements[j].parentIndex,
+              holeIndex: placements[j].holeIndex,
+              area: (partAreaById.get(placements[j].id) || 0) * 2
+            });
+            // Base reward for any part placed in a hole
+            fitness -= ((partAreaById.get(placements[j].id) || 0) / totalsheetarea / 100);
+          }
         }
       }
-    }
-    // Second pass: apply additional fitness rewards for parts placed on contours of other parts within holes
-    // This incentivizes the algorithm to stack parts efficiently within holes
-    for (let j = 0; j < partsInHoles.length; j++) {
-      const part = partsInHoles[j];
-      for (let k = 0; k < partsInHoles.length; k++) {
-        if (j !== k &&
-          part.parentIndex === partsInHoles[k].parentIndex &&
-          part.holeIndex === partsInHoles[k].holeIndex) {
-          // Calculate distances between parts to see if they're using each other's contours
-          const p1 = placements[part.index];
-          const p2 = placements[partsInHoles[k].index];
+      // Second pass: apply additional fitness rewards for parts placed on contours of other parts within holes
+      // This incentivizes the algorithm to stack parts efficiently within holes
+      for (let j = 0; j < partsInHoles.length; j++) {
+        const part = partsInHoles[j];
+        for (let k = 0; k < partsInHoles.length; k++) {
+          if (j !== k &&
+            part.parentIndex === partsInHoles[k].parentIndex &&
+            part.holeIndex === partsInHoles[k].holeIndex) {
+            // Calculate distances between parts to see if they're using each other's contours
+            const p1 = placements[part.index];
+            const p2 = placements[partsInHoles[k].index];
 
-          // Calculate Manhattan distance between parts (simple proximity check)
-          const dx = Math.abs(p1.x - p2.x);
-          const dy = Math.abs(p1.y - p2.y);
+            // Calculate Manhattan distance between parts (simple proximity check)
+            const dx = Math.abs(p1.x - p2.x);
+            const dy = Math.abs(p1.y - p2.y);
 
-          // If parts are close to each other (touching or nearly touching)
-          // within configurable threshold - can be adjusted based on your specific needs
-          const proximityThreshold = 2.0; // proximity threshold in user units
-          if (dx < proximityThreshold || dy < proximityThreshold) {
-            // Award extra fitness for parts efficiently placed near each other in the same hole
-            // This encourages the algorithm to place parts on contours of other parts
-            fitness -= (part.area / totalsheetarea) * 0.01; // Additional 50% bonus
+            // If parts are close to each other (touching or nearly touching)
+            // within configurable threshold - can be adjusted based on your specific needs
+            const proximityThreshold = 2.0; // proximity threshold in user units
+            if (dx < proximityThreshold || dy < proximityThreshold) {
+              // Award extra fitness for parts efficiently placed near each other in the same hole
+              // This encourages the algorithm to place parts on contours of other parts
+              fitness -= (part.area / totalsheetarea) * 0.01; // Additional 50% bonus
+            }
           }
         }
       }
     }
+  } catch (e) {
+    console.log('DBG fitness[error]', e && e.message ? e.message : e);
   }
 
   // send finish progress signal
   ipcRenderer.send('background-progress', { index: nestindex, progress: -1 });
+  try { console.log('DBG placeParts[finished] sent progress -1'); } catch (e) {}
 
   console.log('WATCH', allplacements);
+  try { console.log('DBG placeParts[return] placementsSheets=', allplacements.length); } catch (e) {}
 
-  const utilisation = totalsheetarea > 0 ? (area / totalsheetarea) * 100 : 0;
+  // Compute utilisation from placed parts' areas using the precomputed per-id map
+  let placedArea = 0;
+  for (let i = 0; i < allplacements.length; i++) {
+    const pls = allplacements[i].sheetplacements || [];
+    for (let j = 0; j < pls.length; j++) {
+      placedArea += (partAreaById.get(pls[j].id) || 0);
+    }
+  }
+  const utilisation = totalsheetarea > 0 ? Math.max(0, Math.min(100, (placedArea / totalsheetarea) * 100)) : 0;
   console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
   return { placements: allplacements, fitness: fitness, area: sheetarea, totalarea: totalsheetarea, mergedLength: totalMerged, utilisation: utilisation };
@@ -1843,13 +2124,14 @@ function analyzeParts(parts, averageHoleArea, config) {
         const hole = partWithHoles.analyzedHoles[k];
 
         // Check if part fits in this hole (with or without rotation)
-        const fitsNormally = part.bounds.width < hole.width * 0.98 &&
-          part.bounds.height < hole.height * 0.98 &&
-          part.bounds.area < hole.area * 0.95;
+        const areaTol = hole.area * 0.001; // 0.1% tolerance for exact match
+        const fitsNormally = (part.bounds.width <= hole.width &&
+          part.bounds.height <= hole.height &&
+          part.bounds.area <= hole.area + areaTol);
 
-        const fitsRotated = part.bounds.height < hole.width * 0.98 &&
-          part.bounds.width < hole.height * 0.98 &&
-          part.bounds.area < hole.area * 0.95;
+        const fitsRotated = (part.bounds.height <= hole.width &&
+          part.bounds.width <= hole.height &&
+          part.bounds.area <= hole.area + areaTol);
 
         if (fitsNormally || fitsRotated) {
           partMatches.push({
@@ -1862,11 +2144,8 @@ function analyzeParts(parts, averageHoleArea, config) {
       }
     }
 
-    // Determine if part is a hole candidate
-    const isSmallEnough = part.bounds.area < config.holeAreaThreshold ||
-      part.bounds.area < averageHoleArea * 0.7;
-
-    if (partMatches.length > 0 || isSmallEnough) {
+    // Determine if part is a hole candidate: only if it actually fits a known hole
+    if (partMatches.length > 0) {
       part.holeMatches = partMatches;
       part.isHoleFitCandidate = true;
       holeCandidates.push(part);

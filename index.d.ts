@@ -10,6 +10,9 @@ export type DeepNestConfig = {
   mutationRate: number;
   placementType: "gravity" | "box" | "convexhull";
   mergeLines: boolean;
+  // Hole packing toggles
+  enableHolePlacement?: boolean;
+  enableHoleInHolePlacement?: boolean;
   /**
    * ratio of material reduction to laser time. 0 = optimize material only, 1 = optimize laser time only
    */

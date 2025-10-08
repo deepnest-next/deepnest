@@ -1,0 +1,4 @@
+onlyBuiltDependencies:
+  - '@deepnest/calculate-nfp'
+  - electron
+  - electron-winstaller
