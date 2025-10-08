@@ -213,6 +213,8 @@ ready(async function () {
         mutationRate: 10,
         placementType: 'box', // how to place each part (possible values gravity, box, convexhull)
         mergeLines: true, // whether to merge lines
+        enableHolePlacement: true, // allow placing parts into holes of placed parts
+        enableHoleInHolePlacement: true, // allow nesting into holes of parts that are themselves placed in holes
         timeRatio: 0.5, // ratio of material reduction to laser time. 0 = optimize material only, 1 = optimize laser time only
         simplify: false,
         dxfImportScale: "1",
@@ -269,7 +271,7 @@ ready(async function () {
                 }
             }
 
-            if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace'].includes(key)) {
+            if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace', 'enableHolePlacement', 'enableHoleInHolePlacement'].includes(key)) {
                 val = i.checked;
             }
 
@@ -370,7 +372,7 @@ ready(async function () {
             else if (i.getAttribute('data-conversion') == 'true') {
                 i.value = c[i.getAttribute('data-config')] / scale.value;
             }
-            else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace'].includes(key)) {
+            else if (['mergeLines', 'simplify', 'useSvgPreProcessor', 'useQuantityFromFileName', 'exportWithSheetBoundboarders', 'exportWithSheetsSpace', 'enableHolePlacement', 'enableHoleInHolePlacement'].includes(key)) {
                 i.checked = c[i.getAttribute('data-config')];
             }
             else {

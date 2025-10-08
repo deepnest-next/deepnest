@@ -18,6 +18,9 @@ var config = {
   threads: 4,
   placementType: "gravity",
   mergeLines: true,
+  // hole packing toggles (default on)
+  enableHolePlacement: true,
+  enableHoleInHolePlacement: true,
   timeRatio: 0.5,
   scale: 72,
   simplify: false,
@@ -541,6 +544,14 @@ export class DeepNest {
 
     if (c.mergeLines === true || c.mergeLines === false) {
       config.mergeLines = !!c.mergeLines;
+    }
+
+    // hole packing toggles
+    if (c.enableHolePlacement === true || c.enableHolePlacement === false) {
+      config.enableHolePlacement = !!c.enableHolePlacement;
+    }
+    if (c.enableHoleInHolePlacement === true || c.enableHoleInHolePlacement === false) {
+      config.enableHoleInHolePlacement = !!c.enableHoleInHolePlacement;
     }
 
     if (c.simplify === true || c.simplify === false) {
