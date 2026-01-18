@@ -31,7 +31,7 @@ import { SheetDialogService, createSheetDialogService } from "./components/sheet
 
 // Utility imports
 import { message } from "./utils/ui-helpers.js";
-import { getElement, getElements, serializeSvg } from "./utils/dom-utils.js";
+import { getElement, getElements } from "./utils/dom-utils.js";
 
 /**
  * IPC renderer interface for Electron communication
@@ -46,20 +46,6 @@ interface IpcRenderer {
  * Helper type for casting getSync() results
  */
 type ConfigResult = UIConfig;
-
-/**
- * Simplified Ractive instance interface to avoid strict type conflicts
- */
-interface SimpleRactiveInstance {
-  update(keypath?: string): Promise<void>;
-}
-
-/**
- * Export button element interface for type safety
- */
-interface ExportButtonInterface {
-  className: string;
-}
 
 /**
  * Window is already augmented in index.d.ts
@@ -524,7 +510,8 @@ function initializeConfigForm(): void {
  * Initialize background progress handler
  */
 function initializeBackgroundProgress(): void {
-  ipcRenderer.on(IPC_CHANNELS.BACKGROUND_PROGRESS, (_event: unknown, p: NestingProgress) => {
+  ipcRenderer.on(IPC_CHANNELS.BACKGROUND_PROGRESS, (_event: unknown, ...args: unknown[]) => {
+    const p = args[0] as NestingProgress;
     const bar = getElement<HTMLElement>("#progressbar");
     if (bar) {
       const progress = p.progress;

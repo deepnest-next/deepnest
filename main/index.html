@@ -27,6 +27,10 @@
       window.DeepNest = new DeepNest(require("electron").ipcRenderer);
 
       import * as page from "./page.js";
+
+      // New modular TypeScript entry point (loaded alongside page.js during migration)
+      // TODO: Remove page.js import once migration is complete
+      import * as ui from "../build/ui/index.js";
     </script>
   </head>
 
