@@ -568,34 +568,33 @@ export class PartsViewService {
 
     const ractive = this.ractive;
     const deepNest = this.deepNest;
-    const self = this;
 
     // Handle part selection on click/mouseover
-    ractive.on("selecthandler", function (e: RactiveEvent, ...args: unknown[]): boolean | void {
+    ractive.on("selecthandler", (e: RactiveEvent, ...args: unknown[]): boolean | void => {
       const part = args[0] as Part;
       // Don't handle if clicking on an input
       if ((e.original.target as HTMLElement).nodeName === "INPUT") {
         return true;
       }
 
-      if (self.mouseDown > 0 || e.original.type === "mousedown") {
-        self.togglePart(part);
+      if (this.mouseDown > 0 || e.original.type === "mousedown") {
+        this.togglePart(part);
         ractive.update("parts");
-        if (self.throttledUpdate) {
-          self.throttledUpdate();
+        if (this.throttledUpdate) {
+          this.throttledUpdate();
         }
       }
       return;
     });
 
     // Handle select all toggle
-    ractive.on("selectall", function (_e: RactiveEvent) {
+    ractive.on("selectall", () => {
       const selectedCount = deepNest.parts.filter((p) => p.selected).length;
       const toggleOn = selectedCount < deepNest.parts.length;
 
       deepNest.parts.forEach((p) => {
         if (p.selected !== toggleOn) {
-          self.togglePart(p);
+          this.togglePart(p);
         }
         p.selected = toggleOn;
       });
@@ -604,12 +603,12 @@ export class PartsViewService {
       ractive.update("imports");
 
       if (deepNest.imports.length > 0) {
-        self.applyZoom();
+        this.applyZoom();
       }
     });
 
     // Handle import tab selection
-    ractive.on("importselecthandler", function (_e: RactiveEvent, ...args: unknown[]): boolean | void {
+    ractive.on("importselecthandler", (_e: RactiveEvent, ...args: unknown[]): boolean | void => {
       const im = args[0] as ImportedFile;
       if (im.selected) {
         return false;
@@ -621,12 +620,12 @@ export class PartsViewService {
 
       im.selected = true;
       ractive.update("imports");
-      self.applyZoom();
+      this.applyZoom();
       return;
     });
 
     // Handle import deletion
-    ractive.on("importdelete", function (_e: RactiveEvent, ...args: unknown[]) {
+    ractive.on("importdelete", (_e: RactiveEvent, ...args: unknown[]) => {
       const im = args[0] as ImportedFile;
       let index = deepNest.imports.indexOf(im);
       deepNest.imports.splice(index, 1);
@@ -641,13 +640,13 @@ export class PartsViewService {
       ractive.update("imports");
 
       if (deepNest.imports.length > 0) {
-        self.applyZoom();
+        this.applyZoom();
       }
     });
 
     // Handle delete button/event
-    ractive.on("delete", function (_e: RactiveEvent) {
-      self.deleteParts();
+    ractive.on("delete", () => {
+      this.deleteParts();
     });
   }
 

@@ -151,7 +151,7 @@ export class ConfigService implements ConfigObject {
         if (savedConfig && typeof savedConfig === "object") {
           this.mergeConfig(savedConfig);
         }
-      } catch (error) {
+      } catch {
         // If reading fails, continue with defaults
         // Error handling should be done at the application level
       }

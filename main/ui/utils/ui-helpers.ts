@@ -76,6 +76,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
       previous = now;
     }
     const remaining = wait - (now - previous);
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     context = this;
     args = funcArgs;
 

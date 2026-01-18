@@ -305,7 +305,7 @@ function initializePresetModal(): void {
           presetSelect.value = name;
         }
         message("Preset saved successfully!");
-      } catch (error) {
+      } catch {
         message("Error saving preset", true);
       }
     });
@@ -349,7 +349,7 @@ function initializePresetModal(): void {
         } else {
           message("Selected preset not found", true);
         }
-      } catch (error) {
+      } catch {
         message("Error loading preset", true);
       }
     });
@@ -373,7 +373,7 @@ function initializePresetModal(): void {
             presetSelect.selectedIndex = 0;
           }
           message("Preset deleted successfully!");
-        } catch (error) {
+        } catch {
           message("Error deleting preset", true);
         }
       }

@@ -456,12 +456,11 @@ export class NestViewService {
     }
 
     const deepNest = this.deepNest;
-    const self = this;
 
     // Handle nest selection
     this.ractive.on(
       "selectnest",
-      function (_e: RactiveEvent, ...args: unknown[]): void {
+      (_e: RactiveEvent, ...args: unknown[]): void => {
         const n = args[0] as SelectableNestingResult;
 
         // Deselect all nests
@@ -473,8 +472,8 @@ export class NestViewService {
         n.selected = true;
 
         // Update UI
-        self.update();
-        self.displayNest(n);
+        this.update();
+        this.displayNest(n);
       }
     );
   }
