@@ -4,10 +4,20 @@
  */
 
 // Re-export core types from root index.d.ts
-export type { DeepNestConfig, SheetPlacement, NestingResult } from "../../../index.d.ts";
+export type {
+  DeepNestConfig,
+  SheetPlacement,
+  NestingResult,
+  PlacementType,
+  UnitType,
+  Bounds,
+  PolygonPoint,
+  Polygon,
+  Part,
+} from "../../../index.d.ts";
 
 // Import base types for extension
-import type { DeepNestConfig, NestingResult } from "../../../index.d.ts";
+import type { DeepNestConfig, NestingResult, PolygonPoint, Part } from "../../../index.d.ts";
 
 /**
  * Extended configuration with UI-specific properties
@@ -33,66 +43,6 @@ export interface UIConfig extends DeepNestConfig {
  * Default configuration values
  */
 export const DEFAULT_CONVERSION_SERVER = "https://converter.deepnest.app/convert";
-
-/**
- * Bounding box rectangle
- */
-export interface Bounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-/**
- * A point in a polygon with optional markers for processing
- */
-export interface PolygonPoint {
-  x: number;
-  y: number;
-  /** Marked for NFP generation or simplification */
-  marked?: boolean;
-  /** Point lies exactly on original polygon edge */
-  exact?: boolean;
-}
-
-/**
- * A polygon represented as an array of points with optional children (holes)
- */
-export interface Polygon extends Array<PolygonPoint> {
-  /** Unique identifier for the polygon within the part tree */
-  id?: number;
-  /** Source index in the original SVG elements array */
-  source?: number;
-  /** Child polygons (holes or nested parts) */
-  children?: Polygon[];
-  /** Parent polygon reference */
-  parent?: Polygon;
-  /** Original filename this polygon came from */
-  filename?: string;
-}
-
-/**
- * Represents a part in the nesting workspace
- */
-export interface Part {
-  /** Polygon tree representation for nesting calculations */
-  polygontree: Polygon;
-  /** Original SVG elements for rendering */
-  svgelements: SVGElement[];
-  /** Bounding box of the part */
-  bounds: Bounds;
-  /** Area of bounding box (width * height) */
-  area: number;
-  /** Number of copies to nest */
-  quantity: number;
-  /** Source filename or null for programmatically created parts */
-  filename: string | null;
-  /** True if this part is a sheet (bin) rather than a piece to nest */
-  sheet?: boolean;
-  /** True if currently selected in the UI */
-  selected?: boolean;
-}
 
 /**
  * SVG Pan/Zoom instance for import view
@@ -146,16 +96,6 @@ export interface ConfigObject extends UIConfig {
    */
   resetToDefaultsSync(): void;
 }
-
-/**
- * Placement type options for nesting algorithm
- */
-export type PlacementType = "gravity" | "box" | "convexhull";
-
-/**
- * Unit options for measurements
- */
-export type UnitType = "mm" | "inch";
 
 /**
  * Nesting progress information from background worker
