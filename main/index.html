@@ -26,7 +26,8 @@
       import { DeepNest, GeneticAlgorithm } from "./deepnest.js";
       window.DeepNest = new DeepNest(require("electron").ipcRenderer);
 
-      import * as page from "./page.js";
+      // Modular TypeScript entry point (replaces legacy page.js)
+      import * as ui from "../build/ui/index.js";
     </script>
   </head>
 

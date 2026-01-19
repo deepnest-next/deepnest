@@ -71,7 +71,7 @@ test("Nest", async ({}, testInfo) => {
   }
   await test.step("Config", async () => {
     await mainWindow.locator("#config_tab").click();
-    const configTab = mainWindow.getByText("Nesting configuration Display");
+    const configTab = mainWindow.locator("#config");
     await configTab.getByRole("link", { name: "set all to default" }).click();
     await test.step("units mm", () =>
       configTab.getByRole("radio").nth(1).check());
@@ -105,8 +105,8 @@ test("Nest", async ({}, testInfo) => {
     expect(config).toMatchObject({
       ...sharedConfig,
       conversionServer: "https://converter.deepnest.app/convert",
-      dxfExportScale: "1",
-      dxfImportScale: "1",
+      dxfExportScale: 1,
+      dxfImportScale: 1,
       endpointTolerance: 0.36,
       units: "mm",
     });
