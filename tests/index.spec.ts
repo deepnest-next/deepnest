@@ -105,8 +105,8 @@ test("Nest", async ({}, testInfo) => {
     expect(config).toMatchObject({
       ...sharedConfig,
       conversionServer: "https://converter.deepnest.app/convert",
-      dxfExportScale: "1",
-      dxfImportScale: "1",
+      dxfExportScale: 1,
+      dxfImportScale: 1,
       endpointTolerance: 0.36,
       units: "mm",
     });
