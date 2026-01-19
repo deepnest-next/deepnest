@@ -13,6 +13,7 @@ import type {
   RactiveInstance,
   NestViewData,
   NestingProgress,
+  PartsViewData,
 } from "./types/index.js";
 import { IPC_CHANNELS } from "./types/index.js";
 
@@ -648,7 +649,7 @@ function initializeComponents(): void {
     svgPreProcessor: svgPreProcessor,
     config: configService as unknown as { getSync: <K extends keyof UIConfig>(key?: K) => K extends keyof UIConfig ? UIConfig[K] : UIConfig },
     deepNest: getDeepNest(),
-    // Note: ractive not set here - using callbacks instead to avoid type conflicts
+    ractive: partsViewService.getRactive() as unknown as RactiveInstance<PartsViewData>,
     attachSortCallback: () => partsViewService.attachSort(),
     applyZoomCallback: () => partsViewService.applyZoom(),
     resizeCallback: resize,
