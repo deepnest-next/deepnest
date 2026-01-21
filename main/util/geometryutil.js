@@ -6,6 +6,9 @@
 
 (function (root) {
   "use strict";
+  
+  // Import the new Polygon class - will be available if polygon.js is loaded
+  const Polygon = root.Polygon;
 
   // private shared variables/methods
 
@@ -551,6 +554,10 @@
 
     // returns the rectangular bounding box of the given polygon
     getPolygonBounds: function (polygon) {
+      if (polygon instanceof Polygon) {
+        return polygon.bounds();
+      }
+      
       if (!polygon || polygon.length < 3) {
         return null;
       }
@@ -584,6 +591,10 @@
 
     // return true if point is in the polygon, false if outside, and null if exactly on a point or edge
     pointInPolygon: function (point, polygon, tolerance) {
+      if (polygon instanceof Polygon) {
+        return polygon.contains(point, tolerance);
+      }
+      
       if (!polygon || polygon.length < 3) {
         return null;
       }
@@ -633,6 +644,10 @@
     // returns the area of the polygon, assuming no self-intersections
     // a negative area indicates counter-clockwise winding direction
     polygonArea: function (polygon) {
+      if (polygon instanceof Polygon) {
+        return polygon.area();
+      }
+      
       var area = 0;
       var i, j;
       for (i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -1503,6 +1518,10 @@
     },
 
     isRectangle: function (poly, tolerance) {
+      if (poly instanceof Polygon) {
+        return poly.isRectangle(tolerance);
+      }
+      
       var bb = this.getPolygonBounds(poly);
       tolerance = tolerance || TOL;
 
@@ -2106,6 +2125,16 @@
     },
 
     rotatePolygon: function (polygon, angle) {
+      if (polygon instanceof Polygon) {
+        var rotated = polygon.rotate(angle);
+        var bounds = rotated.bounds();
+        rotated.x = bounds.x;
+        rotated.y = bounds.y;
+        rotated.width = bounds.width;
+        rotated.height = bounds.height;
+        return rotated;
+      }
+      
       var rotated = [];
       angle = (angle * Math.PI) / 180;
       for (var i = 0; i < polygon.length; i++) {

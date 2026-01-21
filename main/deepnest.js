@@ -5,6 +5,7 @@
 
 import { Point } from '../build/util/point.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import { Polygon } from '../build/util/polygon.js';
 
 const { simplifyPolygon: simplifyPoly } = require("@deepnest/svg-preprocessor");
 
@@ -119,6 +120,11 @@ export class DeepNest {
   };
 
   getHull(polygon) {
+    if (polygon instanceof Polygon) {
+      var hullPolygon = HullPolygon.hull(polygon);
+      return hullPolygon ? hullPolygon.toArray() : null;
+    }
+    
     var points = [];
     for (let i = 0; i < polygon.length; i++) {
       points.push({
@@ -131,7 +137,7 @@ export class DeepNest {
     if (!hullpoints) {
       return null;
     }
-    return hullpoints;
+    return hullpoints instanceof Polygon ? hullpoints.toArray() : hullpoints;
   };
 
   // use RDP simplification, then selectively offset
