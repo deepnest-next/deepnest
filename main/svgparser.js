@@ -42,7 +42,7 @@ export class SvgParser {
       "rect",
       "image",
       "line",
-/** * Load an SVG string and prepare it for CAD/CAM operations * Parses SVG string, handles Inkscape XML namespace issues, computes scaling, * and initializes internal SVG document structure * @param dirpath - Directory path for resolving relative image references * @param svgString - SVG markup string to parse * @param scale - Desired scale factor for output (affects internal scale computation) * @param scalingFactor - Optional absolute scaling factor to apply (overrides SVG'\''s natural scale) * @returns The SVG root element ready for CAD operations * @throws {Error} If svgString is invalid or not a string * @sideEffect Creates DOMParser instance, parses SVG, computes scale factor, modifies internal state (this.svg, this.svgRoot, this.dirPath, this.conf.scale) */    ];
+    ];
 
     // elements that can be polygonified
     this.polygonElements = [
@@ -76,6 +76,18 @@ export class SvgParser {
     this.conf.endpointTolerance = Number(config.endpointTolerance);
   }
 
+  /**
+   * Load an SVG string and prepare it for CAD/CAM operations
+   * Parses SVG string, handles Inkscape XML namespace issues, computes scaling,
+   * and initializes internal SVG document structure
+   * @param dirpath - Directory path for resolving relative image references
+   * @param svgString - SVG markup string to parse
+   * @param scale - Desired scale factor for output (affects internal scale computation)
+   * @param scalingFactor - Optional absolute scaling factor to apply (overrides SVG's natural scale)
+   * @returns The SVG root element ready for CAD operations
+   * @throws {Error} If svgString is invalid or not a string
+   * @sideEffect Creates DOMParser instance, parses SVG, computes scale factor, modifies internal state (this.svg, this.svgRoot, this.dirPath, this.conf.scale)
+   */
   load(dirpath, svgString, scale, scalingFactor) {
     if (!svgString || typeof svgString !== "string") {
       throw Error("invalid SVG string");
@@ -181,7 +193,14 @@ export class SvgParser {
     return this.svgRoot;
   }
 
-  // use the utility functions in this class to prepare the svg for CAD-CAM/nest related operations
+  /**
+   * Prepare SVG for CAD/CAM operations
+   * Applies transformations, flattens structure, filters elements,
+   * splits compound paths, and merges lines for clean geometry
+   * @param dxfFlag - Whether processing DXF file (affects arc rotation fix)
+   * @returns The cleaned SVG root element ready for operations
+   * @sideEffect Modifies this.svgRoot DOM structure extensively
+   */
   cleanInput(dxfFlag) {
     // apply any transformations, so that all path positions etc will be in the same coordinate space
     this.applyTransform(this.svgRoot, "", false, dxfFlag);
@@ -223,6 +242,13 @@ export class SvgParser {
     return this.svgRoot;
   }
 
+  /**
+   * Resolve image references to absolute paths
+   * Converts relative image paths to absolute paths using directory path
+   * @param svg - Root SVG element containing images
+   * @returns False if dirPath not set
+   * @sideEffect Modifies href attributes on image elements
+   */
   imagePaths(svg) {
     if (!this.dirPath) {
       return false;
@@ -241,7 +267,15 @@ export class SvgParser {
     }
   }
 
-  // return a path from list that has one and only one endpoint that is coincident with the given path
+  /**
+   * Find path with one coincident endpoint
+   * Searches list for paths that share an endpoint with the given path
+   * @param path - Path to find coincident paths for
+   * @param list - Array of paths to search
+   * @param tolerance - Tolerance value for coincidence checking
+   * @returns Coincident path info object with path and reverse flags, or null if not found
+   * @sideEffect None (returns new object)
+   */
   getCoincident(path, list, tolerance) {
     var index = list.indexOf(path);
 
@@ -295,6 +329,15 @@ export class SvgParser {
     return null;
   }
 
+  /**
+   * Merge overlapping line segments
+   * Finds and merges overlapping line segments to reduce geometry complexity
+   * Used before processing paths with mergeLines for optimization
+   * @param root - SVG element containing lines to merge
+   * @param tolerance - Distance threshold for detecting overlaps (from configuration)
+   * @returns Number of lines merged (or null if none)
+   * @sideEffect Removes overlapping line elements from root, adds merged lines
+   */
   mergeLines(root, tolerance) {
     /*for(var i=0; i<root.children.length; i++){
 			var p = root.children[i];
@@ -389,7 +432,14 @@ export class SvgParser {
     }
   }
 
-  // merge all line objects that overlap eachother
+  /**
+   * Merge overlapping line segments in SVG
+   * Identifies and merges collinear, overlapping lines to simplify geometry
+   * Handles lines with arbitrary rotations by transforming to local coordinate space
+   * @param root - SVG element containing lines
+   * @param tolerance - Tolerance for overlap detection
+   * @sideEffect Modifies DOM by replacing overlapping lines with merged ones
+   */
   mergeOverlap(root, tolerance) {
     var min2 = 0.001;
 
@@ -562,7 +612,12 @@ export class SvgParser {
     }
   }
 
-  // split paths and polylines into separate line objects
+  /**
+   * Split paths and polylines into separate line objects
+   * Iterates through children and converts polylines/polygons/rects/paths into individual line elements
+   * @param root - SVG element to process
+   * @sideEffect Modifies DOM: replaces shapes with line elements, removes original shapes
+   */
   splitLines(root) {
     var paths = Array.prototype.slice.call(root.children);
 
@@ -621,7 +676,13 @@ export class SvgParser {
     }
   }
 
-  // turn one path into individual segments
+  /**
+   * Split path into individual line segments
+   * Converts all path commands (L, H, V, Z) into independent line elements
+   * @param path - Path element to split
+   * @returns Array of line elements created from path segments
+   * @sideEffect None (returns new elements, does not modify DOM)
+   */
   splitPathSegments(path) {
     // we'll assume that splitpath has already been run on this path, and it only has one M/m command
     var seglist = path.pathSegList;
@@ -690,7 +751,13 @@ export class SvgParser {
     return split;
   }
 
-  // reverse an open path in place, where an open path could by any of line, polyline or path types
+  /**
+   * Reverse the direction of an open path
+   * Handles line, polyline, and path elements
+   * Reverses coordinates or path commands in place
+   * @param path - SVG element to reverse
+   * @sideEffect Modifies element attributes (d, points, coordinates)
+   */
   reverseOpenPath(path) {
     /*if(path.endpoints){
 			var temp = path.endpoints.start;
@@ -830,7 +897,15 @@ export class SvgParser {
     }
   }
 
-  // merge b into a, assuming the end of a coincides with the start of b
+  /**
+   * Merge two open paths into one
+   * Appends path B to the end of path A
+   * Assumes the end of A coincides with the start of B
+   * @param a - First path element (will contain the result)
+   * @param b - Second path element (will be merged into A and removed)
+   * @returns The merged path element (A), or null if invalid inputs
+   * @sideEffect Modifies path A (appends segments), removes path B from DOM
+   */
   mergeOpenPaths(a, b) {
     var topath = function (svg, p) {
       if (p.tagName == "line") {
@@ -911,6 +986,14 @@ export class SvgParser {
     return patha;
   }
 
+  /**
+   * Check if an SVG element represents a closed shape
+   * Handles different element types: paths, polygons, circles, ellipses, rects
+   * @param p - SVG element to check
+   * @param tolerance - Optional tolerance for coincidence checking (defaults to this.conf.toleranceSvg if not provided)
+   * @returns True if element is closed, false otherwise
+   * @sideEffect None (returns boolean value)
+   */
   isClosed(p, tolerance) {
     var openElements = ["line", "polyline", "path"];
 
@@ -996,6 +1079,13 @@ export class SvgParser {
     }
   }
 
+  /**
+   * Retrieve start and end points from path element
+   * Handles line, polyline, and path types to extract coordinates
+   * @param p - SVG element (line, polyline, or path)
+   * @returns Object with {start: {x, y}, end: {x, y}} or null if type not supported
+   * @sideEffect None (returns new object)
+   */
   getEndpoints(p) {
     var start, end;
     if (p.tagName == "line") {
@@ -1035,8 +1125,15 @@ export class SvgParser {
     return { start: start, end: end };
   }
 
-  // set the given path as absolute coords (capital commands)
-  // from http://stackoverflow.com/a/9677915/433888
+  /**
+   * Convert SVG path from relative to absolute coordinates
+   * Replaces relative commands (m, l, h, v) with absolute (M, L, H, V)
+   * from: http://stackoverflow.com/a/9677915/433888
+   * @param path - SVG path element to convert
+   * @returns Modified path element with absolute commands
+   * @throws {Error} If element is not a path
+   * @sideEffect Modifies path.pathSegList, replaces relative commands with absolute ones
+   */
   pathToAbsolute(path) {
     if (!path || path.tagName != "path") {
       throw Error("invalid path");
@@ -1128,13 +1225,28 @@ export class SvgParser {
       if (command == "M" || command == "m") ((x0 = x), (y0 = y));
     }
   }
-  // takes an SVG transform string and returns corresponding SVGMatrix
-  // from https://github.com/fontello/svgpath
+
+  /**
+   * Parse SVG transform string into Matrix object
+   * Wrapper for Matrix.applyTransformString
+   * @param transformString - SVG transform attribute string (e.g., "translate(10, 20) rotate(45)")
+   * @returns Matrix object representing the transformation
+   * @sideEffect None
+   */
   transformParse(transformString) {
     return new Matrix().applyTransformString(transformString);
   }
 
-  // recursively apply the transform property to the given element
+  /**
+   * Apply transformation to SVG element and its children
+   * Recursively applies global and local transforms, flattening the hierarchy
+   * Handles special cases for different element types (circle, ellipse, rect, etc.)
+   * @param element - SVG element to transform
+   * @param globalTransform - Accumulated transform string from parent elements
+   * @param skipClosed - Whether to skip transforming closed shapes (optimization)
+   * @param dxfFlag - Flag for DXF import quirks (arc rotation)
+   * @sideEffect Modifies element attributes (d, points, x, y, etc.), removes transform attributes
+   */
   applyTransform(element, globalTransform, skipClosed, dxfFlag) {
     globalTransform = globalTransform || "";
     var transformString = element.getAttribute("transform") || "";
@@ -1514,7 +1626,12 @@ export class SvgParser {
     }
   }
 
-  // bring all child elements to the top level
+  /**
+   * Flatten SVG structure by moving all children to root level
+   * Removes nesting (groups, defs) to simplify processing
+   * @param element - Root element to flatten
+   * @sideEffect Modifies DOM structure, moves elements around
+   */
   flatten(element) {
     for (var i = 0; i < element.children.length; i++) {
       this.flatten(element.children[i]);
@@ -1527,8 +1644,15 @@ export class SvgParser {
     }
   }
 
-  // remove all elements with tag name not in the whitelist
-  // use this to remove <text>, <g> etc that don't represent shapes
+  /**
+   * Filter SVG elements based on whitelist
+   * Removes elements not in the whitelist (e.g., text, metadata)
+   * Recursively processes children
+   * @param whitelist - Array of allowed tag names
+   * @param element - Root element to filter
+   * @sideEffect Removes elements from DOM
+   * @throws {Error} If whitelist is invalid or empty
+   */
   filter(whitelist, element) {
     if (!whitelist || whitelist.length == 0) {
       throw Error("invalid whitelist");
@@ -1548,7 +1672,13 @@ export class SvgParser {
     }
   }
 
-  // split a compound path (paths with M, m commands) into an array of paths
+  /**
+   * Split compound paths into individual path elements
+   * Separates paths with multiple move commands (M/m) into distinct path elements
+   * @param path - Compound path element to split
+   * @returns Array of new path elements (or false if no split needed/possible)
+   * @sideEffect Inserts new path elements into DOM, removes original path
+   */
   splitPath(path) {
     if (!path || path.tagName != "path" || !path.parentElement) {
       return false;
@@ -1626,7 +1756,13 @@ export class SvgParser {
     return addedPaths;
   }
 
-  // recursively run the given function on the given element
+  /**
+   * Recursively apply function to element and its children
+   * Safely handles DOM modifications by copying children list first
+   * @param element - Root element to process
+   * @param func - Function to apply to each element
+   * @sideEffect Depends on the provided function
+   */
   recurse(element, func) {
     // only operate on original DOM tree, ignore any children that are added. Avoid infinite loops
     var children = Array.prototype.slice.call(element.children);
@@ -1637,7 +1773,14 @@ export class SvgParser {
     func(element);
   }
 
-  // return a polygon from the given SVG element in the form of an array of points
+  /**
+   * Convert SVG element to polygon (array of points)
+   * Handles paths, rects, circles, ellipses, polygons, polylines
+   * Approximates curves with line segments based on tolerance
+   * @param element - SVG element to convert
+   * @returns Array of point objects {x, y} representing the polygon
+   * @sideEffect None
+   */
   polygonify(element) {
     var poly = [];
     var i;
@@ -1750,6 +1893,13 @@ export class SvgParser {
     return poly;
   }
 
+  /**
+   * Convert SVG path data to polygon points
+   * Linearizes path segments (Bezier curves, arcs) into discrete points
+   * @param path - SVG path element
+   * @returns Array of point objects {x, y} approximating the path
+   * @sideEffect None
+   */
   polygonifyPath(path) {
     // we'll assume that splitpath has already been run on this path, and it only has one M/m command
     var seglist = path.pathSegList;
