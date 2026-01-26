@@ -3,7 +3,7 @@ import type { Point } from "../types/index.js";
 /**
  * Clipper coordinate format with uppercase X, Y properties.
  */
-interface ClipperPoint {
+export interface ClipperPoint {
   X: number;
   Y: number;
 }
