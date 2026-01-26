@@ -62,4 +62,22 @@ export interface NestConfig {
    * If not specified, hole fitting is disabled
    */
   holeAreaThreshold?: number;
+
+  /**
+   * Scale factor for converting between user units and internal units
+   * Used for minimum line length calculations in edge merging
+   */
+  scale: number;
+
+  /**
+   * Tolerance for curve approximation
+   * Used to determine how closely lines must align to be considered merged
+   */
+  curveTolerance: number;
+
+  /**
+   * Time ratio for converting merged edge length to time savings
+   * Used in fitness calculation when mergeLines is enabled
+   */
+  timeRatio: number;
 }
