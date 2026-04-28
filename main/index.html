@@ -27,7 +27,8 @@
       window.DeepNest = new DeepNest(require("electron").ipcRenderer);
 
       // Modular TypeScript entry point (replaces legacy page.js)
-      import * as ui from "../build/ui/index.js";
+      const modulePath = new URL("../build/ui/index.js", import.meta.url).href;
+      const ui = await import(modulePath);
     </script>
   </head>
 
