@@ -1,221 +1,70 @@
 /*!
- * Deepnest - Core Nesting Algorithm Module
+ * Deepnest
  * Licensed under GPLv3
- *
- * @fileoverview
- * This module implements the core nesting algorithm for optimizing the placement
- * of 2D shapes (parts) onto sheets (bins) for CNC cutting, laser cutting, or plotting.
- *
- * ## Overview for Junior Developers
- *
- * **What is "Nesting"?**
- * Nesting is the process of arranging irregular 2D shapes on a sheet of material
- * to minimize waste. Think of it like a puzzle where you're trying to fit as many
- * pieces as possible onto a limited space.
- *
- * **Key Concepts:**
- * - **Part**: A 2D shape to be cut (e.g., a letter, a gear outline)
- * - **Sheet/Bin**: The material surface where parts are placed
- * - **Polygon**: Mathematical representation of a part as a series of {x, y} points
- * - **NFP (No-Fit Polygon)**: A computed boundary showing where a part can't be placed
- *   relative to another part without overlapping
- *
- * **How This Module Works:**
- * 1. SVG files are imported and converted to polygon representations
- * 2. Parts are simplified and offset (to account for cutting tool width/spacing)
- * 3. A Genetic Algorithm optimizes the order and rotation of parts
- * 4. Background workers compute placements in parallel
- * 5. Results are stored as "nests" - successful arrangements of parts on sheets
- *
- * **Main Class:**
- * - `DeepNest`: Main orchestrator handling import, processing, and nesting workflow
- *
- * **Related Modules:**
- * - `GeneticAlgorithm`: Optimization engine that evolves better part arrangements (./GeneticAlgorithm.js)
- *
- * **External Dependencies:**
- * - ClipperLib: Polygon boolean operations (union, offset, intersection)
- * - GeometryUtil: Helper functions for polygon math
- * - SvgParser: SVG to polygon conversion
- *
- * @module deepnest
- * @requires ../build/util/point.js
- * @requires ../build/util/HullPolygon.js
- * @requires ./GeneticAlgorithm.js
- * @requires @deepnest/svg-preprocessor
  */
 
-import { Point } from "../build/util/point.js";
-import { HullPolygon } from "../build/util/HullPolygon.js";
-import { GeneticAlgorithm } from "./GeneticAlgorithm.js";
+import { Point } from '../build/util/point.js';
+import { HullPolygon } from '../build/util/HullPolygon.js';
 
 const { simplifyPolygon: simplifyPoly } = require("@deepnest/svg-preprocessor");
 
-/**
- * Global configuration object for the nesting algorithm.
- * These values control how parts are processed, optimized, and placed.
- *
- * @typedef {Object} NestConfig
- * @property {number} clipperScale - Scale factor for ClipperLib integer math (10M = high precision)
- * @property {number} curveTolerance - Max deviation when converting curves to line segments (SVG units)
- * @property {number} spacing - Gap between parts after nesting (accounts for laser kerf/tool width)
- * @property {number} rotations - Number of rotation angles to try (4 = 0°, 90°, 180°, 270°)
- * @property {number} populationSize - Number of individuals in the genetic algorithm population
- * @property {number} mutationRate - Probability of mutation (1-50 range, higher = more variation)
- * @property {number} threads - Max parallel workers for NFP computation (capped at 8)
- * @property {string} placementType - Placement strategy: "gravity" (fall to bottom) or "box"
- * @property {boolean} mergeLines - Whether to merge overlapping cut lines for efficiency
- * @property {number} timeRatio - Balance between speed and quality (0-1)
- * @property {number} scale - Default SVG scale factor (72 = typical screen DPI)
- * @property {boolean} simplify - If true, use convex hull (faster but less accurate)
- * @property {number} overlapTolerance - Allowed overlap between parts (for floating point errors)
- */
 var config = {
-  clipperScale: 10000000, // ClipperLib uses integers; this gives ~7 decimal precision
-  curveTolerance: 0.3, // How closely line segments must follow curves
-  spacing: 0, // Part-to-part gap (set based on your cutting tool width)
-  rotations: 4, // More rotations = better fit but slower computation
-  populationSize: 10, // Larger population = more diversity but slower generations
-  mutationRate: 10, // 10% chance of random changes per gene
-  threads: 4, // Parallel workers (diminishing returns past 4-8)
-  placementType: "gravity", // Parts "fall" to the bottom-left of the bin
-  mergeLines: true, // Combine shared edges (saves cutting time)
-  timeRatio: 0.5, // Balances exploration vs exploitation
-  scale: 72, // Pixels per inch (standard screen resolution)
-  simplify: false, // True = convex hull (fast); False = precise outline
-  overlapTolerance: 0.0001, // Tiny overlap allowed for numerical stability
+  clipperScale: 10000000,
+  curveTolerance: 0.3,
+  spacing: 0,
+  rotations: 4,
+  populationSize: 10,
+  mutationRate: 10,
+  threads: 4,
+  placementType: "gravity",
+  mergeLines: true,
+  timeRatio: 0.5,
+  scale: 72,
+  simplify: false,
+  overlapTolerance: 0.0001,
 };
 
-/**
- * Main nesting orchestrator class.
- *
- * DeepNest manages the entire nesting workflow:
- * 1. Import SVG files and extract parts
- * 2. Process polygons (simplify, offset for spacing)
- * 3. Run genetic algorithm to find optimal arrangements
- * 4. Coordinate background workers for parallel computation
- *
- * ## Lifecycle
- * ```
- * const nest = new DeepNest(eventEmitter);
- * nest.config({ spacing: 2, rotations: 8 });  // Configure
- * nest.importsvg('file.svg', ...);            // Load parts
- * nest.start(onProgress, onDisplay);          // Begin nesting
- * // ... wait for results in nest.nests array
- * nest.stop();                                // Halt computation
- * ```
- *
- * @class DeepNest
- */
 export class DeepNest {
-  /**
-   * Creates a new DeepNest instance.
-   *
-   * @param {EventEmitter} eventEmitter - IPC event emitter for communicating with background workers.
-   *   Must implement send() for outgoing messages and on() for incoming responses.
-   *
-   * @example
-   * // In Electron main process
-   * const nest = new DeepNest(ipcRenderer);
-   */
   constructor(eventEmitter) {
     var svg = null;
 
-    /**
-     * Imported SVG files with their parsed DOM trees.
-     * @type {Array<{filename: string, svg: SVGElement}>}
-     */
+    // list of imported files
+    // import: {filename: 'blah.svg', svg: svgroot}
     this.imports = [];
 
-    /**
-     * All extracted parts from imported SVGs.
-     * Each part contains polygon data, metadata, and quantity.
-     * @type {Array<{polygontree: Polygon, quantity: number, filename: string, sheet?: boolean, bounds: Object, area: number}>}
-     */
+    // list of all extracted parts
+    // part: {name: 'part name', quantity: ...}
     this.parts = [];
 
-    /**
-     * Temporary polygon tree used only during active nesting.
-     * This is a processed copy of parts with offsets applied.
-     * @type {Array<Polygon>}
-     */
+    // a pure polygonal representation of parts that lives only during the nesting step
     this.partsTree = [];
 
-    /**
-     * Whether nesting is currently running.
-     * @type {boolean}
-     */
     this.working = false;
 
-    /**
-     * Active Genetic Algorithm instance (null when not nesting).
-     * @type {GeneticAlgorithm|null}
-     */
     this.GA = null;
-
-    /**
-     * Timer ID for the worker polling interval.
-     * @type {number|null}
-     */
     this.workerTimer = null;
 
-    /**
-     * Callback invoked when nesting progress updates.
-     * @type {Function|null}
-     */
     this.progressCallback = null;
-
-    /**
-     * Callback invoked when a new valid placement is found.
-     * @type {Function|null}
-     */
     this.displayCallback = null;
-
-    /**
-     * Successful nesting results, sorted by fitness (best first).
-     * Each nest contains placement coordinates for all parts.
-     * @type {Array<{fitness: number, placements: Array}>}
-     */
+    // a running list of placements
     this.nests = [];
 
-    /**
-     * IPC event emitter for background worker communication.
-     * @type {EventEmitter}
-     */
     this.eventEmitter = eventEmitter;
   }
 
-  /**
-   * Imports an SVG file and extracts all nestable parts.
-   *
-   * ## Workflow
-   * 1. Parse SVG string into DOM tree via SvgParser
-   * 2. Clean up paths (handle DXF conversion artifacts if flagged)
-   * 3. Extract closed polygons as separate parts
-   * 4. Store both original SVG reference and processed parts
-   *
-   * @param {string} filename - File name for part ID; also parsed for quantity (e.g., "gear.5.svg" → qty=5)
-   * @param {string} dirpath - Directory path for resolving relative image/href references
-   * @param {string} svgstring - Raw SVG markup string to parse
-   * @param {number} scalingFactor - Absolute scale multiplier (e.g., 25.4 for mm→inch conversion)
-   * @param {boolean} dxfFlag - If true, applies DXF-specific path cleanup (unclosed paths, etc.)
-   * @returns {Array<Part>} Extracted parts with polygontree, bounds, quantity, and SVG elements
-   */
-  importsvg(filename, dirpath, svgstring, scalingFactor, dxfFlag) {
-    // Parse the SVG string into a DOM tree. config.scale is the default DPI (72),
-    // but scalingFactor provides an absolute override (useful for unit conversion)
-    var svg = window.SvgParser.load(
-      dirpath,
-      svgstring,
-      config.scale,
-      scalingFactor,
-    );
-
-    // Clean up parsed SVG: close near-closed paths, remove degenerate elements.
-    // DXF-converted SVGs often have quirks that need special handling.
+  importsvg(
+    filename,
+    dirpath,
+    svgstring,
+    scalingFactor,
+    dxfFlag
+  ) {
+    // parse svg
+    // config.scale is the default scale, and may not be applied
+    // scalingFactor is an absolute scaling that must be applied regardless of input svg contents
+    var svg = window.SvgParser.load(dirpath, svgstring, config.scale, scalingFactor);
     svg = window.SvgParser.cleanInput(dxfFlag);
 
-    // Store the import for reference (allows re-export, debugging)
     if (filename) {
       this.imports.push({
         filename: filename,
@@ -229,24 +78,16 @@ export class DeepNest {
     }
 
     return parts;
-  }
+  };
 
-  /**
-   * DEBUG: Renders a polygon as an SVG polyline for visual inspection.
-   * Useful for debugging NFP calculations or polygon simplification.
-   *
-   * @param {Array<{x: number, y: number}>} poly - Polygon vertices to render
-   * @param {SVGElement} svg - Target SVG element to append the polyline to
-   * @param {string} [highlight] - CSS class name for styling (e.g., "error", "debug")
-   * @private
-   */
+  // debug function
   renderPolygon(poly, svg, highlight) {
     if (!poly || poly.length == 0) {
       return;
     }
     var polyline = window.document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "polyline",
+      "polyline"
     );
 
     for (var i = 0; i < poly.length; i++) {
@@ -259,22 +100,14 @@ export class DeepNest {
       polyline.setAttribute("class", highlight);
     }
     svg.appendChild(polyline);
-  }
+  };
 
-  /**
-   * DEBUG: Renders points as SVG circles for visual inspection.
-   * Useful for debugging vertex positions or intersection points.
-   *
-   * @param {Array<{x: number, y: number}>} points - Points to render
-   * @param {SVGElement} svg - Target SVG element to append circles to
-   * @param {string} highlight - CSS class name for styling
-   * @private
-   */
+  // debug function
   renderPoints(points, svg, highlight) {
     for (var i = 0; i < points.length; i++) {
       var circle = window.document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "circle",
+        "circle"
       );
       circle.setAttribute("r", "5");
       circle.setAttribute("cx", points[i].x);
@@ -283,78 +116,43 @@ export class DeepNest {
 
       svg.appendChild(circle);
     }
-  }
+  };
 
-  /**
-   * Computes the convex hull of a polygon.
-   *
-   * The convex hull is the smallest convex shape that contains all points -
-   * imagine stretching a rubber band around all vertices. Used when
-   * config.simplify=true for faster (but less accurate) nesting.
-   *
-   * @param {Array<{x: number, y: number}>} polygon - Input polygon vertices
-   * @returns {Array<{x: number, y: number}>|null} Convex hull vertices, or null if computation fails
-   */
   getHull(polygon) {
-    // Copy points to avoid mutating the original polygon
     var points = [];
     for (let i = 0; i < polygon.length; i++) {
       points.push({
         x: polygon[i].x,
-        y: polygon[i].y,
+        y: polygon[i].y
       });
     }
-
-    // Compute convex hull using Graham scan or similar algorithm
     var hullpoints = HullPolygon.hull(points);
 
     if (!hullpoints) {
       return null;
     }
     return hullpoints;
-  }
+  };
 
-  /**
-   * Simplifies a polygon while preserving critical features for accurate nesting.
-   *
-   * ## Algorithm Overview (Ramer-Douglas-Peucker with selective offsetting)
-   *
-   * This is one of the most complex functions in the codebase. It balances:
-   * - **Fewer vertices** = faster NFP computation
-   * - **Shape accuracy** = parts still fit correctly after cutting
-   *
-   * ### Workflow:
-   * 1. If config.simplify=true, just return convex hull (fast but loses concave details)
-   * 2. Clean polygon (remove self-intersections, duplicate points)
-   * 3. Apply RDP simplification (reduces vertices while keeping shape similar)
-   * 4. Mark "important" long line segments that must be preserved exactly
-   * 5. Offset the simplified polygon inward/outward
-   * 6. Selectively un-offset vertices to ensure no exterior points exist
-   * 7. Straighten near-vertical/horizontal lines (cleaner cuts)
-   * 8. Union simplified + original to ensure we don't lose any area
-   *
-   * ### Why This Matters:
-   * A simplified polygon with 50 vertices computes NFPs ~10x faster than one
-   * with 500 vertices, but we can't oversimplify or parts won't fit.
-   *
-   * @param {Array<{x: number, y: number}>} polygon - Input polygon vertices
-   * @param {boolean} inside - True if this is a hole (offset inward), false for outer contour
-   * @returns {Array<{x: number, y: number}>} Simplified polygon with optional .children (holes)
-   */
+  // use RDP simplification, then selectively offset
   simplifyPolygon(polygon, inside) {
-    // Tolerance for RDP simplification - 4x the curve tolerance for good balance
     var tolerance = 4 * config.curveTolerance;
 
-    // Long segments (> ~0.25 inch squared) get special treatment to preserve accuracy.
-    // Standard RDP doesn't care about segment length, just perpendicular distance.
+    // give special treatment to line segments above this length (squared)
     var fixedTolerance =
       40 * config.curveTolerance * 40 * config.curveTolerance;
     var i, j, k;
     var self = this;
 
-    // Fast path: if user wants maximum simplification, just use convex hull
-    // This is MUCH faster but loses all concave features (holes in shapes, etc.)
     if (config.simplify) {
+      /*
+      // use convex hull
+      var hull = new ConvexHullGrahamScan();
+      for(var i=0; i<polygon.length; i++){
+        hull.addPoint(polygon[i].x, polygon[i].y);
+      }
+
+      return hull.getHull();*/
       var hull = this.getHull(polygon);
       if (hull) {
         return hull;
@@ -363,7 +161,6 @@ export class DeepNest {
       }
     }
 
-    // Step 1: Clean up the polygon (remove self-intersections, coincident points)
     var cleaned = this.cleanPolygon(polygon);
     if (cleaned && cleaned.length > 1) {
       polygon = cleaned;
@@ -371,13 +168,13 @@ export class DeepNest {
       return polygon;
     }
 
-    // Convert closed polygon to open polyline for RDP (add first point at end)
+    // polygon to polyline
     var copy = polygon.slice(0);
     copy.push(copy[0]);
 
-    // Step 2: Mark long segments as "important" - these endpoints must be preserved.
-    // RDP only cares about perpendicular distance, not segment length.
-    // A 10-inch straight line might get reduced to just 2 points, losing precision.
+    // mark all segments greater than ~0.25 in to be kept
+    // the PD simplification algo doesn't care about the accuracy of long lines, only the absolute distance of each point
+    // we care a great deal
     for (var i = 0; i < copy.length - 1; i++) {
       var p1 = copy[i];
       var p2 = copy[i + 1];
@@ -511,8 +308,16 @@ export class DeepNest {
             GeometryUtil.almostEqual(s1.y, s2.y)) && // we only really care about vertical and horizontal lines
           GeometryUtil.withinDistance(p1, s1, 2 * tolerance) &&
           GeometryUtil.withinDistance(p2, s2, 2 * tolerance) &&
-          (!GeometryUtil.withinDistance(p1, s1, config.curveTolerance / 1000) ||
-            !GeometryUtil.withinDistance(p2, s2, config.curveTolerance / 1000))
+          (!GeometryUtil.withinDistance(
+            p1,
+            s1,
+            config.curveTolerance / 1000
+          ) ||
+            !GeometryUtil.withinDistance(
+              p2,
+              s2,
+              config.curveTolerance / 1000
+            ))
         ) {
           p1.x = s1.x;
           p1.y = s1.y;
@@ -541,7 +346,7 @@ export class DeepNest {
         ClipperLib.ClipType.ctUnion,
         combined,
         ClipperLib.PolyFillType.pftNonZero,
-        ClipperLib.PolyFillType.pftNonZero,
+        ClipperLib.PolyFillType.pftNonZero
       )
     ) {
       var largestArea = null;
@@ -584,19 +389,9 @@ export class DeepNest {
 
     return offset;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // INNER HELPER FUNCTIONS for simplifyPolygon
-    // These are scoped inside simplifyPolygon to access closure variables
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Finds the best target point on the simplified polygon to snap an offset point to.
-     * Prefers "exact" points (original vertices) over interpolated ones.
-     * @inner
-     */
     function getTarget(point, simple, tol) {
       var inrange = [];
-      // Find all points on simplified polygon within tolerance distance
+      // find closest points within 2 offset deltas
       for (var j = 0; j < simple.length; j++) {
         var s = simple[j];
         var d2 = (o.x - s.x) * (o.x - s.x) + (o.y - s.y) * (o.y - s.y);
@@ -607,21 +402,19 @@ export class DeepNest {
 
       var target;
       if (inrange.length > 0) {
-        // Prefer exact points (original polygon vertices) over simplified ones
         var filtered = inrange.filter(function (p) {
           return p.point.exact;
         });
 
+        // use exact points when available, normal points when not
         inrange = filtered.length > 0 ? filtered : inrange;
 
-        // Sort by distance and pick the closest
         inrange.sort(function (a, b) {
           return a.distance - b.distance;
         });
 
         target = inrange[0].point;
       } else {
-        // No points in range - find the absolute closest point
         var mind = null;
         for (var j = 0; j < simple.length; j++) {
           var s = simple[j];
@@ -636,12 +429,9 @@ export class DeepNest {
       return target;
     }
 
-    /**
-     * Checks if any vertices of the complex polygon fall outside the simple polygon.
-     * Used to validate that simplification hasn't made the polygon smaller than original.
-     * @inner
-     */
+    // returns true if any complex vertices fall outside the simple polygon
     function exterior(simple, complex, inside) {
+      // find all protruding vertices
       for (var i = 0; i < complex.length; i++) {
         var v = complex[i];
         if (
@@ -662,11 +452,6 @@ export class DeepNest {
       return false;
     }
 
-    /**
-     * Converts nest coordinates {x, y} to ClipperLib coordinates {X, Y}.
-     * ClipperLib uses uppercase property names and integer math.
-     * @inner
-     */
     function toClipperCoordinates(polygon) {
       var clone = [];
       for (var i = 0; i < polygon.length; i++) {
@@ -675,14 +460,10 @@ export class DeepNest {
           Y: polygon[i].y,
         });
       }
+
       return clone;
     }
 
-    /**
-     * Converts ClipperLib coordinates {X, Y} back to nest coordinates {x, y}.
-     * Divides by scale to undo the integer scaling.
-     * @inner
-     */
     function toNestCoordinates(polygon, scale) {
       var clone = [];
       for (var i = 0; i < polygon.length; i++) {
@@ -691,14 +472,10 @@ export class DeepNest {
           y: polygon[i].Y / scale,
         });
       }
+
       return clone;
     }
 
-    /**
-     * Finds the index of a vertex in a polygon (fuzzy match within tolerance).
-     * Returns null if not found.
-     * @inner
-     */
     function find(v, p) {
       for (var i = 0; i < p.length; i++) {
         if (
@@ -710,10 +487,6 @@ export class DeepNest {
       return null;
     }
 
-    /**
-     * Creates a shallow copy of a polygon (new array, same coordinate values).
-     * @inner
-     */
     function clone(p) {
       var newp = [];
       for (var i = 0; i < p.length; i++) {
@@ -722,28 +495,14 @@ export class DeepNest {
           y: p[i].y,
         });
       }
+
       return newp;
     }
-  }
+  };
 
-  /**
-   * Gets or sets the nesting configuration.
-   *
-   * When called without arguments, returns the current config.
-   * When called with an object, merges values into the config (with validation).
-   *
-   * @param {NestConfig} [c] - Configuration object to merge
-   * @returns {NestConfig} Current configuration after any updates
-   *
-   * @example
-   * // Get current config
-   * const currentConfig = nest.config();
-   *
-   * // Update specific values
-   * nest.config({ spacing: 2, rotations: 8, populationSize: 20 });
-   */
   config(c) {
-    // If no argument, return current config (getter mode)
+    // clean up inputs
+
     if (!c) {
       return config;
     }
@@ -807,29 +566,15 @@ export class DeepNest {
     this.GA = null;
 
     return config;
-  }
+  };
 
-  /**
-   * Tests whether a point lies strictly inside a polygon.
-   *
-   * Uses ClipperLib's point-in-polygon test with coarse scaling (1000x instead
-   * of clipperScale's 10M) to deliberately exclude points lying exactly ON
-   * the polygon boundary. This prevents edge cases where parts share an edge.
-   *
-   * @param {{x: number, y: number}} point - Point to test
-   * @param {Array<{x: number, y: number}>} polygon - Polygon vertices
-   * @returns {boolean} True if point is strictly inside (not on boundary)
-   */
   pointInPolygon(point, polygon) {
-    // Scale at 1000x (not 10M) to be "fuzzy" about boundary points.
-    // This ensures points ON the edge return false (not inside).
+    // scaling is deliberately coarse to filter out points that lie *on* the polygon
     var p = this.svgToClipper(polygon, 1000);
     var pt = new ClipperLib.IntPoint(1000 * point.x, 1000 * point.y);
 
-    // ClipperLib returns: -1 = outside, 0 = on boundary, 1 = inside
-    // We want strictly inside, so we check > 0
     return ClipperLib.Clipper.PointInPolygon(pt, p) > 0;
-  }
+  };
 
   /*this.simplifyPolygon = function(polygon, concavehull){
     function clone(p){
@@ -923,103 +668,81 @@ export class DeepNest {
     return simple;
   }*/
 
-  /**
-   * Extracts nestable parts from SVG paths and organizes them into a tree structure.
-   *
-   * ## Why a Tree Structure?
-   * Parts can have holes (like a donut shape), and holes can contain islands
-   * (like a target symbol). The tree alternates: parts → holes → islands → ...
-   * - Depth 0 (root): Outer part contours
-   * - Depth 1: Holes in those parts
-   * - Depth 2: Islands inside holes
-   * - And so on...
-   *
-   * ## Workflow
-   * 1. Filter to valid polygon elements (circle, rect, path, etc.)
-   * 2. Skip open paths (can't be cut/filled)
-   * 3. Convert SVG elements to polygon arrays
-   * 4. Build parent-child relationships based on containment
-   * 5. Associate non-polygon elements (images, lines) with containing parts
-   *
-   * @param {HTMLCollection|Array} paths - SVG child elements to process
-   * @param {string} filename - Source filename (used for quantity parsing and sheet detection)
-   * @returns {Array<Part>} Parts with polygontree, svgelements, bounds, quantity, etc.
-   */
+  // assuming no intersections, return a tree where odd leaves are parts and even ones are holes
+  // might be easier to use the DOM, but paths can't have paths as children. So we'll just make our own tree.
   getParts(paths, filename) {
     var j;
     var polygons = [];
 
     var numChildren = paths.length;
     for (var i = 0; i < numChildren; i++) {
-      // Skip non-polygon elements (groups, text, etc.)
       if (window.SvgParser.polygonElements.indexOf(paths[i].tagName) < 0) {
         continue;
       }
 
-      // Skip open paths - they can't be cut as closed shapes
+      // don't use open paths
       if (!window.SvgParser.isClosed(paths[i], 2 * config.curveTolerance)) {
         continue;
       }
 
-      // Convert SVG element to polygon (array of {x, y} points)
       var poly = window.SvgParser.polygonify(paths[i]);
       poly = this.cleanPolygon(poly);
 
-      // Validate: must have area > tolerance² (filters out degenerate shapes)
+      // todo: warn user if poly could not be processed and is excluded from the nest
       if (
         poly &&
         poly.length > 2 &&
         Math.abs(GeometryUtil.polygonArea(poly)) >
-          config.curveTolerance * config.curveTolerance
+        config.curveTolerance * config.curveTolerance
       ) {
-        poly.source = i; // Remember which SVG element this came from
+        poly.source = i;
         polygons.push(poly);
       }
     }
 
-    // Build hierarchical tree based on polygon containment
+    // turn the list into a tree
+    // root level nodes of the tree are parts
     toTree(polygons);
 
-    /**
-     * Recursively organizes polygons into a parent-child tree based on containment.
-     * A polygon is a child of another if >50% of its sample points are inside.
-     * @inner
-     */
     function toTree(list, idstart) {
-      // Local coordinate converter for containment testing
       function svgToClipper(polygon) {
         var clip = [];
         for (var i = 0; i < polygon.length; i++) {
           clip.push({ X: polygon[i].x, Y: polygon[i].y });
         }
+
         ClipperLib.JS.ScaleUpPath(clip, config.clipperScale);
+
         return clip;
       }
-
-      // Tests if a point is inside a ClipperLib-format polygon
       function pointInClipperPolygon(point, polygon) {
         var pt = new ClipperLib.IntPoint(
           config.clipperScale * point.x,
-          config.clipperScale * point.y,
+          config.clipperScale * point.y
         );
+
         return ClipperLib.Clipper.PointInPolygon(pt, polygon) > 0;
       }
-
       var parents = [];
+
+      // assign a unique id to each leaf
       var id = idstart || 0;
 
-      // Determine parent-child relationships by testing containment
       for (var i = 0; i < list.length; i++) {
         var p = list[i];
+
         var ischild = false;
-
         for (var j = 0; j < list.length; j++) {
-          if (j == i) continue;
-          if (p.length < 2) continue;
-
-          // Sample up to 10 points to test containment (faster than all points)
+          if (j == i) {
+            continue;
+          }
+          if (p.length < 2) {
+            continue;
+          }
           var inside = 0;
           var fullinside = Math.min(10, p.length);
+
+          // sample about 10 points
           var clipper_polygon = svgToClipper(list[j]);
 
           for (var k = 0; k < fullinside; k++) {
@@ -1028,7 +751,8 @@ export class DeepNest {
             }
           }
 
-          // If >50% of sample points are inside, this polygon is a child (hole or island)
+          //console.log(inside, fullinside);
+
           if (inside > 0.5 * fullinside) {
             if (!list[j].children) {
               list[j].children = [];
@@ -1045,7 +769,6 @@ export class DeepNest {
         }
       }
 
-      // Remove child polygons from the main list (they're now in .children)
       for (var i = 0; i < list.length; i++) {
         if (parents.indexOf(list[i]) < 0) {
           list.splice(i, 1);
@@ -1053,13 +776,11 @@ export class DeepNest {
         }
       }
 
-      // Assign unique IDs to parent polygons
       for (var i = 0; i < parents.length; i++) {
         parents[i].id = id;
         id++;
       }
 
-      // Recursively process children (holes, islands, etc.)
       for (var i = 0; i < parents.length; i++) {
         if (parents[i].children) {
           id = toTree(parents[i].children, id);
@@ -1255,24 +976,14 @@ export class DeepNest {
     }
 
     return parts;
-  }
+  };
 
-  /**
-   * Deep clones a polygon tree, preserving the hierarchical structure.
-   *
-   * Creates new arrays with copied coordinate values but same structure.
-   * Essential for passing data through IPC without mutating originals.
-   *
-   * @param {Array<{x: number, y: number, exact?: boolean}>} tree - Polygon with optional .children
-   * @returns {Array} Cloned polygon tree with same structure
-   */
   cloneTree(tree) {
     var newtree = [];
     tree.forEach(function (t) {
       newtree.push({ x: t.x, y: t.y, exact: t.exact });
     });
 
-    // Recursively clone child polygons (holes, islands, etc.)
     var self = this;
     if (tree.children && tree.children.length > 0) {
       newtree.children = [];
@@ -1282,33 +993,21 @@ export class DeepNest {
     }
 
     return newtree;
-  }
+  };
 
-  /**
-   * Starts the nesting computation.
-   *
-   * This is the main entry point to begin optimizing part placements.
-   * It sets up callbacks, prepares parts for IPC transfer, applies spacing
-   * offsets, initializes the genetic algorithm, and starts background workers.
-   *
-   * ## Workflow
-   * 1. Store callbacks for progress and display updates
-   * 2. Clone parts (avoid mutating originals during computation)
-   * 3. Apply spacing offset: sheets shrink, parts grow by spacing/2
-   * 4. Start interval timer that polls launchWorkers()
-   * 5. Listen for background-response events with placement results
-   *
-   * @param {Function} p - Progress callback (called during computation)
-   * @param {Function} d - Display callback (called when new best placement found)
-   */
+  // progressCallback is called when progress is made
+  // displayCallback is called when a new placement has been made
   start(p, d) {
     this.progressCallback = p;
     this.displayCallback = d;
 
     var parts = [];
 
-    // Clone parts for IPC transfer - only include data needed by workers
-    // (avoids sending DOM elements and other non-serializable data)
+    /*while(this.nests.length > 0){
+      this.nests.pop();
+    }*/
+
+    // send only bare essentials through ipc
     for (var i = 0; i < this.parts.length; i++) {
       parts.push({
         quantity: this.parts[i].quantity,
@@ -1318,25 +1017,21 @@ export class DeepNest {
       });
     }
 
-    // Apply spacing offsets: sheets shrink INWARD, parts grow OUTWARD.
-    // This creates the required gap between nested parts.
-    // Total gap = spacing/2 (sheet) + spacing/2 (part) = spacing
     for (var i = 0; i < parts.length; i++) {
       if (parts[i].sheet) {
-        // Sheet: offset INWARD (negative) to create margin from edges
         offsetTree(
           parts[i].polygontree,
           -0.5 * config.spacing,
           this.polygonOffset.bind(this),
           this.simplifyPolygon.bind(this),
-          true,
+          true
         );
       } else {
         offsetTree(
           parts[i].polygontree,
           0.5 * config.spacing,
           this.polygonOffset.bind(this),
-          this.simplifyPolygon.bind(this),
+          this.simplifyPolygon.bind(this)
         );
       }
     }
@@ -1377,7 +1072,7 @@ export class DeepNest {
             -offset,
             offsetFunction,
             simpleFunction,
-            !inside,
+            !inside
           );
         }
       }
@@ -1393,7 +1088,7 @@ export class DeepNest {
           parts,
           config,
           this.progressCallback,
-          this.displayCallback,
+          this.displayCallback
         );
         //progressCallback(progress);
       }, 100);
@@ -1434,9 +1129,7 @@ export class DeepNest {
       } else if (process.env.DEEPNEST_LONGLIST) {
         // With DEEPNEST_LONGLIST, we add the result to the list regardless of fitness
         // Just make sure it's not worse than the worst result we already have
-        const worstFitness = Math.min(
-          ...this.nests.map((item) => item.fitness),
-        );
+        const worstFitness = Math.min(...this.nests.map(item => item.fitness));
         if (this.nests.length < 100 || payload.fitness > worstFitness) {
           // Find where to insert this result to maintain insertion order
           this.nests.push(payload);
@@ -1464,79 +1157,53 @@ export class DeepNest {
         }
       }
     });
-  }
+  };
 
-  /**
-   * Pads a number with leading zeros to a specified width.
-   * @param {number} n - Number to pad
-   * @param {number} width - Desired total width
-   * @param {string} [z='0'] - Padding character
-   * @returns {string} Zero-padded string
-   * @private
-   */
   padNumber(n, width, z) {
-    z = z || "0";
-    n = n + "";
+    z = z || '0';
+    n = n + '';
     return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
   }
 
-  /**
-   * Main worker coordination loop - dispatches parts to background workers.
-   *
-   * Called every 100ms by the workerTimer interval. This function:
-   * 1. Initializes the Genetic Algorithm on first call (creates "adam" population)
-   * 2. Checks if current GA generation is complete
-   * 3. Advances to next generation if all individuals evaluated
-   * 4. Dispatches pending individuals to background workers via IPC
-   *
-   * ## Genetic Algorithm Integration
-   * The GA maintains a population of "individuals", where each individual
-   * represents a specific ordering and rotation of parts. This function
-   * sends individuals to background workers which compute their "fitness"
-   * (how well the parts fit on sheets).
-   *
-   * ## First-Fit Decreasing Heuristic
-   * Parts are initially sorted by area (largest first). This "first-fit
-   * decreasing" strategy is a well-known bin packing heuristic that
-   * produces good initial solutions.
-   *
-   * @param {Array<Part>} parts - Parts to nest (with quantity, polygontree, etc.)
-   * @param {NestConfig} config - Nesting configuration
-   * @param {Function} progressCallback - Progress update callback
-   * @param {Function} displayCallback - Display update callback
-   * @private
-   */
-  launchWorkers(parts, config, progressCallback, displayCallback) {
-    // Fisher-Yates shuffle (not currently used but available)
+  launchWorkers(
+    parts,
+    config,
+    progressCallback,
+    displayCallback
+  ) {
     function shuffle(array) {
       var currentIndex = array.length,
         temporaryValue,
         randomIndex;
+
+      // While there remain elements to shuffle...
       while (0 !== currentIndex) {
+        // Pick a remaining element...
         randomIndex = Math.floor(Math.random() * currentIndex);
         currentIndex -= 1;
+
+        // And swap it with the current element.
         temporaryValue = array[currentIndex];
         array[currentIndex] = array[randomIndex];
         array[randomIndex] = temporaryValue;
       }
+
       return array;
     }
 
     var i, j;
 
-    // Initialize GA on first call - create the initial population
     if (this.GA === null) {
-      // "Adam" is the first individual - all parts in their original order
+      // initiate new GA
+
       var adam = [];
       var id = 0;
-
-      // Expand parts by quantity (e.g., 3 copies of part A → 3 entries)
       for (var i = 0; i < parts.length; i++) {
         if (!parts[i].sheet) {
           for (var j = 0; j < parts[i].quantity; j++) {
-            var poly = this.cloneTree(parts[i].polygontree);
-            poly.id = id; // Unique instance ID (includes duplicates)
-            poly.source = i; // Reference to original part definition
+            var poly = this.cloneTree(parts[i].polygontree); // deep copy
+            poly.id = id; // id is the unique id of all parts that will be nested, including cloned duplicates
+            poly.source = i; // source is the id of each unique part from the main part list
             poly.filename = parts[i].filename;
 
             adam.push(poly);
@@ -1545,8 +1212,7 @@ export class DeepNest {
         }
       }
 
-      // First-Fit Decreasing: sort largest parts first.
-      // This heuristic places big items first, then fills gaps with smaller ones.
+      // seed with decreasing area
       adam.sort(function (a, b) {
         return (
           Math.abs(GeometryUtil.polygonArea(b)) -
@@ -1554,8 +1220,8 @@ export class DeepNest {
         );
       });
 
-      // Create the GA with Adam as the seed individual
       this.GA = new GeneticAlgorithm(adam, config);
+      //console.log(GA.population[1].placement);
     }
 
     // check if current generation is finished
@@ -1588,7 +1254,7 @@ export class DeepNest {
         var poly = parts[i].polygontree;
         for (var j = 0; j < parts[i].quantity; j++) {
           sheets.push(poly);
-          sheetids.push(this.padNumber(sid, 4) + "-" + this.padNumber(j, 4));
+          sheetids.push(this.padNumber(sid, 4) + '-' + this.padNumber(j, 4));
           sheetsources.push(i);
           sheetchildren.push(poly.children);
         }
@@ -1639,22 +1305,10 @@ export class DeepNest {
         running++;
       }
     }
-  }
+  };
 
-  /**
-   * Expands or contracts a polygon by a given offset distance.
-   *
-   * Uses ClipperLib's offset operation with miter joins. This is essential for:
-   * - Adding spacing between parts (positive offset = grow)
-   * - Creating margins from sheet edges (negative offset = shrink)
-   *
-   * Note: May return multiple polygons if offsetting creates new shapes
-   * (e.g., a large inward offset might split a thin area into separate regions).
-   *
-   * @param {Array<{x: number, y: number}>} polygon - Input polygon vertices
-   * @param {number} offset - Offset distance (positive = expand, negative = contract)
-   * @returns {Array<Array<{x: number, y: number}>>} Array of resulting polygons
-   */
+  // use the clipper library to return an offset to the given polygon. Positive offset expands the polygon, negative contracts
+  // note that this returns an array of polygons
   polygonOffset(polygon, offset) {
     if (!offset || offset == 0 || GeometryUtil.almostEqual(offset, 0)) {
       return polygon;
@@ -1662,56 +1316,41 @@ export class DeepNest {
 
     var p = this.svgToClipper(polygon);
 
-    // Miter limit controls how far sharp corners can extend
     var miterLimit = 4;
     var co = new ClipperLib.ClipperOffset(
       miterLimit,
-      config.curveTolerance * config.clipperScale,
+      config.curveTolerance * config.clipperScale
     );
     co.AddPath(
       p,
-      ClipperLib.JoinType.jtMiter, // Sharp corners (good for mechanical parts)
-      ClipperLib.EndType.etClosedPolygon,
+      ClipperLib.JoinType.jtMiter,
+      ClipperLib.EndType.etClosedPolygon
     );
 
     var newpaths = new ClipperLib.Paths();
     co.Execute(newpaths, offset * config.clipperScale);
 
-    // Convert all resulting paths back to SVG coordinates
     var result = [];
     for (var i = 0; i < newpaths.length; i++) {
       result.push(this.clipperToSvg(newpaths[i]));
     }
 
     return result;
-  }
+  };
 
-  /**
-   * Cleans up a polygon by removing self-intersections and degenerate features.
-   *
-   * ## What This Does
-   * 1. Simplify: Remove self-intersections (figure-8 shapes become separate polygons)
-   * 2. Select: Keep only the largest resulting polygon
-   * 3. Clean: Remove coincident points and near-zero-length edges
-   * 4. Dedupe: Remove duplicate start/end points
-   *
-   * @param {Array<{x: number, y: number}>} polygon - Input polygon (potentially dirty)
-   * @returns {Array<{x: number, y: number}>|null} Cleaned polygon, or null if degenerate
-   */
+  // returns a less complex polygon that satisfies the curve tolerance
   cleanPolygon(polygon) {
     var p = this.svgToClipper(polygon);
-
-    // SimplifyPolygon resolves self-intersections (may produce multiple polygons)
+    // remove self-intersections and find the biggest polygon that's left
     var simple = ClipperLib.Clipper.SimplifyPolygon(
       p,
-      ClipperLib.PolyFillType.pftNonZero,
+      ClipperLib.PolyFillType.pftNonZero
     );
 
     if (!simple || simple.length == 0) {
       return null;
     }
 
-    // Keep only the largest polygon (discard tiny fragments from self-intersection)
     var biggest = simple[0];
     var biggestarea = Math.abs(ClipperLib.Clipper.Area(biggest));
     for (var i = 1; i < simple.length; i++) {
@@ -1722,10 +1361,10 @@ export class DeepNest {
       }
     }
 
-    // Remove singularities (coincident points, near-zero edges)
+    // clean up singularities, coincident points and edges
     var clean = ClipperLib.Clipper.CleanPolygon(
       biggest,
-      0.01 * config.curveTolerance * config.clipperScale,
+      0.01 * config.curveTolerance * config.clipperScale
     );
 
     if (!clean || clean.length == 0) {
@@ -1734,7 +1373,7 @@ export class DeepNest {
 
     var cleaned = this.clipperToSvg(clean);
 
-    // Remove duplicate first/last point (ClipperLib sometimes adds this)
+    // remove duplicate endpoints
     var start = cleaned[0];
     var end = cleaned[cleaned.length - 1];
     if (
@@ -1746,18 +1385,9 @@ export class DeepNest {
     }
 
     return cleaned;
-  }
+  };
 
-  /**
-   * Converts nest coordinates {x, y} to ClipperLib format {X, Y} with integer scaling.
-   *
-   * ClipperLib uses integer arithmetic for precision. We scale by clipperScale (10M)
-   * to maintain ~7 decimal places of precision.
-   *
-   * @param {Array<{x: number, y: number}>} polygon - Floating-point coordinates
-   * @param {number} [scale] - Custom scale (defaults to config.clipperScale)
-   * @returns {Array<{X: number, Y: number}>} Integer coordinates for ClipperLib
-   */
+  // converts a polygon from normal float coordinates to integer coordinates used by clipper, as well as x/y -> X/Y
   svgToClipper(polygon, scale) {
     var clip = [];
     for (var i = 0; i < polygon.length; i++) {
@@ -1767,14 +1397,8 @@ export class DeepNest {
     ClipperLib.JS.ScaleUpPath(clip, scale || config.clipperScale);
 
     return clip;
-  }
+  };
 
-  /**
-   * Converts ClipperLib format {X, Y} back to nest coordinates {x, y}.
-   *
-   * @param {Array<{X: number, Y: number}>} polygon - ClipperLib integer coordinates
-   * @returns {Array<{x: number, y: number}>} Floating-point coordinates
-   */
   clipperToSvg(polygon) {
     var normal = [];
 
@@ -1786,17 +1410,9 @@ export class DeepNest {
     }
 
     return normal;
-  }
+  };
 
-  /**
-   * Applies a placement result to generate exportable SVG elements.
-   *
-   * Takes placement coordinates from the nesting algorithm and creates
-   * SVG groups with appropriate transforms (translate + rotate) for each part.
-   *
-   * @param {Array<Array<{id: number, x: number, y: number, rotation: number}>>} placement - Placement data per sheet
-   * @returns {Array<SVGElement>} Array of SVG elements, one per sheet
-   */
+  // returns an array of SVG elements that represent the placement, for export or rendering
   applyPlacement(placement) {
     var clone = [];
     for (var i = 0; i < parts.length; i++) {
@@ -1809,7 +1425,7 @@ export class DeepNest {
       var newsvg = svg.cloneNode(false);
       newsvg.setAttribute(
         "viewBox",
-        "0 0 " + binBounds.width + " " + binBounds.height,
+        "0 0 " + binBounds.width + " " + binBounds.height
       );
       newsvg.setAttribute("width", binBounds.width + "px");
       newsvg.setAttribute("height", binBounds.height + "px");
@@ -1818,7 +1434,7 @@ export class DeepNest {
       binclone.setAttribute("class", "bin");
       binclone.setAttribute(
         "transform",
-        "translate(" + -binBounds.x + " " + -binBounds.y + ")",
+        "translate(" + -binBounds.x + " " + -binBounds.y + ")"
       );
       newsvg.appendChild(binclone);
 
@@ -1830,7 +1446,7 @@ export class DeepNest {
         var partgroup = document.createElementNS(svg.namespaceURI, "g");
         partgroup.setAttribute(
           "transform",
-          "translate(" + p.x + " " + p.y + ") rotate(" + p.rotation + ")",
+          "translate(" + p.x + " " + p.y + ") rotate(" + p.rotation + ")"
         );
         partgroup.appendChild(clone[part.source]);
 
@@ -1866,14 +1482,8 @@ export class DeepNest {
     }
 
     return svglist;
-  }
+  };
 
-  /**
-   * Stops the nesting computation gracefully.
-   *
-   * Clears processing flags on all GA individuals and stops the worker timer.
-   * Call this when the user clicks "Stop" or before closing the application.
-   */
   stop() {
     this.working = false;
     if (this.GA && this.GA.population && this.GA.population.length > 0) {
@@ -1885,14 +1495,8 @@ export class DeepNest {
       clearInterval(this.workerTimer);
       this.workerTimer = null;
     }
-  }
+  };
 
-  /**
-   * Resets the nester to initial state.
-   *
-   * Clears the GA, all stored nests, and callbacks. Call this before
-   * starting a new nesting job to ensure clean state.
-   */
   reset() {
     this.GA = null;
     while (this.nests.length > 0) {
@@ -1900,5 +1504,155 @@ export class DeepNest {
     }
     this.progressCallback = null;
     this.displayCallback = null;
+  };
+}
+
+export class GeneticAlgorithm {
+  constructor(adam, config) {
+    this.config = config || {
+      populationSize: 10,
+      mutationRate: 10,
+      rotations: 4,
+    };
+
+    // population is an array of individuals. Each individual is a object representing the order of insertion and the angle each part is rotated
+    var angles = [];
+    for (var i = 0; i < adam.length; i++) {
+      var angle =
+        Math.floor(Math.random() * this.config.rotations) *
+        (360 / this.config.rotations);
+      angles.push(angle);
+    }
+
+    this.population = [{ placement: adam, rotation: angles }];
+
+    while (this.population.length < config.populationSize) {
+      var mutant = this.mutate(this.population[0]);
+      this.population.push(mutant);
+    }
   }
+
+  // returns a mutated individual with the given mutation rate
+  mutate(individual) {
+    var clone = {
+      placement: individual.placement.slice(0),
+      rotation: individual.rotation.slice(0),
+    };
+    for (var i = 0; i < clone.placement.length; i++) {
+      var rand = Math.random();
+      if (rand < 0.01 * this.config.mutationRate) {
+        // swap current part with next part
+        var j = i + 1;
+
+        if (j < clone.placement.length) {
+          var temp = clone.placement[i];
+          clone.placement[i] = clone.placement[j];
+          clone.placement[j] = temp;
+        }
+      }
+
+      rand = Math.random();
+      if (rand < 0.01 * this.config.mutationRate) {
+        clone.rotation[i] =
+          Math.floor(Math.random() * this.config.rotations) *
+          (360 / this.config.rotations);
+      }
+    }
+
+    return clone;
+  };
+
+  // single point crossover
+  mate(male, female) {
+    var cutpoint = Math.round(
+      Math.min(Math.max(Math.random(), 0.1), 0.9) * (male.placement.length - 1)
+    );
+
+    var gene1 = male.placement.slice(0, cutpoint);
+    var rot1 = male.rotation.slice(0, cutpoint);
+
+    var gene2 = female.placement.slice(0, cutpoint);
+    var rot2 = female.rotation.slice(0, cutpoint);
+
+    for (var i = 0; i < female.placement.length; i++) {
+      if (!contains(gene1, female.placement[i].id)) {
+        gene1.push(female.placement[i]);
+        rot1.push(female.rotation[i]);
+      }
+    }
+
+    for (var i = 0; i < male.placement.length; i++) {
+      if (!contains(gene2, male.placement[i].id)) {
+        gene2.push(male.placement[i]);
+        rot2.push(male.rotation[i]);
+      }
+    }
+
+    function contains(gene, id) {
+      for (var i = 0; i < gene.length; i++) {
+        if (gene[i].id == id) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    return [
+      { placement: gene1, rotation: rot1 },
+      { placement: gene2, rotation: rot2 },
+    ];
+  };
+
+  generation() {
+    // Individuals with higher fitness are more likely to be selected for mating
+    this.population.sort(function (a, b) {
+      return a.fitness - b.fitness;
+    });
+
+    // fittest individual is preserved in the new generation (elitism)
+    var newpopulation = [this.population[0]];
+
+    while (newpopulation.length < this.population.length) {
+      var male = this.randomWeightedIndividual();
+      var female = this.randomWeightedIndividual(male);
+
+      // each mating produces two children
+      var children = this.mate(male, female);
+
+      // slightly mutate children
+      newpopulation.push(this.mutate(children[0]));
+
+      if (newpopulation.length < this.population.length) {
+        newpopulation.push(this.mutate(children[1]));
+      }
+    }
+
+    this.population = newpopulation;
+  };
+
+  // returns a random individual from the population, weighted to the front of the list (lower fitness value is more likely to be selected)
+  randomWeightedIndividual(exclude) {
+    var pop = this.population.slice(0);
+
+    if (exclude && pop.indexOf(exclude) >= 0) {
+      pop.splice(pop.indexOf(exclude), 1);
+    }
+
+    var rand = Math.random();
+
+    var lower = 0;
+    var weight = 1 / pop.length;
+    var upper = weight;
+
+    for (var i = 0; i < pop.length; i++) {
+      // if the random number falls between lower and upper bounds, select this individual
+      if (rand > lower && rand < upper) {
+        return pop[i];
+      }
+      lower = upper;
+      upper += 2 * weight * ((pop.length - i) / pop.length);
+    }
+
+    return pop[0];
+  };
 }
