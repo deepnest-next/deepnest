@@ -577,6 +577,150 @@ function nfpToClipperCoordinates(nfp, config) {
   return clipperNfp;
 }
 
+function clonePolygonPath(polygon) {
+  var clone = [];
+  for (let i = 0; i < polygon.length; i++) {
+    clone.push({
+      x: polygon[i].x,
+      y: polygon[i].y,
+      exact: polygon[i].exact
+    });
+  }
+
+  return clone;
+}
+
+function clonePolygonWithChildren(polygon) {
+  var clone = clonePolygonPath(polygon);
+  if (polygon.children && polygon.children.length > 0) {
+    clone.children = [];
+    for (let i = 0; i < polygon.children.length; i++) {
+      clone.children.push(clonePolygonPath(polygon.children[i]));
+    }
+  }
+
+  return clone;
+}
+
+function polygonMaterialArea(polygon) {
+  var materialArea = Math.abs(GeometryUtil.polygonArea(polygon));
+  if (polygon.children && polygon.children.length > 0) {
+    for (let i = 0; i < polygon.children.length; i++) {
+      materialArea -= Math.abs(GeometryUtil.polygonArea(polygon.children[i]));
+    }
+  }
+
+  return Math.max(0, materialArea);
+}
+
+function outerPathToClipperCoordinates(polygon, config) {
+  var outer = clonePolygonPath(polygon);
+  if (GeometryUtil.polygonArea(outer) > 0) {
+    outer.reverse();
+  }
+
+  var clipperOuter = toClipperCoordinates(outer);
+  ClipperLib.JS.ScaleUpPath(clipperOuter, config.clipperScale);
+  return clipperOuter;
+}
+
+function childPathsToClipperCoordinates(polygon, config) {
+  var clipperChildren = [];
+  if (!polygon.children || polygon.children.length == 0) {
+    return clipperChildren;
+  }
+
+  for (let i = 0; i < polygon.children.length; i++) {
+    var child = clonePolygonPath(polygon.children[i]);
+    if (GeometryUtil.polygonArea(child) < 0) {
+      child.reverse();
+    }
+
+    var clipperChild = toClipperCoordinates(child);
+    ClipperLib.JS.ScaleUpPath(clipperChild, config.clipperScale);
+    clipperChildren.push(clipperChild);
+  }
+
+  return clipperChildren;
+}
+
+function hasMaterialOverlap(A, B, config) {
+  var clipperA = outerPathToClipperCoordinates(A, config);
+  var clipperB = outerPathToClipperCoordinates(B, config);
+  var intersection = new ClipperLib.Paths();
+  var clipper = new ClipperLib.Clipper();
+
+  clipper.AddPath(clipperA, ClipperLib.PolyType.ptSubject, true);
+  clipper.AddPath(clipperB, ClipperLib.PolyType.ptClip, true);
+
+  if (!clipper.Execute(ClipperLib.ClipType.ctIntersection, intersection,
+    ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero) ||
+    intersection.length == 0) {
+    return false;
+  }
+
+  var holes = childPathsToClipperCoordinates(A, config).concat(childPathsToClipperCoordinates(B, config));
+  if (holes.length > 0) {
+    var materialIntersection = new ClipperLib.Paths();
+    clipper = new ClipperLib.Clipper();
+    clipper.AddPaths(intersection, ClipperLib.PolyType.ptSubject, true);
+    clipper.AddPaths(holes, ClipperLib.PolyType.ptClip, true);
+
+    if (!clipper.Execute(ClipperLib.ClipType.ctDifference, materialIntersection,
+      ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
+      return true;
+    }
+    intersection = materialIntersection;
+  }
+
+  for (let i = 0; i < intersection.length; i++) {
+    if (Math.abs(ClipperLib.Clipper.Area(intersection[i])) > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasMaterialOutsideSheet(part, sheet, config) {
+  var clipperPart = outerPathToClipperCoordinates(part, config);
+  var clipperSheet = outerPathToClipperCoordinates(sheet, config);
+  var outside = new ClipperLib.Paths();
+  var clipper = new ClipperLib.Clipper();
+
+  clipper.AddPath(clipperPart, ClipperLib.PolyType.ptSubject, true);
+  clipper.AddPath(clipperSheet, ClipperLib.PolyType.ptClip, true);
+
+  if (!clipper.Execute(ClipperLib.ClipType.ctDifference, outside,
+    ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
+    return true;
+  }
+
+  if (hasNonZeroClipperArea(outside)) {
+    return true;
+  }
+
+  if (sheet.children && sheet.children.length > 0) {
+    for (let i = 0; i < sheet.children.length; i++) {
+      if (hasMaterialOverlap(part, sheet.children[i], config)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function hasNonZeroClipperArea(paths) {
+  for (let i = 0; i < paths.length; i++) {
+    if (Math.abs(ClipperLib.Clipper.Area(paths[i])) > 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /**
  * Converts inner NFPs to Clipper coordinate format.
  *
@@ -947,7 +1091,6 @@ function getInnerNfp(A, B, config) {
  *   - placementType: placement strategy ('gravity', 'box', or 'convexhull')
  *   - mergeLines: whether to merge collinear edges
  *   - clipperScale: scale factor for Clipper library operations
- *   - holeAreaThreshold: minimum area for considering hole placement
  * @param {number} nestindex - Index of this nesting attempt (for progress tracking)
  * @return {Object} Placement result with fitness score, placements array, and unplaced parts
  *
@@ -958,8 +1101,6 @@ function getInnerNfp(A, B, config) {
  * GENERAL FLOW:
  * 1. PREPROCESSING:
  *    - Rotate all parts to their specified orientations
- *    - Analyze sheets and parts to identify hole placement opportunities
- *    - Sort parts prioritizing those that can fit in holes
  *
  * 2. SHEET-BY-SHEET PLACEMENT LOOP:
  *    - Open a new sheet and add its area to fitness (penalty for using more sheets)
@@ -967,11 +1108,10 @@ function getInnerNfp(A, B, config) {
  *      a. Try multiple rotations if part doesn't fit initially
  *      b. Calculate inner NFP (valid positions within sheet boundary)
  *      c. Calculate outer NFPs (collision boundaries with already-placed parts)
- *      d. Find all valid candidate positions by intersecting/subtracting NFPs
- *      e. Check for hole-fitting opportunities in placed parts
- *      f. Score each candidate position based on placement strategy
- *      g. Select best position and place part
- *      h. Update fitness based on placement quality
+ *      d. Subtract placed outer contours and add their inner contours back
+ *      e. Score each candidate position based on placement strategy
+ *      f. Select best position and place part
+ *      g. Update fitness based on placement quality
  *    - Repeat until no more parts fit on current sheet
  *
  * 3. FITNESS CALCULATION:
@@ -980,7 +1120,6 @@ function getInnerNfp(A, B, config) {
  *      * Gravity: Minimize width (5x weight) and height
  *      * Box: Minimize bounding box area
  *      * Convex hull: Minimize convex hull area
- *    - Subtract bonuses for parts placed in holes
  *    - Subtract savings from merged cutting edges (if enabled)
  *    - Add massive penalties for unplaced parts (100M × part area)
  *
@@ -1003,6 +1142,8 @@ function placeParts(sheets, parts, config, nestindex) {
 
   var totalnum = parts.length;
   var totalsheetarea = 0;
+  var totalusablesheetarea = 0;
+  var totalplacedarea = 0;
 
   // total length of merged lines
   var totalMerged = 0;
@@ -1020,22 +1161,6 @@ function placeParts(sheets, parts, config, nestindex) {
   }
 
   parts = rotated;
-
-  // Set default holeAreaThreshold if not defined
-  if (!config.holeAreaThreshold) {
-    // Default threshold of 1000 square units determines which parts are small enough to consider for hole placement
-    // Parts smaller than this threshold will be prioritized for placement inside holes of larger parts
-    // This value balances hole utilization vs. computation time - smaller values = more aggressive hole packing
-    config.holeAreaThreshold = 1000;
-  }
-
-  // Pre-analyze holes in all sheets
-  const sheetHoleAnalysis = analyzeSheetHoles(sheets);
-
-  // Analyze all parts to identify those with holes and potential fits
-  const { mainParts, holeCandidates } = analyzeParts(parts, sheetHoleAnalysis.averageHoleArea, config);
-
-  // console.log(`Analyzed parts: ${mainParts.length} main parts, ${holeCandidates.length} hole candidates`);
 
   var allplacements = [];
   // ============================================================================
@@ -1064,12 +1189,7 @@ function placeParts(sheets, parts, config, nestindex) {
   //    - Multiplier of 100,000,000 ensures unplaced parts dominate fitness
   //    - Scaled by part area to penalize larger unplaced parts more heavily
   //
-  // 4. HOLE PLACEMENT BONUSES: Rewards for placing parts inside holes (negative fitness)
-  //    - Base reward: part_area / total_sheet_area / 100
-  //    - Adjacent parts in same hole: additional 1% bonus
-  //    - Encourages efficient use of cutout spaces
-  //
-  // 5. EDGE MERGING SAVINGS: Reduces fitness when edges can be merged (if enabled)
+  // 4. EDGE MERGING SAVINGS: Reduces fitness when edges can be merged (if enabled)
   //    - Subtracts merged_length × time_ratio from fitness
   //    - Rewards placements that reduce cutting time
   //
@@ -1082,13 +1202,6 @@ function placeParts(sheets, parts, config, nestindex) {
   // ============================================================================
   var fitness = 0;
 
-  // Now continue with the original placeParts logic, but use our sorted parts
-
-  // Combine main parts and hole candidates back into a single array
-  // mainParts first since we want to place them first
-  parts = [...mainParts, ...holeCandidates];
-
-  // Continue with the original placeParts logic
   // var binarea = Math.abs(GeometryUtil.polygonArea(self.binPolygon));
   var key, nfp;
   var part;
@@ -1102,6 +1215,7 @@ function placeParts(sheets, parts, config, nestindex) {
     var sheet = sheets.shift();
     var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
     totalsheetarea += sheetarea;
+    totalusablesheetarea += polygonMaterialArea(sheet);
 
     // ============================================================================
     // FITNESS PENALTY: NEW SHEET OPENED
@@ -1128,7 +1242,6 @@ function placeParts(sheets, parts, config, nestindex) {
     // ============================================================================
     fitness += sheetarea;
 
-    var clipCache = [];
     //console.log('new sheet');
     for (let i = 0; i < parts.length; i++) {
       // console.time('placement');
@@ -1173,10 +1286,22 @@ function placeParts(sheets, parts, config, nestindex) {
         // first placement, put it on the top left corner
         for (let j = 0; j < sheetNfp.length; j++) {
           for (let k = 0; k < sheetNfp[j].length; k++) {
-            if (position === null || sheetNfp[j][k].x - part[0].x < position.x || (GeometryUtil.almostEqual(sheetNfp[j][k].x - part[0].x, position.x) && sheetNfp[j][k].y - part[0].y < position.y)) {
+            var firstPosition = {
+              x: sheetNfp[j][k].x - part[0].x,
+              y: sheetNfp[j][k].y - part[0].y,
+              id: part.id,
+              rotation: part.rotation,
+              source: part.source,
+              filename: part.filename
+            };
+            if (hasMaterialOutsideSheet(shiftPolygon(part, firstPosition), sheet, config)) {
+              continue;
+            }
+
+            if (position === null || firstPosition.x < position.x || (GeometryUtil.almostEqual(firstPosition.x, position.x) && firstPosition.y < position.y)) {
               position = {
-                x: sheetNfp[j][k].x - part[0].x,
-                y: sheetNfp[j][k].y - part[0].y,
+                x: firstPosition.x,
+                y: firstPosition.y,
                 id: part.id,
                 rotation: part.rotation,
                 source: part.source,
@@ -1187,6 +1312,7 @@ function placeParts(sheets, parts, config, nestindex) {
         }
         if (position === null) {
           // console.log(sheetNfp);
+          continue;
         }
         placements.push(position);
         placed.push(part);
@@ -1194,231 +1320,18 @@ function placeParts(sheets, parts, config, nestindex) {
         continue;
       }
 
-      // ============================================================================
-      // HOLE-FITTING STRATEGY
-      // ============================================================================
-      // This section implements an advanced material utilization optimization by
-      // attempting to place smaller parts inside holes (cutouts) of already-placed
-      // larger parts. This maximizes sheet usage by filling otherwise wasted space.
-      //
-      // OVERALL STRATEGY:
-      // 1. Scan all previously placed parts to identify those with holes (children)
-      // 2. For each hole, check if current part is small enough to fit inside
-      // 3. Try multiple rotations (0°, 90°, 180°, 270°) to find optimal orientation
-      // 4. Compute inner NFP (No-Fit Polygon) for valid hole placements
-      // 5. Track all candidate positions and select best one during placement phase
-      //
-      // PART-TO-HOLE MATCHING:
-      // - Parts are matched to holes based on area comparison (hole must be 10% larger)
-      // - Inner NFP calculation determines exact valid placement positions within hole
-      // - Orientation matching (wide-to-wide, tall-to-tall) is tracked as a quality metric
-      // - Fill ratio (part area / hole area) helps prioritize efficient space usage
-      //
-      // ROTATION IMPORTANCE:
-      // - Different rotations can mean the difference between fitting or not fitting
-      // - A rectangular part may only fit in a rectangular hole at specific angles
-      // - Orientation matching (aligning wide parts with wide holes) improves packing density
-      // - All 4 cardinal rotations (90° increments) are tested to maximize fit success rate
-      // - The rotation with best orientation match is selected when multiple rotations work
-      //
-      // The resulting hole positions compete with regular sheet positions during the
-      // placement selection phase, allowing the algorithm to choose the globally optimal
-      // placement location for each part.
-      // ============================================================================
-
-      // Check for holes in already placed parts where this part might fit
-      var holePositions = [];
-      try {
-        // Track the best rotation for each hole
-        const holeOptimalRotations = new Map(); // Map of "parentIndex_holeIndex" -> best rotation
-
-        for (let j = 0; j < placed.length; j++) {
-          if (placed[j].children && placed[j].children.length > 0) {
-            for (let k = 0; k < placed[j].children.length; k++) {
-              // Check if the hole is large enough for the part
-              var childHole = placed[j].children[k];
-              var childArea = Math.abs(GeometryUtil.polygonArea(childHole));
-              var partArea = Math.abs(GeometryUtil.polygonArea(part));
-
-              // Only consider holes that are larger than the part
-              // Require hole to be 10% (1.1x) larger than part to ensure valid placement with clearance
-              // This buffer accounts for NFP calculation precision and prevents tight fits that may cause overlap
-              if (childArea > partArea * 1.1) {
-                try {
-                  var holePoly = [];
-                  // Create proper array structure for the hole polygon
-                  for (let p = 0; p < childHole.length; p++) {
-                    holePoly.push({
-                      x: childHole[p].x,
-                      y: childHole[p].y,
-                      exact: childHole[p].exact || false
-                    });
-                  }
-
-                  // Add polygon metadata
-                  holePoly.source = placed[j].source + "_hole_" + k;
-                  holePoly.rotation = 0;
-                  holePoly.children = [];
-
-
-                  // Get dimensions of the hole and part to match orientations
-                  const holeBounds = GeometryUtil.getPolygonBounds(holePoly);
-                  const partBounds = GeometryUtil.getPolygonBounds(part);
-
-                  // Determine if the hole is wider than it is tall
-                  const holeIsWide = holeBounds.width > holeBounds.height;
-                  const partIsWide = partBounds.width > partBounds.height;
-
-
-                  // Try part with current rotation
-                  let bestRotationNfp = null;
-                  let bestRotation = part.rotation;
-                  let bestFitFill = 0;
-                  let rotationPlacements = [];
-
-                  // Try original rotation
-                  var holeNfp = getInnerNfp(holePoly, part, config);
-                  if (holeNfp && holeNfp.length > 0) {
-                    bestRotationNfp = holeNfp;
-                    bestFitFill = partArea / childArea;
-
-                    for (let m = 0; m < holeNfp.length; m++) {
-                      for (let n = 0; n < holeNfp[m].length; n++) {
-                        rotationPlacements.push({
-                          x: holeNfp[m][n].x - part[0].x + placements[j].x,
-                          y: holeNfp[m][n].y - part[0].y + placements[j].y,
-                          rotation: part.rotation,
-                          orientationMatched: (holeIsWide === partIsWide),
-                          fillRatio: bestFitFill
-                        });
-                      }
-                    }
-                  }
-
-                  // Try up to 4 different rotations (0°, 90°, 180°, 270°) to find the best fit for this hole
-                  // These 90° increments cover all orthogonal orientations, maximizing chances of finding optimal fit
-                  // while keeping computational cost reasonable (checking all 4 cardinal orientations)
-                  const rotationsToTry = [90, 180, 270];
-                  for (let rot of rotationsToTry) {
-                    let newRotation = (part.rotation + rot) % 360;
-                    const rotatedPart = rotatePolygon(part, newRotation);
-                    rotatedPart.rotation = newRotation;
-                    rotatedPart.source = part.source;
-                    rotatedPart.id = part.id;
-                    rotatedPart.filename = part.filename;
-
-                    const rotatedBounds = GeometryUtil.getPolygonBounds(rotatedPart);
-                    const rotatedIsWide = rotatedBounds.width > rotatedBounds.height;
-                    const rotatedNfp = getInnerNfp(holePoly, rotatedPart, config);
-
-                    if (rotatedNfp && rotatedNfp.length > 0) {
-                      // Calculate fill ratio for this rotation
-                      const rotatedFill = partArea / childArea;
-
-                      // If this rotation has better orientation match or is the first valid one
-                      if ((holeIsWide === rotatedIsWide && (bestRotationNfp === null || !(holeIsWide === partIsWide))) ||
-                        (bestRotationNfp === null)) {
-                        bestRotationNfp = rotatedNfp;
-                        bestRotation = newRotation;
-                        bestFitFill = rotatedFill;
-
-                        // Clear previous placements for worse rotations
-                        rotationPlacements = [];
-
-                        for (let m = 0; m < rotatedNfp.length; m++) {
-                          for (let n = 0; n < rotatedNfp[m].length; n++) {
-                            rotationPlacements.push({
-                              x: rotatedNfp[m][n].x - rotatedPart[0].x + placements[j].x,
-                              y: rotatedNfp[m][n].y - rotatedPart[0].y + placements[j].y,
-                              rotation: newRotation,
-                              orientationMatched: (holeIsWide === rotatedIsWide),
-                              fillRatio: bestFitFill
-                            });
-                          }
-                        }
-                      }
-                    }
-                  }
-
-                  // If we found valid placements, add them to the hole positions
-                  if (rotationPlacements.length > 0) {
-                    const holeKey = `${j}_${k}`;
-                    holeOptimalRotations.set(holeKey, bestRotation);
-
-                    // Add all placements with complete data
-                    for (let placement of rotationPlacements) {
-                      holePositions.push({
-                        x: placement.x,
-                        y: placement.y,
-                        id: part.id,
-                        rotation: placement.rotation,
-                        source: part.source,
-                        filename: part.filename,
-                        inHole: true,
-                        parentIndex: j,
-                        holeIndex: k,
-                        orientationMatched: placement.orientationMatched,
-                        rotated: placement.rotation !== part.rotation,
-                        fillRatio: placement.fillRatio
-                      });
-                    }
-                  }
-                } catch (e) {
-                  // console.log('Error processing hole:', e);
-                  // Continue with next hole
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        // console.log('Error in hole detection:', e);
-        // Continue with normal placement, ignoring holes
-      }
-
-      // Fix hole creation by ensuring proper polygon structure
-      var validHolePositions = [];
-      if (holePositions && holePositions.length > 0) {
-        // Filter hole positions to only include valid ones
-        for (let j = 0; j < holePositions.length; j++) {
-          try {
-            // Get parent and hole info
-            var parentIdx = holePositions[j].parentIndex;
-            var holeIdx = holePositions[j].holeIndex;
-            if (parentIdx >= 0 && parentIdx < placed.length &&
-              placed[parentIdx].children &&
-              holeIdx >= 0 && holeIdx < placed[parentIdx].children.length) {
-              validHolePositions.push(holePositions[j]);
-            }
-          } catch (e) {
-            // console.log('Error validating hole position:', e);
-          }
-        }
-        holePositions = validHolePositions;
-        // console.log(`Found ${holePositions.length} valid hole positions for part ${part.source}`);
-      }
-
       var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config);
-      var clipper = new ClipperLib.Clipper();
-      var combinedNfp = new ClipperLib.Paths();
+      var finalNfp = clipperSheetNfp;
       var error = false;
 
-      // check if stored in clip cache
-      var clipkey = 's:' + part.source + 'r:' + part.rotation;
-      var startindex = 0;
-      if (clipCache[clipkey]) {
-        var prevNfp = clipCache[clipkey].nfp;
-        clipper.AddPaths(prevNfp, ClipperLib.PolyType.ptSubject, true);
-        startindex = clipCache[clipkey].index;
-      }
-
-      for (let j = startindex; j < placed.length; j++) {
+      for (let j = 0; j < placed.length; j++) {
         nfp = getOuterNfp(placed[j], part);
         // minkowski difference failed. very rare but could happen
         if (!nfp) {
           error = true;
           break;
         }
+        nfp = clonePolygonWithChildren(nfp);
         // shift to placed location
         for (let m = 0; m < nfp.length; m++) {
           nfp[m].x += placements[j].x;
@@ -1434,32 +1347,36 @@ function placeParts(sheets, parts, config, nestindex) {
           }
         }
 
-        var clipperNfp = nfpToClipperCoordinates(nfp, config);
-        clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true);
+        var clipper = new ClipperLib.Clipper();
+        var nextNfp = new ClipperLib.Paths();
+        clipper.AddPaths(finalNfp, ClipperLib.PolyType.ptSubject, true);
+        clipper.AddPath(outerPathToClipperCoordinates(nfp, config), ClipperLib.PolyType.ptClip, true);
+
+        if (!clipper.Execute(ClipperLib.ClipType.ctDifference, nextNfp,
+          ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
+          error = true;
+          break;
+        }
+
+        var clipperChildren = childPathsToClipperCoordinates(nfp, config);
+        if (clipperChildren.length > 0) {
+          var restoredNfp = new ClipperLib.Paths();
+          clipper = new ClipperLib.Clipper();
+          clipper.AddPaths(nextNfp, ClipperLib.PolyType.ptSubject, true);
+          clipper.AddPaths(clipperChildren, ClipperLib.PolyType.ptSubject, true);
+
+          if (!clipper.Execute(ClipperLib.ClipType.ctUnion, restoredNfp,
+            ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
+            error = true;
+            break;
+          }
+          nextNfp = restoredNfp;
+        }
+
+        finalNfp = nextNfp;
       }
 
-      if (error || !clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-        // console.log('clipper error', error);
-        continue;
-      }
-
-      clipCache[clipkey] = {
-        nfp: combinedNfp,
-        index: placed.length - 1
-      };
-      // console.log('save cache', placed.length - 1);
-
-      // difference with sheet polygon
-      var finalNfp = new ClipperLib.Paths();
-      clipper = new ClipperLib.Clipper();
-      clipper.AddPaths(combinedNfp, ClipperLib.PolyType.ptClip, true);
-      clipper.AddPaths(clipperSheetNfp, ClipperLib.PolyType.ptSubject, true);
-
-      if (!clipper.Execute(ClipperLib.ClipType.ctDifference, finalNfp, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftNonZero)) {
-        continue;
-      }
-
-      if (!finalNfp || finalNfp.length == 0) {
+      if (error || !finalNfp || finalNfp.length == 0) {
         continue;
       }
 
@@ -1550,8 +1467,7 @@ function placeParts(sheets, parts, config, nestindex) {
             id: part.id,
             source: part.source,
             rotation: part.rotation,
-            filename: part.filename,
-            inHole: false
+            filename: part.filename
           };
 
           if (config.placementType == 'gravity' || config.placementType == 'box') {
@@ -1766,11 +1682,6 @@ function placeParts(sheets, parts, config, nestindex) {
             //    - The union operation can create tiny gaps or overlaps at intersection points
             //    - These artifacts might suggest positions are valid when they aren't
             //
-            // 4. HOLE PLACEMENT SPECIAL CASES
-            //    - Parts placed in holes require additional validation
-            //    - Must verify part is fully contained within hole AND doesn't overlap other parts
-            //    - NFP alone doesn't capture the "fully contained" constraint
-            //
             // HOW OVERLAP CHECKING WORKS:
             // - Convert candidate position to absolute coordinates (shift part)
             // - Use Clipper intersection operation on actual part geometries
@@ -1786,35 +1697,16 @@ function placeParts(sheets, parts, config, nestindex) {
             // ============================================================================
 
             var isOverlapping = false;
-            // Create a shifted version of the part to test
             var testShifted = shiftPolygon(part, shiftvector);
-            // Convert to clipper format for intersection test
-            var clipperPart = toClipperCoordinates(testShifted);
-            ClipperLib.JS.ScaleUpPath(clipperPart, config.clipperScale);
+            if (hasMaterialOutsideSheet(testShifted, sheet, config)) {
+              isOverlapping = true;
+            }
 
             // Check against all placed parts for potential overlap
-            for (let m = 0; m < placed.length; m++) {
-              // Convert the placed part to clipper format
-              var clipperPlaced = toClipperCoordinates(shiftPolygon(placed[m], placements[m]));
-              ClipperLib.JS.ScaleUpPath(clipperPlaced, config.clipperScale);
-
-              // Perform geometric intersection test
-              // This definitively determines if the two polygons overlap
-              var clipSolution = new ClipperLib.Paths();
-              var clipper = new ClipperLib.Clipper();
-              clipper.AddPath(clipperPart, ClipperLib.PolyType.ptSubject, true);
-              clipper.AddPath(clipperPlaced, ClipperLib.PolyType.ptClip, true);
-
-              // Execute the intersection operation
-              // If intersection exists (clipSolution not empty), parts overlap
-              if (clipper.Execute(ClipperLib.ClipType.ctIntersection, clipSolution,
-                ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-
-                // If there's any overlap (intersection result not empty), reject this position
-                if (clipSolution.length > 0) {
-                  isOverlapping = true;
-                  break;
-                }
+            for (let m = 0; !isOverlapping && m < placed.length; m++) {
+              if (hasMaterialOverlap(testShifted, shiftPolygon(placed[m], placements[m]), config)) {
+                isOverlapping = true;
+                break;
               }
             }
             // Only accept this position if there's no overlap
@@ -1835,457 +1727,8 @@ function placeParts(sheets, parts, config, nestindex) {
         }
       }
 
-      // Now process potential hole positions using the same placement strategies
-      try {
-        if (holePositions && holePositions.length > 0) {
-          // Count how many parts are already in each hole to encourage distribution
-          const holeUtilization = new Map(); // Map of "parentIndex_holeIndex" -> count
-          const holeAreaUtilization = new Map(); // Map of "parentIndex_holeIndex" -> used area percentage
-
-          // Track which holes are being used
-          for (let m = 0; m < placements.length; m++) {
-            if (placements[m].inHole) {
-              const holeKey = `${placements[m].parentIndex}_${placements[m].holeIndex}`;
-              holeUtilization.set(holeKey, (holeUtilization.get(holeKey) || 0) + 1);
-
-              // Calculate area used in each hole
-              if (placed[m]) {
-                const partArea = Math.abs(GeometryUtil.polygonArea(placed[m]));
-                holeAreaUtilization.set(
-                  holeKey,
-                  (holeAreaUtilization.get(holeKey) || 0) + partArea
-                );
-              }
-            }
-          }
-
-          // Sort hole positions to prioritize:
-          // 1. Unused holes first (to ensure we use all holes)
-          // 2. Then holes with fewer parts
-          // 3. Then orientation-matched placements
-          holePositions.sort((a, b) => {
-            const aKey = `${a.parentIndex}_${a.holeIndex}`;
-            const bKey = `${b.parentIndex}_${b.holeIndex}`;
-
-            const aCount = holeUtilization.get(aKey) || 0;
-            const bCount = holeUtilization.get(bKey) || 0;
-
-            // First priority: unused holes get top priority
-            if (aCount === 0 && bCount > 0) return -1;
-            if (bCount === 0 && aCount > 0) return 1;
-
-            // Second priority: holes with fewer parts
-            if (aCount < bCount) return -1;
-            if (bCount < aCount) return 1;
-
-            // Third priority: orientation match
-            if (a.orientationMatched && !b.orientationMatched) return -1;
-            if (!a.orientationMatched && b.orientationMatched) return 1;
-
-            // Fourth priority: better hole fit (higher fill ratio)
-            if (a.fillRatio && b.fillRatio) {
-              if (a.fillRatio > b.fillRatio) return -1;
-              if (b.fillRatio > a.fillRatio) return 1;
-            }
-
-            return 0;
-          });
-
-          // console.log(`Sorted hole positions. Prioritizing distribution across ${holeUtilization.size} used holes out of ${new Set(holePositions.map(h => `${h.parentIndex}_${h.holeIndex}`)).size} total holes`);
-
-          for (let j = 0; j < holePositions.length; j++) {
-            let holeShift = holePositions[j];
-
-            // For debugging the hole's orientation
-            const holeKey = `${holeShift.parentIndex}_${holeShift.holeIndex}`;
-            const partsInThisHole = holeUtilization.get(holeKey) || 0;
-
-            if (config.placementType == 'gravity' || config.placementType == 'box') {
-              var rectbounds = GeometryUtil.getPolygonBounds([
-                // allbounds points
-                { x: allbounds.x, y: allbounds.y },
-                { x: allbounds.x + allbounds.width, y: allbounds.y },
-                { x: allbounds.x + allbounds.width, y: allbounds.y + allbounds.height },
-                { x: allbounds.x, y: allbounds.y + allbounds.height },
-                // part points
-                { x: partbounds.x + holeShift.x, y: partbounds.y + holeShift.y },
-                { x: partbounds.x + partbounds.width + holeShift.x, y: partbounds.y + holeShift.y },
-                { x: partbounds.x + partbounds.width + holeShift.x, y: partbounds.y + partbounds.height + holeShift.y },
-                { x: partbounds.x + holeShift.x, y: partbounds.y + partbounds.height + holeShift.y }
-              ]);
-
-              // weigh width more, to help compress in direction of gravity
-              if (config.placementType == 'gravity') {
-                area = rectbounds.width * 5 + rectbounds.height;
-              }
-              else {
-                area = rectbounds.width * rectbounds.height;
-              }
-
-              // Apply small bonus for orientation match, but no significant scaling factor
-              // Multiplier of 0.99 gives 1% fitness improvement for matching hole/part orientation (wide-to-wide, tall-to-tall)
-              // Small bonus ensures orientation is a tiebreaker rather than dominant factor in placement decisions
-              if (holeShift.orientationMatched) {
-                area *= 0.99;
-              }
-
-              // ============================================================================
-              // FITNESS BONUS: UNUSED HOLE PRIORITY
-              // ============================================================================
-              // Apply a small fitness bonus (1% improvement) when placing a part in an
-              // empty hole that hasn't been used yet. This encourages distributing parts
-              // across multiple holes rather than overfilling some while leaving others empty.
-              //
-              // WHY THIS BONUS EXISTS:
-              // - Ensures all available holes are utilized (maximizes space efficiency)
-              // - Prevents the algorithm from packing too many parts into one hole
-              // - Distributes parts evenly for better balance and material utilization
-              //
-              // HOW IT WORKS:
-              // - Multiplier of 0.99 reduces fitness by 1% (lower is better)
-              // - Only applied to holes with zero parts already placed (partsInThisHole === 0)
-              // - Acts as a tiebreaker when comparing holes with similar fitness scores
-              //
-              // EXAMPLE:
-              // - Hole A (empty): area = 1000, bonus applied → fitness = 1000 × 0.99 = 990
-              // - Hole B (has 2 parts): area = 1000, no bonus → fitness = 1000
-              // - Algorithm prefers Hole A, ensuring even distribution across holes
-              //
-              // IMPACT:
-              // - Small enough not to override other placement criteria (orientation, fill ratio)
-              // - Large enough to break ties and encourage hole distribution
-              // - Results in more balanced material usage across the sheet
-              // ============================================================================
-              if (partsInThisHole === 0) {
-                area *= 0.99;
-                // console.log(`Small priority bonus for unused hole ${holeKey}`);
-              }
-            }
-            else if (config.placementType == 'convexhull') {
-              // For hole placements with convex hull, use the actual area without arbitrary factor
-              area = Math.abs(GeometryUtil.polygonArea(hull || []));
-              holeShift.hull = hull;
-
-              // Apply tiny orientation matching bonus
-              // 1% improvement (0.99x multiplier) for matching orientations in convex hull mode
-              // Consistent with gravity/box mode to maintain similar placement behavior across algorithms
-              if (holeShift.orientationMatched) {
-                area *= 0.99;
-              }
-            }
-
-            if (config.mergeLines) {
-              // if lines can be merged, subtract savings from area calculation
-              var shiftedpart = shiftPolygon(part, holeShift);
-              var shiftedplaced = [];
-
-              for (let m = 0; m < placed.length; m++) {
-                shiftedplaced.push(shiftPolygon(placed[m], placements[m]));
-              }
-
-              // don't check small lines, cut off at about 1/2 in
-              var minlength = 0.5 * config.scale;
-              var merged = mergedLength(shiftedplaced, shiftedpart, minlength, 0.1 * config.curveTolerance);
-              area -= merged.totalLength * config.timeRatio;
-            }
-
-            // Check if this hole position is better than our current best position
-            if (
-              minarea === null ||
-              (config.placementType == 'gravity' && area < minarea) ||
-              (config.placementType != 'gravity' && area < minarea) ||
-              (GeometryUtil.almostEqual(minarea, area) && holeShift.inHole)
-            ) {
-              // For hole positions, we need to verify it's entirely within the parent's hole
-              // This is a special case where overlap is allowed, but only inside a hole
-              var isValidHolePlacement = true;
-              var intersectionArea = 0;
-              try {
-                // Get the parent part and its specific hole where we're trying to place the current part
-                var parentPart = placed[holeShift.parentIndex];
-                var hole = parentPart.children[holeShift.holeIndex];
-                // Shift the hole based on parent's placement
-                var shiftedHole = shiftPolygon(hole, placements[holeShift.parentIndex]);
-                // Create a shifted version of the current part based on proposed position
-                var shiftedPart = shiftPolygon(part, holeShift);
-
-                // Check if the part is contained within this hole using a different approach
-                // We'll do this by reversing the hole (making it a polygon) and checking if
-                // the part is fully inside it
-                var reversedHole = [];
-                for (let h = shiftedHole.length - 1; h >= 0; h--) {
-                  reversedHole.push(shiftedHole[h]);
-                }
-
-                // Convert both to clipper format
-                var clipperHole = toClipperCoordinates(reversedHole);
-                var clipperPart = toClipperCoordinates(shiftedPart);
-                ClipperLib.JS.ScaleUpPath(clipperHole, config.clipperScale);
-                ClipperLib.JS.ScaleUpPath(clipperPart, config.clipperScale);
-
-                // Use INTERSECTION instead of DIFFERENCE
-                // If part is entirely contained in hole, intersection should equal the part
-                var clipSolution = new ClipperLib.Paths();
-                var clipper = new ClipperLib.Clipper();
-                clipper.AddPath(clipperPart, ClipperLib.PolyType.ptSubject, true);
-                clipper.AddPath(clipperHole, ClipperLib.PolyType.ptClip, true);
-
-                if (clipper.Execute(ClipperLib.ClipType.ctIntersection, clipSolution,
-                  ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftEvenOdd)) {
-
-                  // If the intersection has different area than the part itself
-                  // then the part is not fully contained in the hole
-                  var intersectionArea = 0;
-                  for (let p = 0; p < clipSolution.length; p++) {
-                    intersectionArea += Math.abs(ClipperLib.Clipper.Area(clipSolution[p]));
-                  }
-
-                  var partArea = Math.abs(ClipperLib.Clipper.Area(clipperPart));
-                  // 1% tolerance (0.01x part area) allows for small floating point errors in intersection calculation
-                  // If intersection area differs from part area by more than 1%, part is not fully contained in hole
-                  if (Math.abs(intersectionArea - partArea) > (partArea * 0.01)) {
-                    isValidHolePlacement = false;
-                    // console.log(`Part not fully contained in hole: ${part.source}`);
-                  }
-                } else {
-                  isValidHolePlacement = false;
-                }
-
-                // Also check if this part overlaps with any other placed parts
-                // (it should only overlap with its parent's hole)
-                if (isValidHolePlacement) {
-                  // Bonus: Check if this part is placed on another part's contour within the same hole
-                  // This incentivizes the algorithm to place parts efficiently inside holes
-                  let contourScore = 0;
-                  // Find other parts already placed in this hole
-                  for (let m = 0; m < placed.length; m++) {
-                    if (placements[m].inHole &&
-                      placements[m].parentIndex === holeShift.parentIndex &&
-                      placements[m].holeIndex === holeShift.holeIndex) {
-                      // Found another part in the same hole, check proximity/contour usage
-                      const p2 = placements[m];
-
-                      // Calculate Manhattan distance between parts
-                      const dx = Math.abs(holeShift.x - p2.x);
-                      const dy = Math.abs(holeShift.y - p2.y);
-
-                      // If parts are close to each other (touching or nearly touching)
-                      // Proximity threshold of 2.0 user units determines when parts are considered adjacent
-                      // This value is chosen to detect parts sharing edges/contours while allowing small gaps from NFP precision
-                      const proximityThreshold = 2.0;
-                      if (dx < proximityThreshold || dy < proximityThreshold) {
-                        // This placement uses contour of another part - give it a bonus
-                        // Score of 5.0 incentivizes placing parts adjacent to each other within holes
-                        // Higher values encourage tighter packing, lower values allow more spread
-                        contourScore += 5.0;
-                        // console.log(`Found contour alignment in hole between ${part.source} and ${placed[m].source}`);
-                      }
-                    }
-                  }
-
-                  // Treat holes exactly like mini-sheets for better space utilization
-                  // This approach will ensure efficient hole packing like we do with sheets
-                  if (isValidHolePlacement) {
-                    // Prioritize placing larger parts in holes first
-                    // Apply a stronger bias for larger parts relative to hole size
-                    const holeArea = Math.abs(GeometryUtil.polygonArea(shiftedHole));
-                    const partArea = Math.abs(GeometryUtil.polygonArea(shiftedPart));
-
-                    // Calculate how much of the hole this part fills (0-1)
-                    const fillRatio = partArea / holeArea;
-
-                    // // Apply stronger benefit for parts that utilize more of the hole space
-                    // // but ensure we don't overly bias very large parts
-                    // if (fillRatio > 0.6) {
-                    // 	// Very large parts (60%+ of hole) get maximum benefit
-                    // 	area *= 0.4; // 60% reduction
-                    // 	// console.log(`Large part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying maximum packing bonus`);
-                    // } else if (fillRatio > 0.3) {
-                    // 	// Medium parts (30-60% of hole) get significant benefit
-                    // 	area *= 0.5; // 50% reduction
-                    // 	// console.log(`Medium part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying major packing bonus`);
-                    // } else if (fillRatio > 0.1) {
-                    // 	// Smaller parts (10-30% of hole) get moderate benefit
-                    // 	area *= 0.6; // 40% reduction
-                    // 	// console.log(`Small part ${part.source} fills ${Math.round(fillRatio*100)}% of hole - applying standard packing bonus`);
-                    // }
-                    // Now apply standard sheet-like placement optimization for parts already in the hole
-                    const partsInSameHole = [];
-                    for (let m = 0; m < placed.length; m++) {
-                      if (placements[m].inHole &&
-                        placements[m].parentIndex === holeShift.parentIndex &&
-                        placements[m].holeIndex === holeShift.holeIndex) {
-                        partsInSameHole.push({
-                          part: placed[m],
-                          placement: placements[m]
-                        });
-                      }
-                    }
-
-                    // Apply the same edge alignment logic we use for sheet placement
-                    if (partsInSameHole.length > 0) {
-                      const shiftedPart = shiftPolygon(part, holeShift);
-                      const bbox1 = GeometryUtil.getPolygonBounds(shiftedPart);
-
-                      // Track best alignment metrics to prioritize clean edge alignments
-                      let bestAlignment = 0;
-                      let alignmentCount = 0;
-
-                      // Examine each part already placed in this hole
-                      for (let m = 0; m < partsInSameHole.length; m++) {
-                        const otherPart = shiftPolygon(partsInSameHole[m].part, partsInSameHole[m].placement);
-                        const bbox2 = GeometryUtil.getPolygonBounds(otherPart);
-
-                        // Edge alignment detection with tighter threshold for precision
-                        // Threshold of 2.0 units defines maximum distance between edges to consider them aligned
-                        // Balances between detecting true alignments vs. false positives from floating point errors
-                        const edgeThreshold = 2.0;
-
-                        // Check all four edge alignments
-                        const leftAligned = Math.abs(bbox1.x - (bbox2.x + bbox2.width)) < edgeThreshold;
-                        const rightAligned = Math.abs((bbox1.x + bbox1.width) - bbox2.x) < edgeThreshold;
-                        const topAligned = Math.abs(bbox1.y - (bbox2.y + bbox2.height)) < edgeThreshold;
-                        const bottomAligned = Math.abs((bbox1.y + bbox1.height) - bbox2.y) < edgeThreshold;
-
-                        if (leftAligned || rightAligned || topAligned || bottomAligned) {
-                          // Score based on alignment length (better packing)
-                          let alignmentLength = 0;
-
-                          if (leftAligned || rightAligned) {
-                            // Calculate vertical overlap
-                            const overlapStart = Math.max(bbox1.y, bbox2.y);
-                            const overlapEnd = Math.min(bbox1.y + bbox1.height, bbox2.y + bbox2.height);
-                            alignmentLength = Math.max(0, overlapEnd - overlapStart);
-                          } else {
-                            // Calculate horizontal overlap
-                            const overlapStart = Math.max(bbox1.x, bbox2.x);
-                            const overlapEnd = Math.min(bbox1.x + bbox1.width, bbox2.x + bbox2.width);
-                            alignmentLength = Math.max(0, overlapEnd - overlapStart);
-                          }
-
-                          if (alignmentLength > bestAlignment) {
-                            bestAlignment = alignmentLength;
-                          }
-                          alignmentCount++;
-                        }
-                      }
-                      // ============================================================================
-                      // FITNESS BONUS: EDGE ALIGNMENT WITHIN HOLES
-                      // ============================================================================
-                      // When parts inside a hole align their edges with other parts in the same hole,
-                      // they create cleaner, more efficient layouts. This bonus rewards such alignments.
-                      //
-                      // WHY EDGE ALIGNMENT MATTERS:
-                      // - Aligned edges create rectangular/grid-like patterns within holes
-                      // - Reduces wasted space between parts (tighter packing)
-                      // - Can enable edge merging for faster cutting (if mergeLines is enabled)
-                      // - Makes visual inspection and quality control easier
-                      //
-                      // HOW THE BONUS IS CALCULATED:
-                      // - Base multiplier: 0.9 (10% improvement for any alignment)
-                      // - Subtract alignment_length / 100 (longer alignments get bigger bonuses)
-                      // - Subtract 5% per additional alignment (multiple alignments are better)
-                      // - Minimum multiplier: 0.7 (capped at 30% fitness improvement)
-                      //
-                      // FORMULA:
-                      //   qualityMultiplier = max(0.7, 0.9 - alignment_length/100 - count×0.05)
-                      //   fitness = base_fitness × qualityMultiplier
-                      //
-                      // EXAMPLE:
-                      // - Base fitness for hole position: 1000
-                      // - Best alignment length: 50 units
-                      // - Number of alignments: 2
-                      // - Multiplier = max(0.7, 0.9 - 50/100 - 2×0.05) = max(0.7, 0.9 - 0.5 - 0.1) = 0.3 → capped at 0.7
-                      // - Final fitness = 1000 × 0.7 = 700 (30% improvement)
-                      //
-                      // WHY CAP AT 0.7 (30% MAX IMPROVEMENT):
-                      // - Prevents edge alignment from completely dominating placement decisions
-                      // - Ensures other factors (hole containment, fill ratio) remain important
-                      // - Balances the competing goals of alignment vs. compactness
-                      //
-                      // IMPACT:
-                      // - Parts naturally form rectangular patterns within holes
-                      // - Mimics efficient sheet-level packing strategies at the hole level
-                      // - Creates "nested nesting" - organized arrangements inside cutout spaces
-                      // ============================================================================
-                      if (bestAlignment > 0) {
-                        // Calculate a multiplier based on alignment quality ranging from 0.7 (best) to 0.9 (minimal)
-                        // Better alignments get lower multipliers (better fitness scores)
-                        // Base of 0.9 reduced by alignment length/100 and 5% (0.05) per additional alignment
-                        // Capped at 0.7 minimum (30% fitness improvement) to prevent excessive weight
-                        const qualityMultiplier = Math.max(0.7, 0.9 - (bestAlignment / 100) - (alignmentCount * 0.05));
-                        area *= qualityMultiplier;
-                        // console.log(`Applied sheet-like alignment strategy in hole with quality ${(1-qualityMultiplier)*100}%`);
-                      }
-                    }
-                  }
-
-                  // Normal overlap check with other parts (excluding the parent)
-                  for (let m = 0; m < placed.length; m++) {
-                    // Skip check against parent part, as we've already verified hole containment
-                    if (m === holeShift.parentIndex) continue;
-
-                    var clipperPlaced = toClipperCoordinates(shiftPolygon(placed[m], placements[m]));
-                    ClipperLib.JS.ScaleUpPath(clipperPlaced, config.clipperScale);
-
-                    clipSolution = new ClipperLib.Paths();
-                    clipper = new ClipperLib.Clipper();
-                    clipper.AddPath(clipperPart, ClipperLib.PolyType.ptSubject, true);
-                    clipper.AddPath(clipperPlaced, ClipperLib.PolyType.ptClip, true);
-
-                    if (clipper.Execute(ClipperLib.ClipType.ctIntersection, clipSolution,
-                      ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
-                      if (clipSolution.length > 0) {
-                        isValidHolePlacement = false;
-                        // console.log(`Part overlaps with other part: ${part.source} with ${placed[m].source}`);
-                        break;
-                      }
-                    }
-                  }
-                }
-                if (isValidHolePlacement) {
-                  // console.log(`Valid hole placement found for part ${part.source} in hole of ${parentPart.source}`);
-                }
-              } catch (e) {
-                // console.log('Error in hole containment check:', e);
-                isValidHolePlacement = false;
-              }
-
-              // Only accept this position if placement is valid
-              if (isValidHolePlacement) {
-                minarea = area;
-                if (config.placementType == 'gravity' || config.placementType == 'box') {
-                  minwidth = rectbounds.width;
-                }
-                position = holeShift;
-                minx = holeShift.x;
-                miny = holeShift.y;
-
-                if (config.mergeLines) {
-                  position.mergedLength = merged.totalLength;
-                  position.mergedSegments = merged.segments;
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        // console.log('Error processing hole positions:', e);
-      }
-
-      // Continue with best non-hole position if available
+      // Continue with best position if available
       if (position) {
-        // Debug placement with less verbose logging
-        if (position.inHole) {
-          // console.log(`Placed part ${position.source} in hole of part ${placed[position.parentIndex].source}`);
-          // Adjust the part placement specifically for hole placement
-          // This prevents the part from being considered as overlapping with its parent
-          var parentPart = placed[position.parentIndex];
-          // console.log(`Hole placement - Parent: ${parentPart.source}, Child: ${part.source}`);
-
-          // Mark the relationship to prevent overlap checks between them in future placements
-          position.parentId = parentPart.id;
-        }
         placed.push(part);
         placements.push(position);
         if (position.mergedLength) {
@@ -2342,6 +1785,7 @@ function placeParts(sheets, parts, config, nestindex) {
     fitness += (minwidth / sheetarea) + minarea;
 
     for (let i = 0; i < placed.length; i++) {
+      totalplacedarea += polygonMaterialArea(placed[i]);
       var index = parts.indexOf(placed[i]);
       if (index >= 0) {
         parts.splice(index, 1);
@@ -2374,334 +1818,15 @@ function placeParts(sheets, parts, config, nestindex) {
     // console.log(`Fitness after unplaced penalty: ${fitness}`);
   }
 
-  // ============================================================================
-  // FITNESS BONUS: HOLE PLACEMENT REWARDS
-  // ============================================================================
-  // Parts placed inside holes (cutout areas within other parts) receive fitness
-  // bonuses because they utilize otherwise wasted space. This two-pass system
-  // rewards both hole usage and efficient packing within holes.
-  //
-  // WHY HOLE PLACEMENT IS VALUABLE:
-  // - Holes represent empty space that would otherwise be discarded
-  // - Placing parts in holes uses material that's already "paid for"
-  // - Reduces the number of sheets needed by filling negative space
-  // - Can significantly improve overall material utilization
-  //
-  // TWO-TIER BONUS STRUCTURE:
-  //
-  // TIER 1 - BASE HOLE PLACEMENT BONUS:
-  //   Formula: -1 × (part_area / total_sheet_area / 100)
-  //   - Negative value reduces fitness (improvement)
-  //   - Proportional to part area (larger parts = bigger bonus)
-  //   - Normalized by total sheet area for fair comparison
-  //   - Division by 100 scales bonus to ~1% of area ratio
-  //   - Example: 100 sq.unit part in 100,000 sq.unit total area
-  //     Bonus = -(100 / 100,000 / 100) = -0.00001
-  //
-  // TIER 2 - ADJACENT PART BONUS (within same hole):
-  //   Formula: -1 × (part_area / total_sheet_area) × 0.01
-  //   - Applied when parts are adjacent (within 2.0 units) in the same hole
-  //   - Encourages tight packing and contour-based placement within holes
-  //   - Additional 1% bonus on top of base hole bonus
-  //   - Incentivizes "nested nesting" - parts arranged efficiently inside holes
-  //
-  // HOW THIS AFFECTS OPTIMIZATION:
-  // - Solutions that place parts in holes get lower (better) fitness
-  // - Multiple parts in the same hole get even better fitness if they're adjacent
-  // - Algorithm learns to prioritize hole placement opportunities
-  // - Balances between hole placement and regular sheet placement based on fitness
-  //
-  // EXAMPLE SCENARIO:
-  // - Total sheet area: 1,000,000 square units
-  // - Part A (area 1,000) placed in hole: fitness -= 0.00001 (base bonus)
-  // - Part B (area 1,000) placed adjacent to Part A in same hole:
-  //   fitness -= 0.00001 (base) + 0.0002 (adjacent) = 0.00021 total bonus
-  // - Over many parts, these small bonuses accumulate to favor hole-utilizing solutions
-  // ============================================================================
-
-  // Enhance fitness calculation to encourage more efficient hole usage
-  // This rewards more efficient use of material by placing parts in holes
-  for (let i = 0; i < allplacements.length; i++) {
-    const placements = allplacements[i].sheetplacements;
-    // First pass: identify all parts placed in holes and award base bonus
-    const partsInHoles = [];
-    for (let j = 0; j < placements.length; j++) {
-      if (placements[j].inHole === true) {
-        // Find the corresponding part to calculate its area
-        const partIndex = j;
-        if (partIndex >= 0) {
-          // Add this part to our tracked list of parts in holes
-          partsInHoles.push({
-            index: j,
-            parentIndex: placements[j].parentIndex,
-            holeIndex: placements[j].holeIndex,
-            area: Math.abs(GeometryUtil.polygonArea(placed[partIndex])) * 2
-          });
-          // Base reward for any part placed in a hole (TIER 1 BONUS)
-          // Subtracting from fitness improves the score (lower is better)
-          // console.log(`Part ${placed[partIndex].source} placed in hole of part ${placed[placements[j].parentIndex].source}`);
-          // console.log(`Part area: ${Math.abs(GeometryUtil.polygonArea(placed[partIndex]))}, Hole area: ${Math.abs(GeometryUtil.polygonArea(placed[placements[j].parentIndex]))}`);
-          fitness -= (Math.abs(GeometryUtil.polygonArea(placed[partIndex])) / totalsheetarea / 100);
-        }
-      }
-    }
-    // Second pass: apply additional fitness rewards for parts placed on contours of other parts within holes
-    // This incentivizes the algorithm to stack parts efficiently within holes (TIER 2 BONUS)
-    for (let j = 0; j < partsInHoles.length; j++) {
-      const part = partsInHoles[j];
-      for (let k = 0; k < partsInHoles.length; k++) {
-        if (j !== k &&
-          part.parentIndex === partsInHoles[k].parentIndex &&
-          part.holeIndex === partsInHoles[k].holeIndex) {
-          // Calculate distances between parts to see if they're using each other's contours
-          const p1 = placements[part.index];
-          const p2 = placements[partsInHoles[k].index];
-
-          // Calculate Manhattan distance between parts (simple proximity check)
-          const dx = Math.abs(p1.x - p2.x);
-          const dy = Math.abs(p1.y - p2.y);
-
-          // If parts are close to each other (touching or nearly touching)
-          // Proximity threshold of 2.0 user units determines when parts are adjacent within a hole
-          // Same value as used during placement ensures consistency in detection
-          const proximityThreshold = 2.0;
-          if (dx < proximityThreshold || dy < proximityThreshold) {
-            // Award extra fitness for parts efficiently placed near each other in the same hole
-            // Fitness bonus of 1% (0.01x) of part-to-sheet area ratio encourages contour-based packing
-            // This rewards configurations where parts nest tightly within holes
-            fitness -= (part.area / totalsheetarea) * 0.01;
-          }
-        }
-      }
-    }
-  }
-
   // send finish progress signal
   ipcRenderer.send('background-progress', { index: nestindex, progress: -1 });
 
   console.log('WATCH', allplacements);
 
-  const utilisation = totalsheetarea > 0 ? (area / totalsheetarea) * 100 : 0;
+  const utilisation = totalusablesheetarea > 0 ? (totalplacedarea / totalusablesheetarea) * 100 : 0;
   console.log(`Utilisation of the sheet(s): ${utilisation.toFixed(2)}%`);
 
-  return { placements: allplacements, fitness: fitness, area: sheetarea, totalarea: totalsheetarea, mergedLength: totalMerged, utilisation: utilisation };
-}
-
-// New helper function to analyze sheet holes
-/**
- * Analyzes all holes (cutouts) in the provided sheets to gather statistics.
- *
- * @param {Array} sheets - Array of sheet polygons, potentially with children (holes)
- * @return {Object} Analysis result containing:
- *   - holes: Array of hole info objects with dimensions and positions
- *   - totalHoleArea: Sum of all hole areas across all sheets
- *   - averageHoleArea: Mean area of holes (used to identify hole placement candidates)
- *   - count: Total number of holes found
- *
- * This preprocessing step helps the placement algorithm identify opportunities for
- * placing smaller parts inside holes to maximize material utilization. For each hole,
- * we track its area, dimensions, and aspect ratio (wide vs. tall) to enable smart
- * part-to-hole matching during placement.
- */
-function analyzeSheetHoles(sheets) {
-  const allHoles = [];
-  let totalHoleArea = 0;
-
-  // Analyze each sheet
-  for (let i = 0; i < sheets.length; i++) {
-    const sheet = sheets[i];
-    if (sheet.children && sheet.children.length > 0) {
-      for (let j = 0; j < sheet.children.length; j++) {
-        const hole = sheet.children[j];
-        const holeArea = Math.abs(GeometryUtil.polygonArea(hole));
-        const holeBounds = GeometryUtil.getPolygonBounds(hole);
-
-        const holeInfo = {
-          sheetIndex: i,
-          holeIndex: j,
-          area: holeArea,
-          width: holeBounds.width,
-          height: holeBounds.height,
-          isWide: holeBounds.width > holeBounds.height
-        };
-
-        allHoles.push(holeInfo);
-        totalHoleArea += holeArea;
-      }
-    }
-  }
-
-  // Calculate statistics about holes
-  const averageHoleArea = allHoles.length > 0 ? totalHoleArea / allHoles.length : 0;
-
-  return {
-    holes: allHoles,
-    totalHoleArea: totalHoleArea,
-    averageHoleArea: averageHoleArea,
-    count: allHoles.length
-  };
-}
-
-/**
- * Analyzes all parts to identify those with holes and those that could fit in holes.
- *
- * @param {Array} parts - Array of part polygons to analyze
- * @param {number} averageHoleArea - Average hole area from sheet analysis (used for filtering)
- * @param {Object} config - Configuration object with holeAreaThreshold
- * @return {Object} Analysis result containing:
- *   - mainParts: Parts that have holes or are too large for hole placement
- *   - holeCandidates: Small parts that could potentially fit inside holes
- *
- * This function performs two-pass analysis:
- *
- * FIRST PASS - Identify parts with holes:
- * - Scans each part for children (holes)
- * - Records hole dimensions, area, and aspect ratio
- * - Calculates bounding box and area for all parts
- *
- * SECOND PASS - Identify hole placement candidates:
- * - For each part, checks if it could fit inside holes of other parts
- * - Tests both normal and rotated orientations (90° rotation)
- * - Uses conservative tolerances (98% width/height, 95% area) to ensure valid fits
- * - Tracks orientation matching (wide-to-wide, tall-to-tall) for quality scoring
- *
- * Parts are categorized as:
- * - Main parts: Have holes themselves, or are larger than the hole area threshold
- * - Hole candidates: Small enough to potentially fit in holes of main parts
- *
- * This separation allows the placement algorithm to prioritize placing main parts first,
- * then attempt to fill their holes with smaller parts for maximum efficiency.
- */
-function analyzeParts(parts, averageHoleArea, config) {
-  const mainParts = [];
-  const holeCandidates = [];
-  const partsWithHoles = [];
-
-  // First pass: identify parts with holes
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i].children && parts[i].children.length > 0) {
-      const partHoles = [];
-      for (let j = 0; j < parts[i].children.length; j++) {
-        const hole = parts[i].children[j];
-        const holeArea = Math.abs(GeometryUtil.polygonArea(hole));
-        const holeBounds = GeometryUtil.getPolygonBounds(hole);
-
-        partHoles.push({
-          holeIndex: j,
-          area: holeArea,
-          width: holeBounds.width,
-          height: holeBounds.height,
-          isWide: holeBounds.width > holeBounds.height
-        });
-      }
-
-      if (partHoles.length > 0) {
-        parts[i].analyzedHoles = partHoles;
-        partsWithHoles.push(parts[i]);
-      }
-    }
-
-    // Calculate and store the part's dimensions for later use
-    const partBounds = GeometryUtil.getPolygonBounds(parts[i]);
-    parts[i].bounds = {
-      width: partBounds.width,
-      height: partBounds.height,
-      area: Math.abs(GeometryUtil.polygonArea(parts[i]))
-    };
-  }
-
-  // console.log(`Found ${partsWithHoles.length} parts with holes`);
-
-  // Second pass: check which parts fit into other parts' holes
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    const partMatches = [];
-
-    // Check if this part fits into holes of other parts
-    for (let j = 0; j < partsWithHoles.length; j++) {
-      const partWithHoles = partsWithHoles[j];
-      if (part.id === partWithHoles.id) continue; // Skip self
-
-      for (let k = 0; k < partWithHoles.analyzedHoles.length; k++) {
-        const hole = partWithHoles.analyzedHoles[k];
-
-        // Check if part fits in this hole (with or without rotation)
-        // Dimension tolerance of 98% (0.98x) ensures part fits with clearance for NFP precision
-        // Area tolerance of 95% (0.95x) prevents attempting to fit parts that are too large
-        // More conservative area threshold accounts for part shape vs. bounding box differences
-        const fitsNormally = part.bounds.width < hole.width * 0.98 &&
-          part.bounds.height < hole.height * 0.98 &&
-          part.bounds.area < hole.area * 0.95;
-
-        const fitsRotated = part.bounds.height < hole.width * 0.98 &&
-          part.bounds.width < hole.height * 0.98 &&
-          part.bounds.area < hole.area * 0.95;
-
-        if (fitsNormally || fitsRotated) {
-          partMatches.push({
-            partId: partWithHoles.id,
-            holeIndex: k,
-            requiresRotation: !fitsNormally && fitsRotated,
-            fitRatio: part.bounds.area / hole.area
-          });
-        }
-      }
-    }
-
-    // Determine if part is a hole candidate
-    // Consider parts smaller than threshold OR smaller than 70% (0.7x) of average hole area
-    // The 70% factor ensures parts significantly smaller than typical holes are prioritized for hole placement
-    // This adaptive threshold works even when holeAreaThreshold isn't perfectly tuned for the job
-    const isSmallEnough = part.bounds.area < config.holeAreaThreshold ||
-      part.bounds.area < averageHoleArea * 0.7;
-
-    if (partMatches.length > 0 || isSmallEnough) {
-      part.holeMatches = partMatches;
-      part.isHoleFitCandidate = true;
-      holeCandidates.push(part);
-    } else {
-      mainParts.push(part);
-    }
-  }
-
-  // Prioritize order of main parts - parts with holes that others fit into go first
-  mainParts.sort((a, b) => {
-    const aHasMatches = holeCandidates.some(p => p.holeMatches &&
-      p.holeMatches.some(match => match.partId === a.id));
-
-    const bHasMatches = holeCandidates.some(p => p.holeMatches &&
-      p.holeMatches.some(match => match.partId === b.id));
-
-    // First priority: parts with holes that other parts fit into
-    if (aHasMatches && !bHasMatches) return -1;
-    if (!aHasMatches && bHasMatches) return 1;
-
-    // Second priority: larger parts first
-    return b.bounds.area - a.bounds.area;
-  });
-
-  // For hole candidates, prioritize parts that fit into holes of parts in mainParts
-  holeCandidates.sort((a, b) => {
-    const aFitsInMainPart = a.holeMatches && a.holeMatches.some(match =>
-      mainParts.some(mp => mp.id === match.partId));
-
-    const bFitsInMainPart = b.holeMatches && b.holeMatches.some(match =>
-      mainParts.some(mp => mp.id === match.partId));
-
-    // Priority to parts that fit in holes of main parts
-    if (aFitsInMainPart && !bFitsInMainPart) return -1;
-    if (!aFitsInMainPart && bFitsInMainPart) return 1;
-
-    // Then by number of matches
-    const aMatchCount = a.holeMatches ? a.holeMatches.length : 0;
-    const bMatchCount = b.holeMatches ? b.holeMatches.length : 0;
-    if (aMatchCount !== bMatchCount) return bMatchCount - aMatchCount;
-
-    // Then by size (smaller first for hole candidates)
-    return a.bounds.area - b.bounds.area;
-  });
-
-  return { mainParts, holeCandidates };
+  return { placements: allplacements, fitness: fitness, area: totalplacedarea, totalarea: totalusablesheetarea, mergedLength: totalMerged, utilisation: utilisation };
 }
 
 // clipperjs uses alerts for warnings
