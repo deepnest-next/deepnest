@@ -55,7 +55,7 @@
     "@playwright/test": "^1.57.0",
     "@types/node": "22.15.17",
     "cross-replace": "0.2.0",
-    "electron": "^40.0.0",
+    "electron": "^40.10.2",
     "electron-builder": "^26.15.2",
     "eslint": "^9.26.0",
     "husky": "^9.1.7",
