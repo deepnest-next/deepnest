@@ -149,6 +149,7 @@
         "deb",
         "rpm"
       ],
+      "icon": "icons",
       "category": "Graphics",
       "maintainer": "deepnest-next Community <github@josef-froehle.de>",
       "artifactName": "${name}-v${version}-linux-${arch}.${ext}"
