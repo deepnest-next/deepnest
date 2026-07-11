@@ -190,12 +190,17 @@ function createNotificationWindow(notification) {
   if (process.env["deepnest_debug"] === "1")
     notificationWindow.webContents.openDevTools();
 
-  notificationWindow.once("ready-to-show", () => {
-    notificationWindow.show();
+  // Capture a local reference: a previously-closed notification window emits
+  // its "closed" event asynchronously (after a new one may already exist), so
+  // nulling the shared `notificationWindow` unconditionally could clobber the
+  // current window and make `.show()` throw on null. Guard against that.
+  const win = notificationWindow;
+  win.once("ready-to-show", () => {
+    win.show();
   });
 
-  notificationWindow.on("closed", () => {
-    notificationWindow = null;
+  win.on("closed", () => {
+    if (notificationWindow === win) notificationWindow = null;
   });
 
   // Store the notification data for access by the renderer
