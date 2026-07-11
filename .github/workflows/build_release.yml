@@ -20,9 +20,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Boost (only for Ubuntu)
+      - name: Install Boost and rpm tooling (only for Ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install -yq libboost-dev
+        # `rpm` provides rpmbuild, required by electron-builder to emit the .rpm package
+        run: sudo apt-get update && sudo apt-get install -yq libboost-dev rpm
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -81,6 +82,23 @@ jobs:
           asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
           asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
           asset_content_type: application/zip
+
+      - name: Build Linux installers (.deb and .rpm)
+        # electron-builder reads the build.linux config in package.json and emits
+        # both a Debian .deb and a Fedora/RHEL .rpm. The `rpm` tool installed above
+        # provides rpmbuild, which is required for the .rpm target.
+        run: npx electron-builder build --linux deb rpm --publish never
+
+      - name: Attach .deb and .rpm to latest release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${{ steps.get_release.outputs.tag }}
+          # electron-builder writes installers into the configured output directory;
+          # collect every produced .deb/.rpm and attach them to the release.
+          mapfile -t ASSETS < <(find . -type f \( -name '*.deb' -o -name '*.rpm' \) -not -path './node_modules/*')
+          echo "Found installers: ${ASSETS[*]}"
+          gh release upload "$TAG" "${ASSETS[@]}" --clobber
 
 
 
