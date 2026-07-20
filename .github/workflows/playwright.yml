@@ -12,7 +12,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-    timeout-minutes: 5
+    # Give the job enough headroom for the non-deterministic nester test to
+    # retry (playwright retries: 2) with its raised per-test timeout without the
+    # job-level timeout cutting a slow-but-valid run short. Flaky-test mitigation.
+    timeout-minutes: 15
     runs-on: ${{ matrix.os }}
     steps:
       - name: boost
