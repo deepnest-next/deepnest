@@ -156,8 +156,10 @@ function createNotificationWindow(notification) {
     width: 750,
     height: 500,
     parent: mainWindow,
-    alwaysOnTop: true,
-    type: "notification",
+    // NOTE: deliberately NOT `alwaysOnTop`/`type: "notification"`. Those forced
+    // the notification above every window on the OS (and, on some Linux WMs,
+    // kept re-raising it over other applications). `modal` + `parent` already
+    // keeps it above deepnest's own window without hijacking the whole desktop.
     center: true,
     maximizable: false,
     minimizable: false,
@@ -207,7 +209,27 @@ function createNotificationWindow(notification) {
   notificationWindow.notificationData = notification;
 }
 
+// Whether the user has opted in to product/update notifications. Defaults to
+// ON; only a config with `showNotifications === false` disables it. When off we
+// never fetch deepnest.net/app_notifications.json, so the app stays fully offline
+// for notifications. `configPath` is a module-scope const defined below; this is
+// only ever called at runtime (post-startup), so it is initialised by then.
+function notificationsEnabled() {
+  try {
+    if (fs.existsSync(configPath)) {
+      const cfg = JSON.parse(fs.readFileSync(configPath).toString());
+      return cfg.showNotifications !== false;
+    }
+  } catch (err) {
+    console.error("Could not read notification setting, defaulting to on:", err);
+  }
+  return true;
+}
+
 async function runNotificationCheck() {
+  if (!notificationsEnabled()) {
+    return;
+  }
   const notification = await notificationService.checkForNotifications();
   if (notification) {
     createNotificationWindow(notification);
