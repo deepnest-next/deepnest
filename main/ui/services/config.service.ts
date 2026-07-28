@@ -44,6 +44,7 @@ export const DEFAULT_CONFIG: Readonly<UIConfig> = {
   exportWithSheetBoundboarders: false,
   exportWithSheetsSpace: false,
   exportWithSheetsSpaceValue: 0.3937007874015748, // 10mm in inches
+  showNotifications: true, // show product/update notifications fetched from deepnest.net
 };
 
 /**
@@ -56,6 +57,7 @@ export const BOOLEAN_CONFIG_KEYS: ReadonlyArray<keyof UIConfig> = [
   "useQuantityFromFileName",
   "exportWithSheetBoundboarders",
   "exportWithSheetsSpace",
+  "showNotifications",
 ];
 
 /**
@@ -96,6 +98,7 @@ export class ConfigService implements ConfigObject {
   exportWithSheetBoundboarders: boolean;
   exportWithSheetsSpace: boolean;
   exportWithSheetsSpaceValue: number;
+  showNotifications: boolean;
   access_token?: string;
   id_token?: string;
 
@@ -130,6 +133,7 @@ export class ConfigService implements ConfigObject {
     this.exportWithSheetBoundboarders = this.config.exportWithSheetBoundboarders;
     this.exportWithSheetsSpace = this.config.exportWithSheetsSpace;
     this.exportWithSheetsSpaceValue = this.config.exportWithSheetsSpaceValue;
+    this.showNotifications = this.config.showNotifications;
   }
 
   /**

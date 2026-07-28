@@ -37,6 +37,8 @@ export interface UIConfig extends DeepNestConfig {
   exportWithSheetsSpace: boolean;
   /** Space value between sheets in SVG units (default: 10mm) */
   exportWithSheetsSpaceValue: number;
+  /** Show product/update notifications fetched from deepnest.net (default: true) */
+  showNotifications: boolean;
 }
 
 /**
