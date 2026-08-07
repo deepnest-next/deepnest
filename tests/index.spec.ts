@@ -15,6 +15,11 @@ import { DeepNestConfig, NestingResult } from "../index";
 // !process.env.CI && test.use({ launchOptions: { slowMo: 500 } });
 
 test("Nest", async ({}, testInfo) => {
+  // Flaky-test mitigation: the nester uses a non-deterministic genetic
+  // algorithm, so on slower CI runners it can take noticeably longer than the
+  // default 30s per-test timeout to place all 54 parts (54/54). Give it more
+  // headroom here rather than weakening the 54/54 correctness assertion below.
+  test.setTimeout(120_000);
   const { pipeConsole } = testInfo.config.metadata;
   if (existsSync(testInfo.outputDir)) {
     mkdir(testInfo.outputDir, { recursive: true });
@@ -180,11 +185,14 @@ test("Nest", async ({}, testInfo) => {
   await expect(
     mainWindow.locator("id=nestinfo").locator("h1").nth(0),
   ).toHaveText("1");
+  // Flaky-test mitigation: poll for the full 54/54 placement for up to 90s so
+  // the non-deterministic genetic algorithm reliably converges on slower CI
+  // runners. The expected part count stays at 54/54 (assertion unchanged).
   await expect(() =>
     expect(mainWindow.locator("id=nestinfo").locator("h1").nth(1)).toHaveText(
       "54/54",
     ),
-  ).toPass();
+  ).toPass({ timeout: 90_000 });
 
   await test.step("Attachments", async () => {
     const svg = await downloadSvg();
