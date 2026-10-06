@@ -1009,7 +1009,48 @@ function getFrame(A) {
  * The result is an array because there may be multiple disconnected valid regions
  * (e.g., if A has multiple holes or complex geometry).
  */
+// Exact rectangular-sheet inner NFP: avoid native integer-rescaling errors at stock boundaries.
+// A is a hole-free axis-aligned rectangle; B is already rotated in local coordinates.
+function rectangularInnerNfp(A, B, config) {
+  if (A.children && A.children.length) return null;
+  var count = A.length;
+  if (count === 5 && A[0].x === A[4].x && A[0].y === A[4].y) count = 4;
+  if (count !== 4) return null;
+  var bounds = GeometryUtil.getPolygonBounds(A);
+  var xmax = bounds.x + bounds.width;
+  var ymax = bounds.y + bounds.height;
+  var corners = new Set();
+  for (var i = 0; i < count; i++) {
+    if ((A[i].x !== bounds.x && A[i].x !== xmax) ||
+        (A[i].y !== bounds.y && A[i].y !== ymax)) return null;
+    var next = A[(i + 1) % count];
+    if ((A[i].x !== next.x && A[i].y !== next.y) ||
+        (A[i].x === next.x && A[i].y === next.y)) return null;
+    corners.add(A[i].x + ',' + A[i].y);
+  }
+  if (corners.size !== 4) return null;
+  var bb = GeometryUtil.getPolygonBounds(B);
+  var scale = config.clipperScale;
+  // One Clipper grid unit of slack avoids floating-point cancellation when the
+  // caller subtracts B's reference point. It never enlarges the feasible region.
+  var x0 = (Math.ceil((bounds.x - bb.x) * scale) + 1) / scale;
+  var y0 = (Math.ceil((bounds.y - bb.y) * scale) + 1) / scale;
+  var x1 = (Math.floor((xmax - (bb.x + bb.width)) * scale) - 1) / scale;
+  var y1 = (Math.floor((ymax - (bb.y + bb.height)) * scale) - 1) / scale;
+  // Preserve the existing general path for exact-fit or narrower-than-grid regions.
+  if (x0 > x1 || y0 > y1) return null;
+  return [[
+    { x: x0 + B[0].x, y: y0 + B[0].y },
+    { x: x1 + B[0].x, y: y0 + B[0].y },
+    { x: x1 + B[0].x, y: y1 + B[0].y },
+    { x: x0 + B[0].x, y: y1 + B[0].y },
+    { x: x0 + B[0].x, y: y0 + B[0].y }
+  ]];
+}
+
 function getInnerNfp(A, B, config) {
+  var rectangular = rectangularInnerNfp(A, B, config);
+  if (rectangular) return rectangular;
   if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
     var doc = window.db.find({ A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation }, true);
 
