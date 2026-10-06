@@ -22,6 +22,7 @@
     "dist": "cross-replace npx @electron/packager . deepnest-v$npm_package_version --overwrite --ignore='\\.github' --ignore='\\.vscode' --ignore='\\.husky' --ignore='deepnest-v[0-9]+\\.[0-9]+\\.[0-9]+-[a-z0-9_-]' --ignore='out' --ignore='renovate\\.json' --ignore='\\.readthedocs\\.yaml' --ignore='CHANGELOG\\.md' --ignore='examples' --ignore='\\.gitignore' --ignore='playwright-report' --ignore='test.log'",
     "build-dist": "electron-builder build --win",
     "build-dist-signed": "electron-builder build --win --publish never",
+    "build-dist-linux": "electron-builder build --linux --publish never",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
     "dist-all-signed": "npm run clean-all && npm install && npm run build && npm run build-dist-signed",
     "prepare": "husky || true",
@@ -142,6 +143,16 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "icon.icns"
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "rpm"
+      ],
+      "icon": "icons",
+      "category": "Graphics",
+      "maintainer": "deepnest-next Community <github@josef-froehle.de>",
+      "artifactName": "${name}-v${version}-linux-${arch}.${ext}"
     }
   },
   "contributors": [
