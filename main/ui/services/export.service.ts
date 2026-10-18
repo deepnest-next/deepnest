@@ -13,6 +13,8 @@ import type {
 } from "../types/index.js";
 import { DEFAULT_CONVERSION_SERVER } from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
+import { generateHpgl } from "../utils/hpgl.js";
+import type { HpglPath } from "../utils/hpgl.js";
 
 /**
  * File filter options for the save dialog
@@ -128,7 +130,7 @@ export interface ExportOptions {
 /**
  * Export file formats
  */
-export type ExportFormat = "svg" | "dxf" | "json";
+export type ExportFormat = "svg" | "dxf" | "json" | "plt";
 
 /**
  * File filters for export dialogs
@@ -139,6 +141,14 @@ const SVG_FILE_FILTERS: FileFilter[] = [
 
 const DXF_FILE_FILTERS: FileFilter[] = [
   { name: "DXF/DWG", extensions: ["dxf", "dwg"] }
+];
+
+const PLT_FILE_FILTERS: FileFilter[] = [
+  { name: "PLT (HPGL)", extensions: ["plt"] }
+];
+
+const JSON_FILE_FILTERS: FileFilter[] = [
+  { name: "JSON", extensions: ["json"] }
 ];
 
 /**
@@ -349,6 +359,40 @@ export class ExportService {
   }
 
   /**
+   * Show save dialog and export the selected nest result to a JSON file
+   * Used by the Export menu; exportToJson stays as the silent save after nesting
+   * @returns True if export was successful
+   */
+  exportToJsonFile(): boolean {
+    if (!this.dialog || !this.fs) {
+      message("Export dependencies not available", true);
+      return false;
+    }
+
+    let fileName = this.dialog.showSaveDialogSync({
+      title: "Export deepnest JSON",
+      filters: JSON_FILE_FILTERS,
+    });
+
+    if (fileName === undefined) {
+      return false;
+    }
+
+    // Ensure .json extension
+    if (!fileName.toLowerCase().endsWith(".json")) {
+      fileName = fileName + ".json";
+    }
+
+    const selected = this.getSelectedNest();
+    if (!selected) {
+      return false;
+    }
+
+    this.fs.writeFileSync(fileName, JSON.stringify(selected));
+    return true;
+  }
+
+  /**
    * Show save dialog and export to SVG
    * @returns True if export was successful
    */
@@ -477,6 +521,118 @@ export class ExportService {
   }
 
   /**
+   * Show save dialog and export to PLT (HPGL), generated locally from the export SVG
+   * @returns True if export was successful
+   */
+  exportToPlt(): boolean {
+    if (!this.dialog || !this.fs || !this.svgParser) {
+      message("Export dependencies not available", true);
+      return false;
+    }
+
+    let fileName = this.dialog.showSaveDialogSync({
+      title: "Export deepnest PLT",
+      filters: PLT_FILE_FILTERS,
+    });
+
+    if (fileName === undefined) {
+      return false;
+    }
+
+    // Ensure .plt extension
+    if (!fileName.toLowerCase().endsWith(".plt")) {
+      fileName = fileName + ".plt";
+    }
+
+    const selected = this.getSelectedNest();
+    if (!selected) {
+      return false;
+    }
+
+    const svg = this.buildSvgExport(selected);
+    const inchesPerUnit = this.getInchesPerSvgUnit(svg);
+    if (inchesPerUnit === null) {
+      message("Could not determine the export size for PLT", true);
+      return false;
+    }
+
+    this.svgParser.applyTransform(svg);
+    this.svgParser.flatten(svg);
+
+    const paths = this.collectHpglPaths(svg, inchesPerUnit);
+    this.fs.writeFileSync(fileName, generateHpgl(paths));
+
+    return true;
+  }
+
+  /**
+   * Get the physical size of one SVG user unit in inches
+   * applyDimensions sets width as a number plus "mm" or "in", and viewBox "0 0 w h"
+   * @param svg - Export SVG element
+   * @returns Inches per SVG unit, or null if width/viewBox are unusable
+   */
+  private getInchesPerSvgUnit(svg: SVGSVGElement): number | null {
+    const widthAttr = svg.getAttribute("width") || "";
+    const width = parseFloat(widthAttr);
+    const viewBoxWidth = Number((svg.getAttribute("viewBox") || "").split(/[\s,]+/)[2]);
+
+    if (!(width > 0) || !(viewBoxWidth > 0)) {
+      return null;
+    }
+
+    const widthInches = widthAttr.endsWith("mm") ? width / 25.4 : width;
+    return widthInches / viewBoxWidth;
+  }
+
+  /**
+   * Convert the flattened export SVG into HPGL paths in inches, y pointing up
+   * SVG y points down and HPGL y points up, hence the flip. polygonify drops a
+   * last point equal to the first, which is why the closed flag re-adds it in generateHpgl.
+   * @param svg - Flattened export SVG element
+   * @param inchesPerUnit - Inches per SVG unit
+   * @returns Paths ready for generateHpgl
+   */
+  private collectHpglPaths(svg: SVGSVGElement, inchesPerUnit: number): HpglPath[] {
+    if (!this.svgParser || !this.config) {
+      return [];
+    }
+
+    const svgParser = this.svgParser;
+    const height = Number(svg.getAttribute("viewBox")?.split(/[\s,]+/)[3]);
+    const closeTolerance = 0.1 * this.config.getSync("curveTolerance");
+    const paths: HpglPath[] = [];
+
+    const elements = Array.prototype.slice.call(svg.children) as SVGElement[];
+    elements.forEach((e) => {
+      let points: { x: number; y: number }[];
+      let closed: boolean;
+
+      if (e.tagName === "line") {
+        points = [
+          { x: Number(e.getAttribute("x1")), y: Number(e.getAttribute("y1")) },
+          { x: Number(e.getAttribute("x2")), y: Number(e.getAttribute("y2")) },
+        ];
+        closed = false;
+      } else if (e.tagName !== "svg" && svgParser.polygonElements.includes(e.tagName)) {
+        points = svgParser.polygonify(e);
+        closed = svgParser.isClosed(e, closeTolerance);
+      } else {
+        return;
+      }
+
+      paths.push({
+        points: points.map((p) => ({
+          x: p.x * inchesPerUnit,
+          y: (height - p.y) * inchesPerUnit,
+        })),
+        closed,
+      });
+    });
+
+    return paths;
+  }
+
+  /**
    * Generate SVG content from a nesting result
    * Core function that builds the SVG document from placements
    * @param nestResult - The nesting result to export
@@ -487,6 +643,20 @@ export class ExportService {
     nestResult: SelectableNestingResult,
     options: ExportOptions = {}
   ): string {
+    return new XMLSerializer().serializeToString(this.buildSvgExport(nestResult, options));
+  }
+
+  /**
+   * Build the SVG element for a nesting result
+   * Shared by the string export (SVG/DXF) and the PLT export, which reads the element directly
+   * @param nestResult - The nesting result to export
+   * @param options - Export options
+   * @returns SVG root element
+   */
+  private buildSvgExport(
+    nestResult: SelectableNestingResult,
+    options: ExportOptions = {}
+  ): SVGSVGElement {
     if (!this.deepNest || !this.config) {
       throw new Error("DeepNest or config not available");
     }
@@ -572,7 +742,7 @@ export class ExportService {
     // Apply line merging if configured
     this.applyLineMerging(svg, nestResult);
 
-    return new XMLSerializer().serializeToString(svg);
+    return svg;
   }
 
   /**
@@ -684,6 +854,8 @@ export class ExportService {
           return await this.exportToDxf();
         case "json":
           return this.exportToJson();
+        case "plt":
+          return this.exportToPlt();
         default:
           message(`Unsupported export format: ${format}`, true);
           return false;
@@ -714,7 +886,7 @@ export class ExportService {
    * @returns Array of supported format strings
    */
   static getSupportedFormats(): ExportFormat[] {
-    return ["svg", "dxf", "json"];
+    return ["svg", "dxf", "json", "plt"];
   }
 
   /**
@@ -728,6 +900,8 @@ export class ExportService {
         return [...SVG_FILE_FILTERS];
       case "dxf":
         return [...DXF_FILE_FILTERS];
+      case "plt":
+        return [...PLT_FILE_FILTERS];
       default:
         return [];
     }
