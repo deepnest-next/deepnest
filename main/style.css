@@ -372,7 +372,7 @@ h3 {
 
 #export_wrapper.active:hover ul.dropdown {
   opacity: 1;
-  height: 5em;
+  height: 6em;
 }
 
 ul.dropdown {

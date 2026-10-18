@@ -727,7 +727,7 @@ function initializeExportButtons(): void {
   const exportJsonBtn = getElement<HTMLElement>("#exportjson");
   if (exportJsonBtn) {
     exportJsonBtn.onclick = () => {
-      exportService.exportToJson();
+      exportService.exportToJsonFile();
       return false;
     };
   }
@@ -746,6 +746,15 @@ function initializeExportButtons(): void {
   if (exportDxfBtn) {
     exportDxfBtn.onclick = async () => {
       await exportService.exportToDxf();
+      return false;
+    };
+  }
+
+  // PLT export
+  const exportPltBtn = getElement<HTMLElement>("#exportplt");
+  if (exportPltBtn) {
+    exportPltBtn.onclick = () => {
+      exportService.exportToPlt();
       return false;
     };
   }
