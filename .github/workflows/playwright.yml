@@ -39,8 +39,11 @@ jobs:
           sudo chmod 4755 $file
       - name: Build
         run: npm run build
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+      # The tests drive Electron (`_electron`), never Playwright's own Chromium: install only
+      # the system libraries. Downloading the Chromium build from the Playwright CDN stalled
+      # until the job timeout on two runs in a row.
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium
       - name: Run Playwright tests
         run: xvfb-run npm test
         env:
