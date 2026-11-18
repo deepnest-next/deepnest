@@ -1,0 +1,4 @@
+# Pinned workspace UI release (deepnest-next/workspace-ui, AGPL-3.0-or-later). Update version
+# + checksum together from the release's SHA256SUMS. Installed by scripts/fetch-workspace-ui.sh.
+WORKSPACE_UI_VERSION=0.1.0
+WORKSPACE_UI_SHA256_electron=0b93e7a1569374eb0779b6a72798377ec50c0f66e4fe651efe4fcc3c99fc3c36

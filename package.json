@@ -28,7 +28,10 @@
     "prepare": "husky || true",
     "precommit": "lint-staged",
     "postinstall": "electron-builder install-app-deps",
-    "pw:codegen": "node helper_scripts/playwright_codegen.js"
+    "pw:codegen": "node helper_scripts/playwright_codegen.js",
+    "workspace:ui": "bash scripts/fetch-workspace-ui.sh",
+    "start:workspace": "electron . --workspace",
+    "test:workspace": "playwright test -c playwright.workspace.config.ts"
   },
   "husky": {
     "hooks": {

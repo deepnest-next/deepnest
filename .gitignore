@@ -34,3 +34,6 @@ node_modules/
 .worktrees/
 .security-key
 logs/security/
+
+# Workspace UI release (scripts/fetch-workspace-ui.sh)
+/workspace/ui/
