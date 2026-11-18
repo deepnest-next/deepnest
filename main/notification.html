@@ -196,22 +196,19 @@
     </div>
 
     <script>
-      const { ipcRenderer } = require("electron");
-
-      // When the window loads, request the notification data
+      // window.notification comes from main/notification-preload.js (sandboxed, no Node).
       window.addEventListener("DOMContentLoaded", () => {
-        ipcRenderer.send("get-notification-data");
+        window.notification.requestData();
       });
 
-      // Handle the notification data sent from main process
-      ipcRenderer.on("notification-data", (event, data) => {
+      window.notification.onData((data) => {
         document.getElementById("title").textContent = data.title;
         document.getElementById("content").innerHTML = data.content;
       });
 
       // Close the notification window when OK is clicked
       document.getElementById("okButton").addEventListener("click", () => {
-        ipcRenderer.send("close-notification");
+        window.notification.close();
       });
     </script>
   </body>

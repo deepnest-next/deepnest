@@ -53,6 +53,16 @@ window.onload = function () {
   window.db = new NfpCache();
 
   ipcRenderer.on('background-start', (event, data) => {
+    // Always answer, even on error: the main window sends the next job only after a
+    // response, so a silent throw here used to freeze the whole nest.
+    function fail(err) {
+      console.error('background-start failed', err);
+      ipcRenderer.send('background-response', { index: data.index, error: String((err && err.stack) || err) });
+    }
+    // Parallel's map() returns its own thenable: no .catch, and a throw inside the success
+    // callback escapes the worker's message handler.
+    const guarded = (fn) => (...args) => { try { return fn(...args); } catch (err) { fail(err); } };
+    try {
     var index = data.index;
     var individual = data.individual;
 
@@ -268,7 +278,7 @@ window.onload = function () {
       p.require('../../main/util/clipper.js');
       p.require('../../main/util/geometryutil.js');
 
-      p.map(process).then(function (processed) {
+      p.map(process).then(guarded(function (processed) {
         function getPart(source) {
           for (let k = 0; k < parts.length; k++) {
             if (parts[k].source == source) {
@@ -324,10 +334,13 @@ window.onload = function () {
         // console.timeEnd('Total');
         // console.log('before sync');
         sync();
-      });
+      }), fail);
     }
     else {
       sync();
+    }
+    } catch (err) {
+      fail(err);
     }
   });
 };
@@ -1822,9 +1835,8 @@ function placeParts(sheets, parts, config, nestindex) {
     //
     // The normalized width component (0.0008) is tiny compared to minarea, but it
     // provides a tiebreaker when comparing solutions with similar minarea values.
+    // (Added below, only for sheets that received parts.)
     // ============================================================================
-    fitness += (minwidth / sheetarea) + minarea;
-
     for (let i = 0; i < placed.length; i++) {
       totalplacedarea += polygonMaterialArea(placed[i]);
       var index = parts.indexOf(placed[i]);
@@ -1834,10 +1846,14 @@ function placeParts(sheets, parts, config, nestindex) {
     }
 
     if (placements && placements.length > 0) {
+      fitness += (minwidth / sheetarea) + minarea;
       allplacements.push({ sheet: sheet.source, sheetid: sheet.id, sheetplacements: placements });
     }
     else {
-      break; // something went wrong
+      // Nothing fits on this sheet (e.g. a small offcut listed before a big sheet): leave it
+      // unused and try the next one instead of giving up on the whole layout.
+      fitness -= sheetarea;
+      totalusablesheetarea -= polygonMaterialArea(sheet);
     }
 
     if (sheets.length == 0) {
