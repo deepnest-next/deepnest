@@ -7,7 +7,8 @@ import {
 } from "@playwright/test";
 import { OpenDialogReturnValue } from "electron";
 import { existsSync } from "node:fs";
-import { appendFile, mkdir, readdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "path";
 import { DeepNestConfig, NestingResult } from "../index";
@@ -25,12 +26,28 @@ test("Nest", async ({}, testInfo) => {
     mkdir(testInfo.outputDir, { recursive: true });
   }
 
+  // Fresh profile with product notifications off: otherwise the app fetches the live
+  // deepnest.net feed at startup and, whenever a notification is published, opens it as
+  // a *modal* over the main window, which blocks every click below.
+  const userData = await mkdtemp(path.join(tmpdir(), "deepnest-test-"));
+  await writeFile(
+    path.join(userData, "settings.json"),
+    JSON.stringify({ showNotifications: false }),
+  );
   const electronApp = await electron.launch({
-    args: ["main.js"],
-    recordVideo: { dir: testInfo.outputDir },
+    args: ["main.js", `--user-data-dir=${userData}`],
+    // No `recordVideo`: with Playwright 1.57 + Electron 40 the window then never loads
+    // (blank URL), so every locator times out. Traces still record on retry.
   });
 
   const mainWindow = await electronApp.firstWindow();
+  // The tabs exist in the static HTML at once, but their click handlers are bound only
+  // at the end of the UI's async initialization (main/ui/index.ts `initialize`); a
+  // click before that is silently lost. `window.nest` is set right after navigation is
+  // bound, so wait for it.
+  await mainWindow.waitForFunction(
+    () => typeof (window as unknown as { nest?: unknown }).nest === "object",
+  );
 
   const consoleDump = testInfo.outputPath("console.txt");
   if (pipeConsole) {
