@@ -53,3 +53,5 @@ LICENSES/
 main/font/
 main/util/_unused/
 icons/
+# UI markup (inline SVG icons), not prose for semantic extraction
+main/*.html
