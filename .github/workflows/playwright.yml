@@ -11,7 +11,10 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        # Pinned: ubuntu-latest is 26.04 now, where Playwright 1.57 can't install chromium
+        # ("Playwright does not support chromium on ubuntu26.04-x64"). The steps below also
+        # assume 24.04 (chrome-sandbox fix). Move on when Playwright supports 26.04.
+        os: [ubuntu-24.04]
     # Give the job enough headroom for the non-deterministic nester test to
     # retry (playwright retries: 2) with its raised per-test timeout without the
     # job-level timeout cutting a slow-but-valid run short. Flaky-test mitigation.
@@ -24,11 +27,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          # Not lts/* (now 26): under Node 26 electron's install.js extracts an incomplete
+          # binary (dist/ holds only chrome-sandbox + locales) and still exits 0.
+          node-version: 22
       - name: Install dependencies
         run: |
           # npm install
           npm ci
+          # npm no longer runs dependency install scripts by default ("npm warn
+          # install-scripts electron@… (postinstall: node install.js)"), so the Electron
+          # binary is never downloaded. Fetch it explicitly.
+          node node_modules/electron/install.js
       - name: Fix Ubuntu 24.04 issue https://github.com/electron/electron/issues/17972
         run: |
           file=node_modules/electron/dist/chrome-sandbox
@@ -36,8 +45,11 @@ jobs:
           sudo chmod 4755 $file
       - name: Build
         run: npm run build
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+      # The tests drive Electron (`_electron`), never Playwright's own Chromium: install only
+      # the system libraries. Downloading the Chromium build from the Playwright CDN stalled
+      # until the job timeout on two runs in a row.
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps chromium
       - name: Run Playwright tests
         run: xvfb-run npm test
         env:
