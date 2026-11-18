@@ -32,6 +32,11 @@ jobs:
         run: |
           # npm install
           npm ci
+          # npm no longer runs dependency install scripts by default ("npm warn
+          # install-scripts electron@… (postinstall: node install.js)"), so the Electron
+          # binary is never downloaded. Fetch it explicitly.
+          node node_modules/electron/install.js
+          npx electron --version
       - name: Fix Ubuntu 24.04 issue https://github.com/electron/electron/issues/17972
         run: |
           file=node_modules/electron/dist/chrome-sandbox
