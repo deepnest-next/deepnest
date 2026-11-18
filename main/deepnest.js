@@ -1101,6 +1101,12 @@ export class DeepNest {
         // user might have quit while we're away
         return;
       }
+      if (payload.error) {
+        console.error("Nest evaluation failed:", payload.error);
+        this.GA.population[payload.index].processing = false;
+        this.GA.population[payload.index].fitness = Number.MAX_VALUE;
+        return;
+      }
       this.GA.population[payload.index].processing = false;
       this.GA.population[payload.index].fitness = payload.fitness;
 

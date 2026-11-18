@@ -166,18 +166,27 @@ function createNotificationWindow(notification) {
     resizable: false,
     modal: true,
     show: false,
+    // Remote content (deepnest.net feed, GitHub release notes): no Node, sandboxed.
     webPreferences: {
-      contextIsolation: false,
-      enableRemoteModule: true,
-      nodeIntegration: true
+      preload: path.join(__dirname, "main/notification-preload.js"),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
     }
   });
 
-  remote.enable(notificationWindow.webContents);
+  // Links open in the system browser, https only; the window itself never navigates.
+  const openHttps = (target) => {
+    if (/^https:\/\//i.test(target)) shell.openExternal(target);
+  };
   notificationWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    openHttps(details.url);
     return { action: 'deny' }
   })
+  notificationWindow.webContents.on("will-navigate", (event, target) => {
+    event.preventDefault();
+    openHttps(target);
+  });
 
   notificationWindow.loadURL(
     url.format({
@@ -272,8 +281,19 @@ function createBackgroundWindows() {
       winCount++;
       createBackgroundWindows();
     });
-    back.webContents.on('render-process-gone', (event, details) => { console.error('Render process gone:', event, details); });
-    back.on('render-process-gone', (event) => { console.error('Render process gone:', event); });
+    back.webContents.on('render-process-gone', (event, details) => {
+      console.error('Background worker gone:', details);
+      // Stop/quit end workers on purpose; only a crash (e.g. out of memory) needs handling.
+      if (details.reason === "clean-exit" || details.reason === "killed" || !backgroundWindows.includes(back)) return;
+      // Fail the job it was running and start a fresh worker, so the nest can go on.
+      if (back.isBusy && mainWindow) {
+        mainWindow.webContents.send("background-response", { index: back.jobIndex, error: "background worker stopped: " + details.reason });
+      }
+      backgroundWindows[backgroundWindows.indexOf(back)] = null;
+      if (!back.isDestroyed()) back.destroy();
+      winCount = 0;
+      createBackgroundWindows();
+    });
   }
 }
 
@@ -331,10 +351,14 @@ ipcMain.on("background-start", function (event, payload) {
   for (var i = 0; i < backgroundWindows.length; i++) {
     if (backgroundWindows[i] && !backgroundWindows[i].isBusy) {
       backgroundWindows[i].isBusy = true;
+      backgroundWindows[i].jobIndex = payload.index;
       backgroundWindows[i].webContents.send("background-start", payload);
-      break;
+      return;
     }
   }
+  // No worker free (e.g. still starting after Stop): fail the job instead of dropping it,
+  // otherwise the renderer waits for its answer forever.
+  event.sender.send("background-response", { index: payload.index, error: "no background worker available" });
 });
 
 ipcMain.on("background-response", function (event, payload) {

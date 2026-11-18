@@ -463,11 +463,17 @@ export class ImportService {
           return;
         }
 
-        const filename = this.path!.basename(filePath);
-        const dirpath = this.path!.dirname(filePath);
-
-        this.processSvgData(data, filename, dirpath);
-        resolve();
+        // A throw here (empty or malformed SVG) would never resolve and keep the
+        // Import button spinning until restart.
+        try {
+          const filename = this.path!.basename(filePath);
+          const dirpath = this.path!.dirname(filePath);
+          this.processSvgData(data, filename, dirpath);
+        } catch (e) {
+          message("Could not import " + filePath + ": " + (e instanceof Error ? e.message : String(e)), true);
+        } finally {
+          resolve();
+        }
       });
     });
   }

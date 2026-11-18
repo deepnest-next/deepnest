@@ -257,7 +257,8 @@ export class NestingService {
       return false;
     }
 
-    return this.deepNest.parts.some((part) => part.sheet);
+    // quantity 0 adds no sheet; the worker would crash on an empty sheet list.
+    return this.deepNest.parts.some((part) => part.sheet && part.quantity > 0);
   }
 
   /**
