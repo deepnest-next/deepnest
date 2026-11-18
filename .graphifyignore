@@ -1,0 +1,55 @@
+# graphify ignore rules (gitignore syntax). Read by `graphify extract/update`,
+# the graphify git hooks and graphify-mesh. graphify already skips lockfiles,
+# node_modules/, dist/, build/, target/, .idea/, .cache/ and graphify-out/.
+
+# --- deepnest-next workspace base ---
+graphify-out/
+
+# Agent / editor tooling (generated or vendored instructions, not project content)
+.claude/
+.agents/
+.opencode/
+.codex/
+.vscode/
+.devcontainer/
+.husky/
+
+# CI config
+.github/
+
+# Binary assets: images, icons, fonts, design files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.icns
+*.svg
+*.afdesign
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.otf
+
+# Generated / minified / lockfile-like
+*.min.js
+*.map
+bun.lockb
+.last-shasum
+
+# Secrets
+.env
+.env.*
+*.pem
+
+# Legal boilerplate
+LICENSE
+LICENSE.*
+LICENSES/
+
+# --- deepnest specific ---
+main/font/
+main/util/_unused/
+icons/
