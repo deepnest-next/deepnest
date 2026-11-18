@@ -20,6 +20,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: deepnest-next/rust-api-server
+          # The workspace window needs /v1/convert/inspect (rust-api-server#107).
+          # TODO: switch to main once #107 is merged.
+          ref: feat/unified-convert
           token: ${{ secrets.DEEPNEST_REPOS_TOKEN }}
           path: rust-api-server
       - uses: dtolnay/rust-toolchain@stable

@@ -11,7 +11,10 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        # Pinned: ubuntu-latest is 26.04 now, where Playwright 1.57 can't install chromium
+        # ("Playwright does not support chromium on ubuntu26.04-x64"). The steps below also
+        # assume 24.04 (chrome-sandbox fix). Move on when Playwright supports 26.04.
+        os: [ubuntu-24.04]
     # Give the job enough headroom for the non-deterministic nester test to
     # retry (playwright retries: 2) with its raised per-test timeout without the
     # job-level timeout cutting a slow-but-valid run short. Flaky-test mitigation.
