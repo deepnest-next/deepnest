@@ -28,17 +28,26 @@ const answer = vm.runInContext(`
   var sheet = poly([[1,1],[139,1],[139,199],[1,199]],'stock',-1,0);
   var parts = [poly(points,0,0,90),poly(points,1,0,270)];
   var result = placeParts([sheet],parts,cfg,0);
+  // A sheet nothing fits on (10x10 offcut) listed first must be skipped, not end the layout.
+  var offcut = poly([[0,0],[10,0],[10,10],[0,10]],'offcut',-2,0);
+  var bigSheet = poly([[1,1],[139,1],[139,199],[1,199]],'stock',-1,0);
+  var skipped = placeParts([offcut,bigSheet],[poly(points,0,0,90),poly(points,1,0,270)],cfg,0);
   var fallbackControls = null;
   if (typeof rectangularInnerNfp === 'function') {
     var holeSheet = poly([[1,1],[139,1],[139,199],[1,199]],'stock',-1,0);holeSheet.children=[poly([[2,2],[3,2],[3,3],[2,3]],2,-3,0)];
     var sloped = poly([[1,1],[139,2],[139,199],[1,199]],'stock',-1,0);
     fallbackControls = [rectangularInnerNfp(holeSheet,parts[0],cfg),rectangularInnerNfp(sloped,parts[0],cfg)];
   }
-  ({ result, fallbackControls });
+  ({ result, skipped, fallbackControls });
 `, context);
 assert(Number.isFinite(answer.result.fitness), 'fitness must remain finite');
 assert.equal(answer.result.placements.length, 1);
 assert.equal(answer.result.placements[0].sheetplacements.length, 2, 'both fitting copies must be placed');
+assert.equal(answer.skipped.placements.length, 1, 'parts must land on the sheet after the offcut');
+assert.equal(answer.skipped.placements[0].sheet, -1);
+assert.equal(answer.skipped.placements[0].sheetplacements.length, 2);
+assert(Number.isFinite(answer.skipped.fitness), 'skipping a sheet must keep fitness finite');
+assert(Math.abs(answer.skipped.fitness - answer.result.fitness) < 1e-6, 'an unused offcut must not change fitness');
 if (answer.fallbackControls) assert(answer.fallbackControls.every(v => v === null));
 if (vm.runInContext("typeof rectangularInnerNfp === 'function'", context)) {
   let seed=20261006;
@@ -69,4 +78,4 @@ if (vm.runInContext("typeof rectangularInnerNfp === 'function'", context)) {
   assert(vm.runInContext('rectangularInnerNfp(A,B,cfg)',context)===null);
 }
 
-console.log('PASS: both copies placed, finite fitness, nonrectangular/hole fallback preserved');
+console.log('PASS: both copies placed, unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');

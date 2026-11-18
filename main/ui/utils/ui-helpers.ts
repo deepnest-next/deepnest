@@ -31,7 +31,8 @@ export function message(txt: string, error?: boolean): void {
     messageElement.className += " animated bounce";
   }, 100);
 
-  contentElement.innerHTML = txt;
+  // Text only: callers pass server responses and file contents, never markup.
+  contentElement.textContent = txt;
 }
 
 /**

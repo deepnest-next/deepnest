@@ -655,6 +655,11 @@ export class PartsViewService {
    */
   private setupKeyboardEvents(): void {
     document.body.addEventListener("keydown", (e) => {
+      // Keys typed into a form field (quantity, sheet size, settings) are not a delete command.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) {
+        return;
+      }
       // Delete key (8 = backspace, 46 = delete)
       if (e.keyCode === 8 || e.keyCode === 46) {
         this.deleteParts();
