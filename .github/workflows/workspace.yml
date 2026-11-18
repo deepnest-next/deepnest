@@ -8,6 +8,9 @@ on:
     paths: ["workspace/**", "main.js", "workspace-ui.lock", "tests/workspace/**", ".github/workflows/workspace.yml"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   e2e:
     runs-on: ubuntu-24.04
