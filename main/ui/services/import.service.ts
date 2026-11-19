@@ -14,7 +14,9 @@ import type {
 import {
   DEFAULT_CONVERSION_SERVER,
   conversionServerErrorText,
+  converterCannotHandle,
   converterErrorText,
+  escapeHtml,
   type DxfConverter,
 } from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
@@ -450,7 +452,7 @@ export class ImportService {
     if (ext.toLowerCase() === ".svg") {
       await this.readSvgFile(filePath);
     } else if (this.isDxf(ext) && this.dxfConverter) {
-      this.importDxfLocally(filePath, filename);
+      await this.importDxfLocally(filePath, filename, ext);
     } else if (this.needsConversion(ext)) {
       await this.convertAndImport(filePath, filename, ext);
     }
@@ -488,21 +490,31 @@ export class ImportService {
    * back in mm with width/height/viewBox and Y already flipped, so it imports at true size
    * without the DXF scaling factor or the svgparser's DXF arc special case.
    */
-  private importDxfLocally(filePath: string, filename: string): void {
-    let result: ReturnType<DxfConverter["dxfToSvg"]>;
+  private async importDxfLocally(filePath: string, filename: string, ext: string): Promise<void> {
+    let result: Awaited<ReturnType<DxfConverter["dxfToSvg"]>>;
     try {
       // "DXF import units" are points per drawing unit; they only apply to DXF files
       // without their own units ($INSUNITS), which includes every R12 file.
       const pointsPerUnit = Number(this.config?.getSync("dxfImportScale")) || 1;
-      result = this.dxfConverter!.dxfToSvg(this.fs!.readFileSync(filePath), {
+      result = await this.dxfConverter!.dxfToSvg(this.fs!.readFileSync(filePath), {
         unitlessMmPerUnit: (pointsPerUnit * 25.4) / 72,
       });
     } catch (err) {
-      message(`Could not import ${filename}: ${converterErrorText(err)}`, true);
+      if (converterCannotHandle(err)) {
+        // e.g. a DWG saved as .dxf: the conversion server reads DWG.
+        await this.convertAndImport(filePath, filename, ext);
+        return;
+      }
+      message(`Could not import ${escapeHtml(filename)}: ${converterErrorText(err)}`, true);
       return;
     }
     for (const w of result.warnings) console.warn(`[dxf import] ${filename}: ${w}`);
     console.info(`[dxf import] ${filename}: units ${result.sourceUnits}`);
+    // Geometry was dropped (undecodable records, a drawing cut off at the size limit): say so.
+    const lost = result.warnings.filter((w) => /skipped|cut off|missing block/i.test(w));
+    if (lost.length) {
+      message(`${escapeHtml(filename)} was imported, but not completely: ${escapeHtml(lost.join(" "))}`);
+    }
     this.processSvgData(result.svg, filename, null);
   }
 
@@ -571,7 +583,7 @@ export class ImportService {
 
       message(
         conversionServerErrorText(errorData) ??
-          `Could not reach the file conversion server (${error.message}). Check your internet connection and the "conversion server" setting, then try again.`,
+          `Could not reach the file conversion server (${escapeHtml(error.message)}). Check your internet connection and the "conversion server" setting, then try again.`,
         true
       );
     }

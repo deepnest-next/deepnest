@@ -57,35 +57,45 @@ export interface DxfConverter {
   dxfToSvg(
     dxf: Buffer,
     options?: { unitlessMmPerUnit?: number }
-  ): { svg: string; sourceUnits: string; unitsAssumed: boolean; warnings: string[] };
-  svgToDxf(svg: Buffer, options: { version: DxfExportVersion; mmPerUnit?: number }): Buffer;
+  ): Promise<{ svg: string; sourceUnits: string; unitsAssumed: boolean; warnings: string[] }>;
+  svgToDxf(svg: Buffer, options: { version: DxfExportVersion; mmPerUnit?: number }): Promise<Buffer>;
+}
+
+/** Escape text for `message()`, which renders HTML (file names and server texts are not ours). */
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 /**
- * Readable text for an error body from the conversion server, or `null` if `raw` is not one.
- * New servers send `error` (what happened + what to do) and `request_id`; old ones only
- * `error_id`.
+ * Readable text (HTML-escaped) for an error body from the conversion server, or `null` if
+ * `raw` is not one. Servers send `error` (what happened + what to do), new ones also a
+ * `request_id` to quote; very old ones only an `error_id` code.
  */
 export function conversionServerErrorText(raw: unknown): string | null {
   if (typeof raw !== "string" || !raw.includes('"error"')) return null;
   try {
-    const e = JSON.parse(raw) as { error?: string; error_id?: string; request_id?: string };
-    if (e.request_id) {
-      return `${e.error ?? "The conversion failed."} Reference: ${e.request_id} (please quote it when you open an issue on github.com/deepnest-next/deepnest).`;
-    }
-    if (e.error_id) {
-      return `There was an error while converting: ${e.error_id}. Please use this code to open an issue on github.com/deepnest-next/deepnest.`;
-    }
+    const e = JSON.parse(raw) as { error?: unknown; error_id?: unknown; request_id?: unknown };
+    const str = (v: unknown) => (typeof v === "string" && v ? escapeHtml(v) : null);
+    const [error, code, ref] = [str(e.error), str(e.error_id), str(e.request_id)];
+    const issue = "when you open an issue on github.com/deepnest-next/deepnest";
+    if (error && ref) return `${error} Reference: ${ref} (please quote it ${issue}).`;
+    if (error) return code ? `${error} (code: ${code})` : error;
+    if (code) return `There was an error while converting: ${code}. Please use this code ${issue}.`;
   } catch {
     /* not JSON */
   }
   return null;
 }
 
-/** The readable part of a converter error (`"<code>: <text>"` → `<text>`). */
+/** The readable part of a converter error (`"<code>: <text>"` → `<text>`), HTML-escaped. */
 export function converterErrorText(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.replace(/^[a-z_]+: /, "");
+  return escapeHtml(msg.replace(/^[a-z_]+: /, ""));
+}
+
+/** Converter errors that the conversion server can handle instead (a DWG saved as .dxf). */
+export function converterCannotHandle(err: unknown): boolean {
+  return err instanceof Error && err.message.startsWith("unsupported:");
 }
 
 /**

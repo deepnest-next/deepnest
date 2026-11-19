@@ -15,6 +15,7 @@ import {
   DEFAULT_CONVERSION_SERVER,
   conversionServerErrorText,
   converterErrorText,
+  escapeHtml,
   type DxfConverter,
 } from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
@@ -440,7 +441,7 @@ export class ExportService {
    * Export the selected nest as DXF with the local converter, in the release from the
    * "DXF export version" setting (AC1009 or AC1018) and the unit from "DXF export units".
    */
-  private exportDxfLocally(): boolean {
+  private async exportDxfLocally(): Promise<boolean> {
     let fileName = this.dialog!.showSaveDialogSync({
       title: "Export deepnest DXF",
       filters: DXF_FILE_FILTERS,
@@ -460,10 +461,14 @@ export class ExportService {
       // "DXF export units" are units per inch (Inches = 1, mm = 25.4, Points = 72).
       const unitsPerInch = Number(this.config?.getSync("dxfExportScale")) || 1;
       const version = this.config?.getSync("dxfExportVersion") === "AC1018" ? "AC1018" : "AC1009";
-      const dxf = this.dxfConverter!.svgToDxf(Buffer.from(this.generateSvgExport(selected)), {
-        version,
-        mmPerUnit: 25.4 / unitsPerInch,
-      });
+      const svg = this.buildSvgExport(selected);
+      // Parts that only got their outline from deepnest's CSS (fill="none", no stroke of
+      // their own) are invisible to the converter's SVG reader: give them a default stroke.
+      if (!svg.getAttribute("stroke")) svg.setAttribute("stroke", "#000000");
+      const dxf = await this.dxfConverter!.svgToDxf(
+        Buffer.from(new XMLSerializer().serializeToString(svg)),
+        { version, mmPerUnit: 25.4 / unitsPerInch },
+      );
       this.fs!.writeFileSync(fileName, dxf);
       return true;
     } catch (err) {
@@ -478,7 +483,7 @@ export class ExportService {
    */
   async exportToDxf(): Promise<boolean> {
     if (this.dxfConverter && this.dialog && this.fs) {
-      return this.exportDxfLocally();
+      return await this.exportDxfLocally();
     }
     if (!this.dialog || !this.fs || !this.httpClient || !this.FormData) {
       message("Export dependencies not available", true);
@@ -544,7 +549,7 @@ export class ExportService {
 
       message(
         conversionServerErrorText(errorData) ??
-          `Could not reach the file conversion server (${error.message}). Check your internet connection and the "conversion server" setting, then try again.`,
+          `Could not reach the file conversion server (${escapeHtml(error.message)}). Check your internet connection and the "conversion server" setting, then try again.`,
         true
       );
       return false;
