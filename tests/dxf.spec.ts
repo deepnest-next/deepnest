@@ -185,3 +185,30 @@ test("R12 without units uses 'DXF import units'; mm export; CSS-only outlines ar
   }
   await app.close();
 });
+
+test("file names and converter errors are shown as text, never as HTML", async () => {
+  test.setTimeout(60_000);
+  const { app, win, dir } = await start({ showNotifications: true });
+  // Linux/macOS allow < > in file names; message() renders HTML in a renderer with Node.
+  const name = "<img src=x onerror=window.__pwned=1>.dxf";
+  const file = path.join(dir, name);
+  await writeFile(file, "0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n"); // valid, but empty
+  await app.evaluate(({ dialog }, p) => {
+    dialog.showOpenDialog = async (): Promise<OpenDialogReturnValue> => ({
+      filePaths: [p],
+      canceled: false,
+    });
+  }, file);
+  await win.click("id=import");
+  await expect(win.locator("#messagecontent")).toContainText(name);
+  await expect(win.locator("#messagecontent")).toContainText(
+    "nothing we can convert",
+  );
+  expect(
+    await win.evaluate(
+      () => (window as unknown as { __pwned?: number }).__pwned,
+    ),
+  ).toBeUndefined();
+  expect(await win.locator("#messagecontent img").count()).toBe(0);
+  await app.close();
+});

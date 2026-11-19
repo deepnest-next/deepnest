@@ -471,7 +471,7 @@ export class ImportService {
     return new Promise<void>((resolve) => {
       this.fs!.readFile(filePath, "utf-8", (err, data) => {
         if (err) {
-          message("An error occurred reading the file: " + err.message, true);
+          message("An error occurred reading the file: " + escapeHtml(err.message), true);
           resolve();
           return;
         }
@@ -555,7 +555,7 @@ export class ImportService {
 
       // Check for error responses
       if (body.substring(0, 5) === "error") {
-        message(body, true);
+        message(escapeHtml(body), true);
         return;
       }
 
@@ -613,14 +613,14 @@ export class ImportService {
         const svgResult = this.svgPreProcessor.loadSvgString(data, scale);
 
         if (!svgResult.success) {
-          message(svgResult.result, true);
+          message(escapeHtml(String(svgResult.result)), true);
           return;
         }
 
         this.importData(svgResult.result, filename, dirpath, scalingFactor, dxfFlag);
       } catch (e) {
         const error = e as Error;
-        message("Error processing SVG: " + error.message, true);
+        message("Error processing SVG: " + escapeHtml(error.message), true);
       }
     } else {
       this.importData(data, filename, dirpath, scalingFactor, dxfFlag);
@@ -721,14 +721,14 @@ export class ImportService {
         const svgResult = this.svgPreProcessor.loadSvgString(svgString, scale);
 
         if (!svgResult.success) {
-          message(svgResult.result, true);
+          message(escapeHtml(String(svgResult.result)), true);
           return null;
         }
 
         processedData = svgResult.result;
       } catch (e) {
         const error = e as Error;
-        message("Error processing SVG: " + error.message, true);
+        message("Error processing SVG: " + escapeHtml(error.message), true);
         return null;
       }
     }

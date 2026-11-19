@@ -158,6 +158,19 @@ const JSON_FILE_FILTERS: FileFilter[] = [
 ];
 
 /**
+ * deepnest draws part outlines with CSS; shapes with fill="none" and no stroke of their own
+ * (e.g. a group stroke lost when groups were flattened) are invisible to an SVG reader and
+ * would be missing from the DXF. Give exactly those a black stroke; filled or stroked parts
+ * keep their colour.
+ */
+function strokeCssOnlyOutlines(svg: SVGSVGElement): SVGSVGElement {
+  svg.querySelectorAll("path, polygon, polyline, rect, circle, ellipse, line").forEach((el) => {
+    if (!el.getAttribute("stroke") && el.getAttribute("fill") === "none") el.setAttribute("stroke", "#000000");
+  });
+  return svg;
+}
+
+/**
  * Export Service class
  * Handles export operations for nesting results to various formats
  * Follows the pattern from main/deepnest.js ES6 class structure
@@ -461,10 +474,7 @@ export class ExportService {
       // "DXF export units" are units per inch (Inches = 1, mm = 25.4, Points = 72).
       const unitsPerInch = Number(this.config?.getSync("dxfExportScale")) || 1;
       const version = this.config?.getSync("dxfExportVersion") === "AC1018" ? "AC1018" : "AC1009";
-      const svg = this.buildSvgExport(selected);
-      // Parts that only got their outline from deepnest's CSS (fill="none", no stroke of
-      // their own) are invisible to the converter's SVG reader: give them a default stroke.
-      if (!svg.getAttribute("stroke")) svg.setAttribute("stroke", "#000000");
+      const svg = strokeCssOnlyOutlines(this.buildSvgExport(selected));
       const dxf = await this.dxfConverter!.svgToDxf(
         Buffer.from(new XMLSerializer().serializeToString(svg)),
         { version, mmPerUnit: 25.4 / unitsPerInch },
@@ -514,8 +524,7 @@ export class ExportService {
     try {
       // Generate SVG with DXF scaling, with a default stroke for CSS-only outlines (see
       // exportDxfLocally).
-      const svg = this.buildSvgExport(selected, { forDxfConversion: true });
-      if (!svg.getAttribute("stroke")) svg.setAttribute("stroke", "#000000");
+      const svg = strokeCssOnlyOutlines(this.buildSvgExport(selected, { forDxfConversion: true }));
       const svgContent = new XMLSerializer().serializeToString(svg);
 
       const formData = new this.FormData();
@@ -524,9 +533,9 @@ export class ExportService {
         contentType: "image/svg+xml",
       });
       formData.append("format", "dxf");
-      // Servers that know DXF versions (deepnest-convert-server, rust-api-server) honour it;
-      // others ignore unknown fields.
-      formData.append("version", this.config?.getSync("dxfExportVersion") === "AC1018" ? "ac1018" : "ac1009");
+      // R12 is every server's default; only ask for R2004 when chosen (servers without it
+      // answer with a readable error instead of a wrong file).
+      if (this.config?.getSync("dxfExportVersion") === "AC1018") formData.append("version", "ac1018");
 
       const response = await this.httpClient.post(url, formData.getBuffer(), {
         headers: formData.getHeaders(),
@@ -537,7 +546,7 @@ export class ExportService {
 
       // Check for error responses
       if (body.substring(0, 5) === "error") {
-        message(body, true);
+        message(escapeHtml(body), true);
         return false;
       }
 
