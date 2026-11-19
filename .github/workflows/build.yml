@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [24.x]
         os: [windows-2022, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:

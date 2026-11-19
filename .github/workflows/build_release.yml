@@ -11,7 +11,7 @@ jobs:
       BUILD_FOR_OS: linux
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [24.x]
         os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
@@ -107,8 +107,8 @@ jobs:
       BUILD_FOR_OS: darwin
     strategy:
       matrix:
-        node-version: [22.x]
-        os: [macos-13, macos-latest]
+        node-version: [24.x]
+        os: [macos-15-intel, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -184,7 +184,7 @@ jobs:
       BUILD_FOR_OS: win32
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [24.x]
         os: [windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
