@@ -46,6 +46,48 @@ export interface UIConfig extends DeepNestConfig {
  */
 export const DEFAULT_CONVERSION_SERVER = "https://converter.deepnest.app/convert";
 
+/** DXF release written on export (only these two). */
+export type DxfExportVersion = DeepNestConfig["dxfExportVersion"];
+
+/**
+ * The local DXF ↔ SVG converter (`@deepnest/dxf-converter`). Errors are thrown with the
+ * message `"<code>: <what happened + what to do>"`.
+ */
+export interface DxfConverter {
+  dxfToSvg(
+    dxf: Buffer,
+    options?: { unitlessMmPerUnit?: number }
+  ): { svg: string; sourceUnits: string; unitsAssumed: boolean; warnings: string[] };
+  svgToDxf(svg: Buffer, options: { version: DxfExportVersion; mmPerUnit?: number }): Buffer;
+}
+
+/**
+ * Readable text for an error body from the conversion server, or `null` if `raw` is not one.
+ * New servers send `error` (what happened + what to do) and `request_id`; old ones only
+ * `error_id`.
+ */
+export function conversionServerErrorText(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.includes('"error"')) return null;
+  try {
+    const e = JSON.parse(raw) as { error?: string; error_id?: string; request_id?: string };
+    if (e.request_id) {
+      return `${e.error ?? "The conversion failed."} Reference: ${e.request_id} (please quote it when you open an issue on github.com/deepnest-next/deepnest).`;
+    }
+    if (e.error_id) {
+      return `There was an error while converting: ${e.error_id}. Please use this code to open an issue on github.com/deepnest-next/deepnest.`;
+    }
+  } catch {
+    /* not JSON */
+  }
+  return null;
+}
+
+/** The readable part of a converter error (`"<code>: <text>"` → `<text>`). */
+export function converterErrorText(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.replace(/^[a-z_]+: /, "");
+}
+
 /**
  * SVG Pan/Zoom instance for import view
  */

@@ -11,7 +11,12 @@ import type {
   RactiveInstance,
   PartsViewData,
 } from "../types/index.js";
-import { DEFAULT_CONVERSION_SERVER } from "../types/index.js";
+import {
+  DEFAULT_CONVERSION_SERVER,
+  conversionServerErrorText,
+  converterErrorText,
+  type DxfConverter,
+} from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
 
 /**
@@ -170,6 +175,8 @@ export class ImportService {
 
   /** SVG pre-processor for cleaning input */
   private svgPreProcessor: SvgPreProcessor | null = null;
+  /** Local DXF → SVG; without it DXF falls back to the conversion server. */
+  private dxfConverter: DxfConverter | null = null;
 
   /** Configuration getter */
   private config: ConfigGetter | null = null;
@@ -204,6 +211,7 @@ export class ImportService {
     httpClient?: HttpClient;
     FormData?: FormDataConstructor;
     svgPreProcessor?: SvgPreProcessor;
+    dxfConverter?: DxfConverter;
     config?: ConfigGetter;
     deepNest?: DeepNestInstance;
     ractive?: RactiveInstance<PartsViewData>;
@@ -219,6 +227,7 @@ export class ImportService {
       this.httpClient = options.httpClient || null;
       this.FormData = options.FormData || null;
       this.svgPreProcessor = options.svgPreProcessor || null;
+      this.dxfConverter = options.dxfConverter || null;
       this.config = options.config || null;
       this.deepNest = options.deepNest || null;
       this.ractive = options.ractive || null;
@@ -440,6 +449,8 @@ export class ImportService {
 
     if (ext.toLowerCase() === ".svg") {
       await this.readSvgFile(filePath);
+    } else if (this.isDxf(ext) && this.dxfConverter) {
+      this.importDxfLocally(filePath, filename);
     } else if (this.needsConversion(ext)) {
       await this.convertAndImport(filePath, filename, ext);
     }
@@ -470,6 +481,29 @@ export class ImportService {
         resolve();
       });
     });
+  }
+
+  /**
+   * Convert a DXF to SVG locally (`@deepnest/dxf-converter`) and import it. The SVG comes
+   * back in mm with width/height/viewBox and Y already flipped, so it imports at true size
+   * without the DXF scaling factor or the svgparser's DXF arc special case.
+   */
+  private importDxfLocally(filePath: string, filename: string): void {
+    let result: ReturnType<DxfConverter["dxfToSvg"]>;
+    try {
+      // "DXF import units" are points per drawing unit; they only apply to DXF files
+      // without their own units ($INSUNITS), which includes every R12 file.
+      const pointsPerUnit = Number(this.config?.getSync("dxfImportScale")) || 1;
+      result = this.dxfConverter!.dxfToSvg(this.fs!.readFileSync(filePath), {
+        unitlessMmPerUnit: (pointsPerUnit * 25.4) / 72,
+      });
+    } catch (err) {
+      message(`Could not import ${filename}: ${converterErrorText(err)}`, true);
+      return;
+    }
+    for (const w of result.warnings) console.warn(`[dxf import] ${filename}: ${w}`);
+    console.info(`[dxf import] ${filename}: units ${result.sourceUnits}`);
+    this.processSvgData(result.svg, filename, null);
   }
 
   /**
@@ -513,12 +547,9 @@ export class ImportService {
         return;
       }
 
-      if (body.includes('"error"') && body.includes('"error_id"')) {
-        const jsonErr = JSON.parse(body) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
+      const serverError = conversionServerErrorText(body);
+      if (serverError) {
+        message(serverError, true);
         return;
       }
 
@@ -538,22 +569,11 @@ export class ImportService {
       const error = err as { response?: { data: string }; message: string };
       const errorData = error.response?.data || error.message;
 
-      if (
-        typeof errorData === "string" &&
-        errorData.includes('"error"') &&
-        errorData.includes('"error_id"')
-      ) {
-        const jsonErr = JSON.parse(errorData) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      } else {
-        message(
-          `Could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      }
+      message(
+        conversionServerErrorText(errorData) ??
+          `Could not reach the file conversion server (${error.message}). Check your internet connection and the "conversion server" setting, then try again.`,
+        true
+      );
     }
   }
 

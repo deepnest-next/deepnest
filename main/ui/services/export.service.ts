@@ -11,7 +11,12 @@ import type {
   Part,
   SvgParserInstance,
 } from "../types/index.js";
-import { DEFAULT_CONVERSION_SERVER } from "../types/index.js";
+import {
+  DEFAULT_CONVERSION_SERVER,
+  conversionServerErrorText,
+  converterErrorText,
+  type DxfConverter,
+} from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
 import { generateHpgl } from "../utils/hpgl.js";
 import type { HpglPath } from "../utils/hpgl.js";
@@ -50,7 +55,7 @@ interface ElectronRemote {
  * File system interface for Node.js fs module
  */
 interface FileSystem {
-  writeFileSync(path: string, data: string): void;
+  writeFileSync(path: string, data: string | Buffer): void;
 }
 
 /**
@@ -140,7 +145,7 @@ const SVG_FILE_FILTERS: FileFilter[] = [
 ];
 
 const DXF_FILE_FILTERS: FileFilter[] = [
-  { name: "DXF/DWG", extensions: ["dxf", "dwg"] }
+  { name: "DXF", extensions: ["dxf"] }
 ];
 
 const PLT_FILE_FILTERS: FileFilter[] = [
@@ -180,6 +185,8 @@ export class ExportService {
 
   /** SvgParser instance for line merging operations */
   private svgParser: SvgParserInstance | null = null;
+  /** Local SVG → DXF; without it DXF export falls back to the conversion server. */
+  private dxfConverter: DxfConverter | null = null;
 
   /** Export button element for spinner state */
   private exportButton: ExportButtonElement | null = null;
@@ -200,6 +207,7 @@ export class ExportService {
     config?: ConfigGetter;
     deepNest?: DeepNestInstance;
     svgParser?: SvgParserInstance;
+    dxfConverter?: DxfConverter;
     exportButton?: ExportButtonElement;
   }) {
     if (options) {
@@ -211,6 +219,7 @@ export class ExportService {
       this.config = options.config || null;
       this.deepNest = options.deepNest || null;
       this.svgParser = options.svgParser || null;
+      this.dxfConverter = options.dxfConverter || null;
       this.exportButton = options.exportButton || null;
     }
   }
@@ -428,10 +437,49 @@ export class ExportService {
   }
 
   /**
+   * Export the selected nest as DXF with the local converter, in the release from the
+   * "DXF export version" setting (AC1009 or AC1018) and the unit from "DXF export units".
+   */
+  private exportDxfLocally(): boolean {
+    let fileName = this.dialog!.showSaveDialogSync({
+      title: "Export deepnest DXF",
+      filters: DXF_FILE_FILTERS,
+    });
+    if (fileName === undefined) {
+      return false;
+    }
+    if (!fileName.toLowerCase().endsWith(".dxf")) {
+      fileName = fileName + ".dxf";
+    }
+    const selected = this.getSelectedNest();
+    if (!selected) {
+      return false;
+    }
+    try {
+      // The SVG keeps its true physical size; the DXF unit goes to the converter instead.
+      // "DXF export units" are units per inch (Inches = 1, mm = 25.4, Points = 72).
+      const unitsPerInch = Number(this.config?.getSync("dxfExportScale")) || 1;
+      const version = this.config?.getSync("dxfExportVersion") === "AC1018" ? "AC1018" : "AC1009";
+      const dxf = this.dxfConverter!.svgToDxf(Buffer.from(this.generateSvgExport(selected)), {
+        version,
+        mmPerUnit: 25.4 / unitsPerInch,
+      });
+      this.fs!.writeFileSync(fileName, dxf);
+      return true;
+    } catch (err) {
+      message(`Could not export the DXF: ${converterErrorText(err)}`, true);
+      return false;
+    }
+  }
+
+  /**
    * Show save dialog and export to DXF via conversion server
    * @returns Promise that resolves to true if export was successful
    */
   async exportToDxf(): Promise<boolean> {
+    if (this.dxfConverter && this.dialog && this.fs) {
+      return this.exportDxfLocally();
+    }
     if (!this.dialog || !this.fs || !this.httpClient || !this.FormData) {
       message("Export dependencies not available", true);
       return false;
@@ -446,8 +494,7 @@ export class ExportService {
       return false;
     }
 
-    // Ensure .dxf or .dwg extension
-    if (!fileName.toLowerCase().endsWith(".dxf") && !fileName.toLowerCase().endsWith(".dwg")) {
+    if (!fileName.toLowerCase().endsWith(".dxf")) {
       fileName = fileName + ".dxf";
     }
 
@@ -483,12 +530,9 @@ export class ExportService {
         return false;
       }
 
-      if (body.includes('"error"') && body.includes('"error_id"')) {
-        const jsonErr = JSON.parse(body) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
+      const serverError = conversionServerErrorText(body);
+      if (serverError) {
+        message(serverError, true);
         return false;
       }
 
@@ -498,22 +542,11 @@ export class ExportService {
       const error = err as { response?: { data: string }; message: string };
       const errorData = error.response?.data || error.message;
 
-      if (
-        typeof errorData === "string" &&
-        errorData.includes('"error"') &&
-        errorData.includes('"error_id"')
-      ) {
-        const jsonErr = JSON.parse(errorData) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      } else {
-        message(
-          `Could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      }
+      message(
+        conversionServerErrorText(errorData) ??
+          `Could not reach the file conversion server (${error.message}). Check your internet connection and the "conversion server" setting, then try again.`,
+        true
+      );
       return false;
     } finally {
       this.setExportLoading(false);

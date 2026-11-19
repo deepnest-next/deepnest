@@ -37,6 +37,14 @@ Further Licenses:
 
 - [LICENSES](LICENSES.md)
 
+**DXF converter.** DXF import and export run locally through
+[`@deepnest/dxf-converter`](https://www.npmjs.com/package/@deepnest/dxf-converter), a native
+addon licensed **AGPL-3.0-or-later**. deepnest itself stays MIT. Distributing deepnest
+together with that addon means meeting the AGPL for that component, for example by pointing
+to its source.
+
+DWG, EPS and PS still go to the conversion server set under *conversion server*.
+
 ## Fork History
 
 - https://github.com/Jack000/SVGnest (Academic Work References)

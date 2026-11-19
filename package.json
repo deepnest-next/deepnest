@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "@deepnest/calculate-nfp": "202503.13.155300",
+    "@deepnest/dxf-converter": "^0.1.0",
     "@deepnest/svg-preprocessor": "0.2.0",
     "@electron/remote": "2.1.3",
     "axios": "1.16.0",
