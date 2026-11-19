@@ -10,6 +10,8 @@ import {
 } from "@playwright/test";
 import { OpenDialogReturnValue } from "electron";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "path";
 
@@ -40,18 +42,25 @@ const outlines = (svg: string) =>
   });
 
 /**
- * Start deepnest with a fresh profile, no notifications, and an unreachable conversion
- * server: if anything still went online, import/export would fail.
+ * Start deepnest with a fresh profile and no notifications. The conversion server is a local
+ * stub that records every request: the DXF tests assert it received none (nothing went online).
  */
 async function start(settings: Record<string, unknown> = {}) {
   const dir = await mkdtemp(path.join(tmpdir(), "deepnest-dxf-"));
+  const requests: string[] = [];
+  const stub = createServer((req, res) => {
+    requests.push(`${req.method} ${req.url}`);
+    res.writeHead(500).end();
+  });
+  await new Promise<void>((ok) => stub.listen(0, "127.0.0.1", ok));
+  const { port } = stub.address() as AddressInfo;
   const userData = path.join(dir, "profile");
   await mkdir(userData, { recursive: true });
   await writeFile(
     path.join(userData, "settings.json"),
     JSON.stringify({
       showNotifications: false,
-      conversionServer: "http://127.0.0.1:9/convert",
+      conversionServer: `http://127.0.0.1:${port}/convert`,
       ...settings,
     }),
   );
@@ -62,7 +71,7 @@ async function start(settings: Record<string, unknown> = {}) {
   await win.waitForFunction(
     () => typeof (window as unknown as { nest?: unknown }).nest === "object",
   );
-  return { app, win, dir };
+  return { app, win, dir, requests, stub };
 }
 
 async function importAndNest(
@@ -114,7 +123,7 @@ async function exportDxf(
 
 test("DXF import and AC1009/AC1018 export run locally", async ({}, testInfo) => {
   test.setTimeout(120_000);
-  const { app, win, dir } = await start();
+  const { app, win, dir, requests, stub } = await start();
   // Fixture: a 100 × 50 mm part with a hole, written as AC1018 (it declares mm).
   const part = path.join(dir, "part.dxf");
   const svg =
@@ -140,13 +149,15 @@ test("DXF import and AC1009/AC1018 export run locally", async ({}, testInfo) => 
   // The exported nest reads back at true size, in whatever orientation the nester chose.
   expect(outlines((await dxfToSvg(r2004)).svg)).toContainEqual([100, 50]);
   await app.close();
+  stub.close();
+  expect(requests, "requests to the conversion server").toEqual([]);
 });
 
 test("R12 without units uses 'DXF import units'; mm export; CSS-only outlines are kept", async ({}, testInfo) => {
   test.setTimeout(120_000);
   // "DXF import units" = mm (points per unit) and "DXF export units" = mm (units per inch).
   // No line merging, so every part keeps its own outline to measure.
-  const { app, win, dir } = await start({
+  const { app, win, dir, requests, stub } = await start({
     dxfImportScale: 2.83465,
     dxfExportScale: 25.4,
     mergeLines: false,
@@ -184,11 +195,15 @@ test("R12 without units uses 'DXF import units'; mm export; CSS-only outlines ar
     expect(parts, version).toContainEqual([60, 30]);
   }
   await app.close();
+  stub.close();
+  expect(requests, "requests to the conversion server").toEqual([]);
 });
 
 test("file names and converter errors are shown as text, never as HTML", async () => {
   test.setTimeout(60_000);
-  const { app, win, dir } = await start({ showNotifications: true });
+  const { app, win, dir, requests, stub } = await start({
+    showNotifications: true,
+  });
   // Linux/macOS allow < > in file names; message() renders HTML in a renderer with Node.
   const name = "<img src=x onerror=window.__pwned=1>.dxf";
   const file = path.join(dir, name);
@@ -211,4 +226,6 @@ test("file names and converter errors are shown as text, never as HTML", async (
   ).toBeUndefined();
   expect(await win.locator("#messagecontent img").count()).toBe(0);
   await app.close();
+  stub.close();
+  expect(requests, "requests to the conversion server").toEqual([]);
 });
