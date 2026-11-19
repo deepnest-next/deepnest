@@ -165,7 +165,18 @@ const JSON_FILE_FILTERS: FileFilter[] = [
  */
 function strokeCssOnlyOutlines(svg: SVGSVGElement): SVGSVGElement {
   svg.querySelectorAll("path, polygon, polyline, rect, circle, ellipse, line").forEach((el) => {
-    if (!el.getAttribute("stroke") && el.getAttribute("fill") === "none") el.setAttribute("stroke", "#000000");
+    // fill/stroke may sit in the attribute or in `style` (style wins in SVG).
+    const style = el.getAttribute("style") ?? "";
+    const fromStyle = (prop: string) =>
+      new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, "i").exec(style)?.[1].trim();
+    const fill = fromStyle("fill") ?? el.getAttribute("fill");
+    const stroke = fromStyle("stroke") ?? el.getAttribute("stroke");
+    if (fill === "none" && (!stroke || stroke === "none")) {
+      el.setAttribute("stroke", "#000000");
+      if (fromStyle("stroke") !== undefined) {
+        el.setAttribute("style", style.replace(/(^|;)\s*stroke\s*:[^;]*/i, "$1"));
+      }
+    }
   });
   return svg;
 }
@@ -804,12 +815,17 @@ export class ExportService {
    * @param sheetPart - Part representing the sheet
    */
   private addSheetBoundary(group: SVGGElement, sheetPart: Part): void {
+    // Its own DXF layer (SHEET): CAM setups map layers to operations, and the outline is
+    // not a part to cut or engrave. The converter reads `<g id="layer-NAME">` as layer NAME.
+    const layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    layer.setAttribute("id", "layer-SHEET");
     sheetPart.svgelements.forEach((e) => {
       const node = e.cloneNode(false) as SVGElement;
       node.setAttribute("stroke", "#00ff00");
       node.setAttribute("fill", "none");
-      group.appendChild(node);
+      layer.appendChild(node);
     });
+    group.appendChild(layer);
   }
 
   /**

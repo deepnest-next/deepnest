@@ -161,6 +161,7 @@ test("R12 without units uses 'DXF import units'; mm export; CSS-only outlines ar
     dxfImportScale: 2.83465,
     dxfExportScale: 25.4,
     mergeLines: false,
+    exportWithSheetBoundboarders: true,
   });
   // R12 has no $INSUNITS: these are 100 × 50 bare numbers, mm by the setting.
   const r12part = path.join(dir, "r12.dxf");
@@ -177,7 +178,7 @@ test("R12 without units uses 'DXF import units'; mm export; CSS-only outlines ar
   await writeFile(
     svgPart,
     '<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="30mm" viewBox="0 0 60 30">' +
-      '<g stroke="#000"><path fill="none" d="M0 0 L60 0 L60 30 L0 30 Z"/></g></svg>',
+      '<g stroke="#000"><path style="fill:none" d="M0 0 L60 0 L60 30 L0 30 Z"/></g></svg>',
   );
   await importAndNest(app, win, [r12part, svgPart]);
 
@@ -193,6 +194,13 @@ test("R12 without units uses 'DXF import units'; mm export; CSS-only outlines ar
     const parts = outlines((await dxfToSvg(dxf)).svg);
     expect(parts, version).toContainEqual([100, 50]);
     expect(parts, version).toContainEqual([60, 30]);
+    // The sheet outline sits on its own layer, not on ENGRAVE (its green colour's role).
+    const names = dxf
+      .toString()
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(names, version).toContain("SHEET");
+    expect(names, version).not.toContain("ENGRAVE");
   }
   await app.close();
   stub.close();
