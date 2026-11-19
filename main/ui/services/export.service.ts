@@ -512,8 +512,11 @@ export class ExportService {
     this.setExportLoading(true);
 
     try {
-      // Generate SVG with DXF scaling
-      const svgContent = this.generateSvgExport(selected, { forDxfConversion: true });
+      // Generate SVG with DXF scaling, with a default stroke for CSS-only outlines (see
+      // exportDxfLocally).
+      const svg = this.buildSvgExport(selected, { forDxfConversion: true });
+      if (!svg.getAttribute("stroke")) svg.setAttribute("stroke", "#000000");
+      const svgContent = new XMLSerializer().serializeToString(svg);
 
       const formData = new this.FormData();
       formData.append("fileUpload", Buffer.from(svgContent), {
@@ -521,6 +524,9 @@ export class ExportService {
         contentType: "image/svg+xml",
       });
       formData.append("format", "dxf");
+      // Servers that know DXF versions (deepnest-convert-server, rust-api-server) honour it;
+      // others ignore unknown fields.
+      formData.append("version", this.config?.getSync("dxfExportVersion") === "AC1018" ? "ac1018" : "ac1009");
 
       const response = await this.httpClient.post(url, formData.getBuffer(), {
         headers: formData.getHeaders(),
