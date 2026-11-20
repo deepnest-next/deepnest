@@ -9,6 +9,7 @@ import type {
   ConfigObject,
   PlacementType,
   UnitType,
+  DxfExportVersion,
 } from "../types/index.js";
 import { DEFAULT_CONVERSION_SERVER, IPC_CHANNELS } from "../types/index.js";
 
@@ -37,6 +38,7 @@ export const DEFAULT_CONFIG: Readonly<UIConfig> = {
   simplify: false,
   dxfImportScale: 1,
   dxfExportScale: 1,
+  dxfExportVersion: "AC1009" as DxfExportVersion,
   endpointTolerance: 0.36,
   conversionServer: DEFAULT_CONVERSION_SERVER,
   useSvgPreProcessor: false,
@@ -91,6 +93,7 @@ export class ConfigService implements ConfigObject {
   simplify: boolean;
   dxfImportScale: number;
   dxfExportScale: number;
+  dxfExportVersion: DxfExportVersion;
   endpointTolerance: number;
   conversionServer: string;
   useSvgPreProcessor: boolean;
@@ -126,6 +129,7 @@ export class ConfigService implements ConfigObject {
     this.simplify = this.config.simplify;
     this.dxfImportScale = this.config.dxfImportScale;
     this.dxfExportScale = this.config.dxfExportScale;
+    this.dxfExportVersion = this.config.dxfExportVersion;
     this.endpointTolerance = this.config.endpointTolerance;
     this.conversionServer = this.config.conversionServer;
     this.useSvgPreProcessor = this.config.useSvgPreProcessor;
@@ -210,6 +214,7 @@ export class ConfigService implements ConfigObject {
     this.simplify = this.config.simplify;
     this.dxfImportScale = this.config.dxfImportScale;
     this.dxfExportScale = this.config.dxfExportScale;
+    this.dxfExportVersion = this.config.dxfExportVersion;
     this.endpointTolerance = this.config.endpointTolerance;
     this.conversionServer = this.config.conversionServer;
     this.useSvgPreProcessor = this.config.useSvgPreProcessor;

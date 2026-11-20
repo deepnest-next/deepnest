@@ -11,7 +11,13 @@ import type {
   Part,
   SvgParserInstance,
 } from "../types/index.js";
-import { DEFAULT_CONVERSION_SERVER } from "../types/index.js";
+import {
+  DEFAULT_CONVERSION_SERVER,
+  conversionServerErrorText,
+  converterErrorText,
+  escapeHtml,
+  type DxfConverter,
+} from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
 import { generateHpgl } from "../utils/hpgl.js";
 import type { HpglPath } from "../utils/hpgl.js";
@@ -50,7 +56,7 @@ interface ElectronRemote {
  * File system interface for Node.js fs module
  */
 interface FileSystem {
-  writeFileSync(path: string, data: string): void;
+  writeFileSync(path: string, data: string | Buffer): void;
 }
 
 /**
@@ -140,7 +146,7 @@ const SVG_FILE_FILTERS: FileFilter[] = [
 ];
 
 const DXF_FILE_FILTERS: FileFilter[] = [
-  { name: "DXF/DWG", extensions: ["dxf", "dwg"] }
+  { name: "DXF", extensions: ["dxf"] }
 ];
 
 const PLT_FILE_FILTERS: FileFilter[] = [
@@ -150,6 +156,30 @@ const PLT_FILE_FILTERS: FileFilter[] = [
 const JSON_FILE_FILTERS: FileFilter[] = [
   { name: "JSON", extensions: ["json"] }
 ];
+
+/**
+ * deepnest draws part outlines with CSS; shapes with fill="none" and no stroke of their own
+ * (e.g. a group stroke lost when groups were flattened) are invisible to an SVG reader and
+ * would be missing from the DXF. Give exactly those a black stroke; filled or stroked parts
+ * keep their colour.
+ */
+function strokeCssOnlyOutlines(svg: SVGSVGElement): SVGSVGElement {
+  svg.querySelectorAll("path, polygon, polyline, rect, circle, ellipse, line").forEach((el) => {
+    // fill/stroke may sit in the attribute or in `style` (style wins in SVG).
+    const style = el.getAttribute("style") ?? "";
+    const fromStyle = (prop: string) =>
+      new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, "i").exec(style)?.[1].trim();
+    const fill = fromStyle("fill") ?? el.getAttribute("fill");
+    const stroke = fromStyle("stroke") ?? el.getAttribute("stroke");
+    if (fill === "none" && (!stroke || stroke === "none")) {
+      el.setAttribute("stroke", "#000000");
+      if (fromStyle("stroke") !== undefined) {
+        el.setAttribute("style", style.replace(/(^|;)\s*stroke\s*:[^;]*/i, "$1"));
+      }
+    }
+  });
+  return svg;
+}
 
 /**
  * Export Service class
@@ -180,6 +210,8 @@ export class ExportService {
 
   /** SvgParser instance for line merging operations */
   private svgParser: SvgParserInstance | null = null;
+  /** Local SVG → DXF; without it DXF export falls back to the conversion server. */
+  private dxfConverter: DxfConverter | null = null;
 
   /** Export button element for spinner state */
   private exportButton: ExportButtonElement | null = null;
@@ -200,6 +232,7 @@ export class ExportService {
     config?: ConfigGetter;
     deepNest?: DeepNestInstance;
     svgParser?: SvgParserInstance;
+    dxfConverter?: DxfConverter;
     exportButton?: ExportButtonElement;
   }) {
     if (options) {
@@ -211,6 +244,7 @@ export class ExportService {
       this.config = options.config || null;
       this.deepNest = options.deepNest || null;
       this.svgParser = options.svgParser || null;
+      this.dxfConverter = options.dxfConverter || null;
       this.exportButton = options.exportButton || null;
     }
   }
@@ -428,10 +462,50 @@ export class ExportService {
   }
 
   /**
+   * Export the selected nest as DXF with the local converter, in the release from the
+   * "DXF export version" setting (AC1009 or AC1018) and the unit from "DXF export units".
+   */
+  private async exportDxfLocally(): Promise<boolean> {
+    let fileName = this.dialog!.showSaveDialogSync({
+      title: "Export deepnest DXF",
+      filters: DXF_FILE_FILTERS,
+    });
+    if (fileName === undefined) {
+      return false;
+    }
+    if (!fileName.toLowerCase().endsWith(".dxf")) {
+      fileName = fileName + ".dxf";
+    }
+    const selected = this.getSelectedNest();
+    if (!selected) {
+      return false;
+    }
+    try {
+      // The SVG keeps its true physical size; the DXF unit goes to the converter instead.
+      // "DXF export units" are units per inch (Inches = 1, mm = 25.4, Points = 72).
+      const unitsPerInch = Number(this.config?.getSync("dxfExportScale")) || 1;
+      const version = this.config?.getSync("dxfExportVersion") === "AC1018" ? "AC1018" : "AC1009";
+      const svg = strokeCssOnlyOutlines(this.buildSvgExport(selected));
+      const dxf = await this.dxfConverter!.svgToDxf(
+        Buffer.from(new XMLSerializer().serializeToString(svg)),
+        { version, mmPerUnit: 25.4 / unitsPerInch },
+      );
+      this.fs!.writeFileSync(fileName, dxf);
+      return true;
+    } catch (err) {
+      message(`Could not export the DXF: ${converterErrorText(err)}`, true);
+      return false;
+    }
+  }
+
+  /**
    * Show save dialog and export to DXF via conversion server
    * @returns Promise that resolves to true if export was successful
    */
   async exportToDxf(): Promise<boolean> {
+    if (this.dxfConverter && this.dialog && this.fs) {
+      return await this.exportDxfLocally();
+    }
     if (!this.dialog || !this.fs || !this.httpClient || !this.FormData) {
       message("Export dependencies not available", true);
       return false;
@@ -446,8 +520,7 @@ export class ExportService {
       return false;
     }
 
-    // Ensure .dxf or .dwg extension
-    if (!fileName.toLowerCase().endsWith(".dxf") && !fileName.toLowerCase().endsWith(".dwg")) {
+    if (!fileName.toLowerCase().endsWith(".dxf")) {
       fileName = fileName + ".dxf";
     }
 
@@ -460,8 +533,10 @@ export class ExportService {
     this.setExportLoading(true);
 
     try {
-      // Generate SVG with DXF scaling
-      const svgContent = this.generateSvgExport(selected, { forDxfConversion: true });
+      // Generate SVG with DXF scaling, with a default stroke for CSS-only outlines (see
+      // exportDxfLocally).
+      const svg = strokeCssOnlyOutlines(this.buildSvgExport(selected, { forDxfConversion: true }));
+      const svgContent = new XMLSerializer().serializeToString(svg);
 
       const formData = new this.FormData();
       formData.append("fileUpload", Buffer.from(svgContent), {
@@ -469,6 +544,9 @@ export class ExportService {
         contentType: "image/svg+xml",
       });
       formData.append("format", "dxf");
+      // R12 is every server's default; only ask for R2004 when chosen (servers without it
+      // answer with a readable error instead of a wrong file).
+      if (this.config?.getSync("dxfExportVersion") === "AC1018") formData.append("version", "ac1018");
 
       const response = await this.httpClient.post(url, formData.getBuffer(), {
         headers: formData.getHeaders(),
@@ -479,16 +557,13 @@ export class ExportService {
 
       // Check for error responses
       if (body.substring(0, 5) === "error") {
-        message(body, true);
+        message(escapeHtml(body), true);
         return false;
       }
 
-      if (body.includes('"error"') && body.includes('"error_id"')) {
-        const jsonErr = JSON.parse(body) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
+      const serverError = conversionServerErrorText(body);
+      if (serverError) {
+        message(serverError, true);
         return false;
       }
 
@@ -498,22 +573,11 @@ export class ExportService {
       const error = err as { response?: { data: string }; message: string };
       const errorData = error.response?.data || error.message;
 
-      if (
-        typeof errorData === "string" &&
-        errorData.includes('"error"') &&
-        errorData.includes('"error_id"')
-      ) {
-        const jsonErr = JSON.parse(errorData) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      } else {
-        message(
-          `Could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      }
+      message(
+        conversionServerErrorText(errorData) ??
+          `Could not reach the file conversion server (${escapeHtml(error.message)}). Check your internet connection and the "conversion server" setting, then try again.`,
+        true
+      );
       return false;
     } finally {
       this.setExportLoading(false);
@@ -751,12 +815,17 @@ export class ExportService {
    * @param sheetPart - Part representing the sheet
    */
   private addSheetBoundary(group: SVGGElement, sheetPart: Part): void {
+    // Its own DXF layer (SHEET): CAM setups map layers to operations, and the outline is
+    // not a part to cut or engrave. The converter reads `<g id="layer-NAME">` as layer NAME.
+    const layer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    layer.setAttribute("id", "layer-SHEET");
     sheetPart.svgelements.forEach((e) => {
       const node = e.cloneNode(false) as SVGElement;
       node.setAttribute("stroke", "#00ff00");
       node.setAttribute("fill", "none");
-      group.appendChild(node);
+      layer.appendChild(node);
     });
+    group.appendChild(layer);
   }
 
   /**

@@ -14,6 +14,7 @@ import type {
   NestViewData,
   NestingProgress,
   PartsViewData,
+  DxfConverter,
 } from "./types/index.js";
 import { IPC_CHANNELS } from "./types/index.js";
 
@@ -124,6 +125,8 @@ let FormData: new () => unknown;
 let axios: { default: { post: unknown } };
 let path: { extname: (p: string) => string; basename: (p: string) => string; dirname: (p: string) => string };
 let svgPreProcessor: { loadSvgString: (svg: string, scale: number) => { success: boolean; result: string } };
+/** Local DXF ↔ SVG (`@deepnest/dxf-converter`); `null` = use the conversion server. */
+let dxfConverter: DxfConverter | null = null;
 
 /**
  * Resize function for parts list
@@ -647,6 +650,7 @@ function initializeComponents(): void {
     httpClient: axios.default as unknown as { post: (url: string, data: Buffer, options: { headers: Record<string, string>; responseType: string }) => Promise<{ data: string }> },
     FormData: FormData as unknown as new () => { append: (name: string, value: Buffer | string, options?: { filename?: string; contentType?: string }) => void; getBuffer: () => Buffer; getHeaders: () => Record<string, string> },
     svgPreProcessor: svgPreProcessor,
+    dxfConverter: dxfConverter ?? undefined,
     config: configService as unknown as { getSync: <K extends keyof UIConfig>(key?: K) => K extends keyof UIConfig ? UIConfig[K] : UIConfig },
     deepNest: getDeepNest(),
     ractive: partsViewService.getRactive() as unknown as RactiveInstance<PartsViewData>,
@@ -665,6 +669,7 @@ function initializeComponents(): void {
     config: configService as unknown as { getSync: <K extends keyof UIConfig>(key?: K) => K extends keyof UIConfig ? UIConfig[K] : UIConfig },
     deepNest: getDeepNest(),
     svgParser: getSvgParser(),
+    dxfConverter: dxfConverter ?? undefined,
     // Note: exportButton set separately after initialization via setExportButton
   });
 
@@ -781,6 +786,12 @@ async function initialize(): Promise<void> {
   axios = require("axios") as typeof axios;
   path = require("path") as typeof path;
   svgPreProcessor = require("@deepnest/svg-preprocessor") as typeof svgPreProcessor;
+  try {
+    dxfConverter = require("@deepnest/dxf-converter") as DxfConverter;
+  } catch (err) {
+    // No prebuilt binary for this platform: DXF keeps working through the conversion server.
+    console.warn("@deepnest/dxf-converter unavailable, DXF uses the conversion server:", err);
+  }
 
   // Disable Ractive debug mode
   Ractive.DEBUG = false;

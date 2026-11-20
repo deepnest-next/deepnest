@@ -11,7 +11,14 @@ import type {
   RactiveInstance,
   PartsViewData,
 } from "../types/index.js";
-import { DEFAULT_CONVERSION_SERVER } from "../types/index.js";
+import {
+  DEFAULT_CONVERSION_SERVER,
+  conversionServerErrorText,
+  converterCannotHandle,
+  converterErrorText,
+  escapeHtml,
+  type DxfConverter,
+} from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
 
 /**
@@ -170,6 +177,8 @@ export class ImportService {
 
   /** SVG pre-processor for cleaning input */
   private svgPreProcessor: SvgPreProcessor | null = null;
+  /** Local DXF → SVG; without it DXF falls back to the conversion server. */
+  private dxfConverter: DxfConverter | null = null;
 
   /** Configuration getter */
   private config: ConfigGetter | null = null;
@@ -204,6 +213,7 @@ export class ImportService {
     httpClient?: HttpClient;
     FormData?: FormDataConstructor;
     svgPreProcessor?: SvgPreProcessor;
+    dxfConverter?: DxfConverter;
     config?: ConfigGetter;
     deepNest?: DeepNestInstance;
     ractive?: RactiveInstance<PartsViewData>;
@@ -219,6 +229,7 @@ export class ImportService {
       this.httpClient = options.httpClient || null;
       this.FormData = options.FormData || null;
       this.svgPreProcessor = options.svgPreProcessor || null;
+      this.dxfConverter = options.dxfConverter || null;
       this.config = options.config || null;
       this.deepNest = options.deepNest || null;
       this.ractive = options.ractive || null;
@@ -440,6 +451,8 @@ export class ImportService {
 
     if (ext.toLowerCase() === ".svg") {
       await this.readSvgFile(filePath);
+    } else if (this.isDxf(ext) && this.dxfConverter) {
+      await this.importDxfLocally(filePath, filename, ext);
     } else if (this.needsConversion(ext)) {
       await this.convertAndImport(filePath, filename, ext);
     }
@@ -458,7 +471,7 @@ export class ImportService {
     return new Promise<void>((resolve) => {
       this.fs!.readFile(filePath, "utf-8", (err, data) => {
         if (err) {
-          message("An error occurred reading the file: " + err.message, true);
+          message("An error occurred reading the file: " + escapeHtml(err.message), true);
           resolve();
           return;
         }
@@ -476,6 +489,39 @@ export class ImportService {
         }
       });
     });
+  }
+
+  /**
+   * Convert a DXF to SVG locally (`@deepnest/dxf-converter`) and import it. The SVG comes
+   * back in mm with width/height/viewBox and Y already flipped, so it imports at true size
+   * without the DXF scaling factor or the svgparser's DXF arc special case.
+   */
+  private async importDxfLocally(filePath: string, filename: string, ext: string): Promise<void> {
+    let result: Awaited<ReturnType<DxfConverter["dxfToSvg"]>>;
+    try {
+      // "DXF import units" are points per drawing unit; they only apply to DXF files
+      // without their own units ($INSUNITS), which includes every R12 file.
+      const pointsPerUnit = Number(this.config?.getSync("dxfImportScale")) || 1;
+      result = await this.dxfConverter!.dxfToSvg(this.fs!.readFileSync(filePath), {
+        unitlessMmPerUnit: (pointsPerUnit * 25.4) / 72,
+      });
+    } catch (err) {
+      if (converterCannotHandle(err)) {
+        // e.g. a DWG saved as .dxf: the conversion server reads DWG.
+        await this.convertAndImport(filePath, filename, ext);
+        return;
+      }
+      message(`Could not import ${escapeHtml(filename)}: ${converterErrorText(err)}`, true);
+      return;
+    }
+    for (const w of result.warnings) console.warn(`[dxf import] ${filename}: ${w}`);
+    console.info(`[dxf import] ${filename}: units ${result.sourceUnits}`);
+    // Geometry was dropped (undecodable records, a drawing cut off at the size limit): say so.
+    const lost = result.warnings.filter((w) => /skipped|cut off|missing block/i.test(w));
+    if (lost.length) {
+      message(`${escapeHtml(filename)} was imported, but not completely: ${escapeHtml(lost.join(" "))}`);
+    }
+    this.processSvgData(result.svg, filename, null);
   }
 
   /**
@@ -515,16 +561,13 @@ export class ImportService {
 
       // Check for error responses
       if (body.substring(0, 5) === "error") {
-        message(body, true);
+        message(escapeHtml(body), true);
         return;
       }
 
-      if (body.includes('"error"') && body.includes('"error_id"')) {
-        const jsonErr = JSON.parse(body) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
+      const serverError = conversionServerErrorText(body);
+      if (serverError) {
+        message(serverError, true);
         return;
       }
 
@@ -544,22 +587,11 @@ export class ImportService {
       const error = err as { response?: { data: string }; message: string };
       const errorData = error.response?.data || error.message;
 
-      if (
-        typeof errorData === "string" &&
-        errorData.includes('"error"') &&
-        errorData.includes('"error_id"')
-      ) {
-        const jsonErr = JSON.parse(errorData) as { error_id: string };
-        message(
-          `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      } else {
-        message(
-          `Could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
-        );
-      }
+      message(
+        conversionServerErrorText(errorData) ??
+          `Could not reach the file conversion server (${escapeHtml(error.message)}). Check your internet connection and the "conversion server" setting, then try again.`,
+        true
+      );
     }
   }
 
@@ -587,14 +619,14 @@ export class ImportService {
         const svgResult = this.svgPreProcessor.loadSvgString(data, scale);
 
         if (!svgResult.success) {
-          message(svgResult.result, true);
+          message(escapeHtml(String(svgResult.result)), true);
           return;
         }
 
         this.importData(svgResult.result, filename, dirpath, scalingFactor, dxfFlag);
       } catch (e) {
         const error = e as Error;
-        message("Error processing SVG: " + error.message, true);
+        message("Error processing SVG: " + escapeHtml(error.message), true);
       }
     } else {
       this.importData(data, filename, dirpath, scalingFactor, dxfFlag);
@@ -695,14 +727,14 @@ export class ImportService {
         const svgResult = this.svgPreProcessor.loadSvgString(svgString, scale);
 
         if (!svgResult.success) {
-          message(svgResult.result, true);
+          message(escapeHtml(String(svgResult.result)), true);
           return null;
         }
 
         processedData = svgResult.result;
       } catch (e) {
         const error = e as Error;
-        message("Error processing SVG: " + error.message, true);
+        message("Error processing SVG: " + escapeHtml(error.message), true);
         return null;
       }
     }

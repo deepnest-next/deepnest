@@ -55,6 +55,8 @@ export type DeepNestConfig = {
   dxfImportScale: number;
   /** Scale factor for DXF export */
   dxfExportScale: number;
+  /** DXF release written on export: R12 (AC1009) or R2004 (AC1018), nothing else */
+  dxfExportVersion: "AC1009" | "AC1018";
   /** Tolerance for endpoint matching when closing paths */
   endpointTolerance: number;
   /** URL of the file conversion server for DXF/DWG support */
