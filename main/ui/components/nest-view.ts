@@ -367,11 +367,15 @@ export class NestViewService {
   }
 
   private applyView(): void {
+    const svg = getElement<SVGSVGElement>(SELECTORS.NEST_SVG);
+    if (!svg) return;
     const v = this.view ?? this.fullView;
-    getElement<SVGSVGElement>(SELECTORS.NEST_SVG)?.setAttribute(
-      "viewBox",
-      `${v.x} ${v.y} ${v.w} ${v.h}`,
-    );
+    svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+    // Keep the hatch spacing the same on screen at every zoom level
+    const k = this.fullView.w ? v.w / this.fullView.w : 1;
+    svg.querySelectorAll("pattern").forEach((pattern) => {
+      pattern.setAttribute("patternTransform", `scale(${k})`);
+    });
   }
 
   /**
