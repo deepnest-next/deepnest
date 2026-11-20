@@ -1282,8 +1282,9 @@ body.dark-mode #parts table tbody tr td input[type="number"]:focus {
   bottom: 0;
   overflow: hidden;
   height: calc(100% - 2 * (var(--nav-width) - 0.625em));
-  /* same distance from the right edge as #nestinfo has from the left */
-  padding-right: 5%;
+  /* same distance from the right edge as #nestinfo has from the left,
+     and the same gap at the bottom as at the top */
+  padding: 0 5% calc(var(--nav-width) - 0.625em) 0;
   box-sizing: border-box;
   cursor: grab;
   touch-action: none;
@@ -1297,7 +1298,8 @@ body.dark-mode #parts table tbody tr td input[type="number"]:focus {
   width: 100%;
   height: 100%;
   display: block;
-  overflow: visible;
+  /* clip a zoomed layout at the view, so the margins stay empty */
+  overflow: hidden;
 }
 
 #nestzoom {
