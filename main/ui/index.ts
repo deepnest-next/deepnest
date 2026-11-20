@@ -60,7 +60,7 @@ import {
 
 // Utility imports
 import { message } from "./utils/ui-helpers.js";
-import { getElement, getElements } from "./utils/dom-utils.js";
+import { getElement } from "./utils/dom-utils.js";
 
 /**
  * IPC renderer interface for Electron communication
@@ -176,7 +176,8 @@ let svgPreProcessor: {
 
 /**
  * Resize function for parts list
- * Adjusts the parts table headers when resizing
+ * Header spans are not pinned to pixel widths: that kept the columns from
+ * shrinking again after the panel had been widened (#161).
  */
 function resize(event?: { rect: { width: number } }): void {
   const parts = getElement<HTMLElement>("#parts");
@@ -184,14 +185,6 @@ function resize(event?: { rect: { width: number } }): void {
   if (event && parts) {
     parts.style.width = event.rect.width + "px";
   }
-
-  const headers = getElements<HTMLTableCellElement>("#parts table th");
-  headers.forEach((th) => {
-    const span = th.querySelector("span");
-    if (span) {
-      (span as HTMLElement).style.width = th.offsetWidth + "px";
-    }
-  });
 }
 
 /**
@@ -630,13 +623,6 @@ function initializePartsResize(): void {
       edges: { left: false, right: true, bottom: false, top: false },
     })
     .on("resizemove", resize);
-
-  window.addEventListener("resize", () => {
-    resize();
-  });
-
-  // Initial resize
-  resize();
 }
 
 /**
