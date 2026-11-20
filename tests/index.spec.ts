@@ -7,7 +7,14 @@ import {
 } from "@playwright/test";
 import { OpenDialogReturnValue } from "electron";
 import { existsSync } from "node:fs";
-import { appendFile, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
+import {
+  appendFile,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "path";
@@ -36,8 +43,10 @@ test("Nest", async ({}, testInfo) => {
   );
   const electronApp = await electron.launch({
     args: ["main.js", `--user-data-dir=${userData}`],
-    // No `recordVideo`: with Playwright 1.57 + Electron 40 the window then never loads
-    // (blank URL), so every locator times out. Traces still record on retry.
+    // No `recordVideo`: with Playwright 1.65 + Electron 45 the main window then never
+    // fires `ready-to-show`, so it stays hidden, the background window is never created
+    // and the test times out (1.57 + Electron 40 showed a blank window). Traces still
+    // record on retry.
   });
 
   const mainWindow = await electronApp.firstWindow();
