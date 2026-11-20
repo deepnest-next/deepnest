@@ -224,7 +224,7 @@ test("Nest", async ({}, testInfo) => {
 
   await test.step("Attachments", async () => {
     const svg = await downloadSvg();
-    const data = (): Promise<NestingResult> =>
+    const data = (): Promise<NestingResult[]> =>
       mainWindow.evaluate(() => window.DeepNest.nests);
 
     await testInfo.attach("nesting.svg", {
