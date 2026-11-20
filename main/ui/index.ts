@@ -18,17 +18,45 @@ import type {
 import { IPC_CHANNELS } from "./types/index.js";
 
 // Service imports
-import { ConfigService, createConfigService, BOOLEAN_CONFIG_KEYS } from "./services/config.service.js";
-import { PresetService, createPresetService } from "./services/preset.service.js";
-import { ImportService, createImportService } from "./services/import.service.js";
-import { ExportService, createExportService } from "./services/export.service.js";
-import { NestingService, createNestingService } from "./services/nesting.service.js";
+import {
+  ConfigService,
+  createConfigService,
+  BOOLEAN_CONFIG_KEYS,
+} from "./services/config.service.js";
+import {
+  PresetService,
+  createPresetService,
+} from "./services/preset.service.js";
+import {
+  ImportService,
+  createImportService,
+} from "./services/import.service.js";
+import {
+  ExportService,
+  createExportService,
+} from "./services/export.service.js";
+import {
+  NestingService,
+  createNestingService,
+} from "./services/nesting.service.js";
 
 // Component imports
-import { NavigationService, createNavigationService } from "./components/navigation.js";
-import { PartsViewService, createPartsViewService } from "./components/parts-view.js";
-import { NestViewService, createNestViewService } from "./components/nest-view.js";
-import { SheetDialogService, createSheetDialogService } from "./components/sheet-dialog.js";
+import {
+  NavigationService,
+  createNavigationService,
+} from "./components/navigation.js";
+import {
+  PartsViewService,
+  createPartsViewService,
+} from "./components/parts-view.js";
+import {
+  NestViewService,
+  createNestViewService,
+} from "./components/nest-view.js";
+import {
+  SheetDialogService,
+  createSheetDialogService,
+} from "./components/sheet-dialog.js";
 
 // Utility imports
 import { message } from "./utils/ui-helpers.js";
@@ -40,7 +68,10 @@ import { getElement, getElements } from "./utils/dom-utils.js";
 interface IpcRenderer {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>;
   send(channel: string, ...args: unknown[]): void;
-  on(channel: string, listener: (event: unknown, ...args: unknown[]) => void): void;
+  on(
+    channel: string,
+    listener: (event: unknown, ...args: unknown[]) => void,
+  ): void;
 }
 
 /**
@@ -54,8 +85,14 @@ type ConfigResult = UIConfig;
  */
 declare const Ractive: { DEBUG: boolean };
 declare const interact: (selector: string) => {
-  resizable(options: { preserveAspectRatio: boolean; edges: { left: boolean; right: boolean; bottom: boolean; top: boolean } }): {
-    on(event: string, handler: (event: { rect: { width: number } }) => void): void;
+  resizable(options: {
+    preserveAspectRatio: boolean;
+    edges: { left: boolean; right: boolean; bottom: boolean; top: boolean };
+  }): {
+    on(
+      event: string,
+      handler: (event: { rect: { width: number } }) => void,
+    ): void;
   };
 };
 
@@ -118,12 +155,24 @@ let sheetDialogService: SheetDialogService;
  * Electron and Node.js module references
  */
 let ipcRenderer: IpcRenderer;
-let electronRemote: { dialog: { showOpenDialog: unknown; showSaveDialogSync: unknown }; getGlobal: (name: string) => string | undefined };
+let electronRemote: {
+  dialog: { showOpenDialog: unknown; showSaveDialogSync: unknown };
+  getGlobal: (name: string) => string | undefined;
+};
 let fs: unknown;
 let FormData: new () => unknown;
 let axios: { default: { post: unknown } };
-let path: { extname: (p: string) => string; basename: (p: string) => string; dirname: (p: string) => string };
-let svgPreProcessor: { loadSvgString: (svg: string, scale: number) => { success: boolean; result: string } };
+let path: {
+  extname: (p: string) => string;
+  basename: (p: string) => string;
+  dirname: (p: string) => string;
+};
+let svgPreProcessor: {
+  loadSvgString: (
+    svg: string,
+    scale: number,
+  ) => { success: boolean; result: string };
+};
 
 /**
  * Resize function for parts list
@@ -153,9 +202,9 @@ function updateForm(c: UIConfig): void {
   // Update unit radio buttons
   let unitInput: HTMLInputElement | null;
   if (c.units === "inch") {
-    unitInput = document.querySelector('#configform input[value=inch]');
+    unitInput = document.querySelector("#configform input[value=inch]");
   } else {
-    unitInput = document.querySelector('#configform input[value=mm]');
+    unitInput = document.querySelector("#configform input[value=mm]");
   }
 
   if (unitInput) {
@@ -190,7 +239,9 @@ function updateForm(c: UIConfig): void {
       return;
     }
 
-    const key = inputElement.getAttribute("data-config") as keyof UIConfig | null;
+    const key = inputElement.getAttribute("data-config") as
+      | keyof UIConfig
+      | null;
     if (!key) {
       return;
     }
@@ -298,7 +349,10 @@ function initializePresetModal(): void {
       }
 
       try {
-        await presetService.savePreset(name, configService.getSync() as unknown as ConfigResult);
+        await presetService.savePreset(
+          name,
+          configService.getSync() as unknown as ConfigResult,
+        );
         presetModal.style.display = "none";
         document.body.classList.remove("modal-open");
         await loadPresetList();
@@ -327,8 +381,12 @@ function initializePresetModal(): void {
 
         if (presetConfig) {
           // Preserve user profile
-          const tempAccess = configService.getSync("access_token") as string | undefined;
-          const tempId = configService.getSync("id_token") as string | undefined;
+          const tempAccess = configService.getSync("access_token") as
+            | string
+            | undefined;
+          const tempId = configService.getSync("id_token") as
+            | string
+            | undefined;
 
           // Apply preset settings
           configService.setSync(presetConfig);
@@ -366,7 +424,11 @@ function initializePresetModal(): void {
         return;
       }
 
-      if (confirm(`Are you sure you want to delete the preset "${selectedPreset}"?`)) {
+      if (
+        confirm(
+          `Are you sure you want to delete the preset "${selectedPreset}"?`,
+        )
+      ) {
         try {
           await presetService.deletePreset(selectedPreset);
           await loadPresetList();
@@ -399,7 +461,9 @@ function initializeConfigForm(): void {
 
     inputElement.addEventListener("change", () => {
       let val: string | number | boolean = inputElement.value;
-      const key = inputElement.getAttribute("data-config") as keyof UIConfig | null;
+      const key = inputElement.getAttribute("data-config") as
+        | keyof UIConfig
+        | null;
 
       if (!key) {
         return;
@@ -477,7 +541,9 @@ function initializeConfigForm(): void {
       e.preventDefault();
 
       // Preserve user profile
-      const tempAccess = configService.getSync("access_token") as string | undefined;
+      const tempAccess = configService.getSync("access_token") as
+        | string
+        | undefined;
       const tempId = configService.getSync("id_token") as string | undefined;
 
       configService.resetToDefaultsSync();
@@ -511,15 +577,18 @@ function initializeConfigForm(): void {
  * Initialize background progress handler
  */
 function initializeBackgroundProgress(): void {
-  ipcRenderer.on(IPC_CHANNELS.BACKGROUND_PROGRESS, (_event: unknown, ...args: unknown[]) => {
-    const p = args[0] as NestingProgress;
-    const bar = getElement<HTMLElement>("#progressbar");
-    if (bar) {
-      const progress = p.progress;
-      const style = `width: ${parseInt(String(progress * 100))}%${progress < 0.01 ? "; transition: none" : ""}`;
-      bar.setAttribute("style", style);
-    }
-  });
+  ipcRenderer.on(
+    IPC_CHANNELS.BACKGROUND_PROGRESS,
+    (_event: unknown, ...args: unknown[]) => {
+      const p = args[0] as NestingProgress;
+      const bar = getElement<HTMLElement>("#progressbar");
+      if (bar) {
+        const progress = p.progress;
+        const style = `width: ${parseInt(String(progress * 100))}%${progress < 0.01 ? "; transition: none" : ""}`;
+        bar.setAttribute("style", style);
+      }
+    },
+  );
 }
 
 /**
@@ -591,7 +660,13 @@ function initializeVersionInfo(): void {
 async function initializeServices(): Promise<void> {
   // Create config service and set up window.config
   configService = await createConfigService(ipcRenderer);
-  (window as unknown as { config: unknown; nest: unknown; loginWindow: unknown }).config = configService as unknown as ConfigObject;
+  (
+    window as unknown as {
+      config: unknown;
+      nest: unknown;
+      loginWindow: unknown;
+    }
+  ).config = configService as unknown as ConfigObject;
 
   // Create preset service
   presetService = createPresetService(ipcRenderer);
@@ -626,7 +701,13 @@ function initializeComponents(): void {
   nestViewService.initialize();
 
   // Set window.nest reference for backward compatibility
-  (window as unknown as { config: unknown; nest: unknown; loginWindow: unknown }).nest = nestViewService.getRactive();
+  (
+    window as unknown as {
+      config: unknown;
+      nest: unknown;
+      loginWindow: unknown;
+    }
+  ).nest = nestViewService.getRactive();
 
   // Initialize sheet dialog
   sheetDialogService = createSheetDialogService({
@@ -640,16 +721,49 @@ function initializeComponents(): void {
 
   // Initialize import service
   importService = createImportService({
-    dialog: electronRemote.dialog as unknown as { showOpenDialog: (options: unknown) => Promise<{ canceled: boolean; filePaths: string[] }> },
-    remote: electronRemote as unknown as { getGlobal: (name: string) => string | undefined },
-    fs: fs as unknown as { readFileSync: (path: string) => Buffer; readFile: (path: string, encoding: string, callback: (err: Error | null, data: string) => void) => void; readdirSync: (path: string) => string[] },
+    dialog: electronRemote.dialog as unknown as {
+      showOpenDialog: (
+        options: unknown,
+      ) => Promise<{ canceled: boolean; filePaths: string[] }>;
+    },
+    remote: electronRemote as unknown as {
+      getGlobal: (name: string) => string | undefined;
+    },
+    fs: fs as unknown as {
+      readFileSync: (path: string) => Buffer;
+      readFile: (
+        path: string,
+        encoding: string,
+        callback: (err: Error | null, data: string) => void,
+      ) => void;
+      readdirSync: (path: string) => string[];
+    },
     path: path,
-    httpClient: axios.default as unknown as { post: (url: string, data: Buffer, options: { headers: Record<string, string>; responseType: string }) => Promise<{ data: string }> },
-    FormData: FormData as unknown as new () => { append: (name: string, value: Buffer | string, options?: { filename?: string; contentType?: string }) => void; getBuffer: () => Buffer; getHeaders: () => Record<string, string> },
+    httpClient: axios.default as unknown as {
+      post: (
+        url: string,
+        data: Buffer,
+        options: { headers: Record<string, string>; responseType: string },
+      ) => Promise<{ data: string }>;
+    },
+    FormData: FormData as unknown as new () => {
+      append: (
+        name: string,
+        value: Buffer | string,
+        options?: { filename?: string; contentType?: string },
+      ) => void;
+      getBuffer: () => Buffer;
+      getHeaders: () => Record<string, string>;
+    },
     svgPreProcessor: svgPreProcessor,
-    config: configService as unknown as { getSync: <K extends keyof UIConfig>(key?: K) => K extends keyof UIConfig ? UIConfig[K] : UIConfig },
+    config: configService as unknown as {
+      getSync: <K extends keyof UIConfig>(
+        key?: K,
+      ) => K extends keyof UIConfig ? UIConfig[K] : UIConfig;
+    },
     deepNest: getDeepNest(),
-    ractive: partsViewService.getRactive() as unknown as RactiveInstance<PartsViewData>,
+    ractive:
+      partsViewService.getRactive() as unknown as RactiveInstance<PartsViewData>,
     attachSortCallback: () => partsViewService.attachSort(),
     applyZoomCallback: () => partsViewService.applyZoom(),
     resizeCallback: resize,
@@ -657,12 +771,39 @@ function initializeComponents(): void {
 
   // Initialize export service
   exportService = createExportService({
-    dialog: electronRemote.dialog as unknown as { showSaveDialogSync: (options: { title: string; filters: { name: string; extensions: string[] }[] }) => string | undefined },
-    remote: electronRemote as unknown as { getGlobal: (name: string) => string | undefined },
-    fs: fs as unknown as { writeFileSync: (path: string, data: string) => void },
-    httpClient: axios.default as unknown as { post: (url: string, data: Buffer, options: { headers: Record<string, string>; responseType: string }) => Promise<{ data: string }> },
-    FormData: FormData as unknown as new () => { append: (name: string, value: Buffer | string, options?: { filename?: string; contentType?: string }) => void; getBuffer: () => Buffer; getHeaders: () => Record<string, string> },
-    config: configService as unknown as { getSync: <K extends keyof UIConfig>(key?: K) => K extends keyof UIConfig ? UIConfig[K] : UIConfig },
+    dialog: electronRemote.dialog as unknown as {
+      showSaveDialogSync: (options: {
+        title: string;
+        filters: { name: string; extensions: string[] }[];
+      }) => string | undefined;
+    },
+    remote: electronRemote as unknown as {
+      getGlobal: (name: string) => string | undefined;
+    },
+    fs: fs as unknown as {
+      writeFileSync: (path: string, data: string) => void;
+    },
+    httpClient: axios.default as unknown as {
+      post: (
+        url: string,
+        data: Buffer,
+        options: { headers: Record<string, string>; responseType: string },
+      ) => Promise<{ data: string }>;
+    },
+    FormData: FormData as unknown as new () => {
+      append: (
+        name: string,
+        value: Buffer | string,
+        options?: { filename?: string; contentType?: string },
+      ) => void;
+      getBuffer: () => Buffer;
+      getHeaders: () => Record<string, string>;
+    },
+    config: configService as unknown as {
+      getSync: <K extends keyof UIConfig>(
+        key?: K,
+      ) => K extends keyof UIConfig ? UIConfig[K] : UIConfig;
+    },
     deepNest: getDeepNest(),
     svgParser: getSvgParser(),
     // Note: exportButton set separately after initialization via setExportButton
@@ -672,13 +813,23 @@ function initializeComponents(): void {
   const exportButton = getElement<HTMLElement>("#export");
   if (exportButton) {
     // Cast is safe: HTMLElement has className property which is what ExportButtonElement adds
-    exportService.setExportButton(exportButton as HTMLElement & { className: string });
+    exportService.setExportButton(
+      exportButton as HTMLElement & { className: string },
+    );
   }
 
   // Initialize nesting service
   nestingService = createNestingService({
-    fs: fs as unknown as { existsSync: (path: string) => boolean; readdirSync: (path: string) => string[]; lstatSync: (path: string) => { isDirectory: () => boolean }; unlinkSync: (path: string) => void; rmdirSync: (path: string) => void },
-    ipcRenderer: ipcRenderer as unknown as { send: (channel: string, ...args: unknown[]) => void },
+    fs: fs as unknown as {
+      existsSync: (path: string) => boolean;
+      readdirSync: (path: string) => string[];
+      lstatSync: (path: string) => { isDirectory: () => boolean };
+      unlinkSync: (path: string) => void;
+      rmdirSync: (path: string) => void;
+    },
+    ipcRenderer: ipcRenderer as unknown as {
+      send: (channel: string, ...args: unknown[]) => void;
+    },
     deepNest: getDeepNest(),
     // Note: nestRactive set separately to avoid type conflicts
     displayNestFn: nestViewService.getDisplayNestCallback(),
@@ -688,7 +839,9 @@ function initializeComponents(): void {
   // Set nestRactive separately to avoid type conflicts
   const nestRactive = nestViewService.getRactive();
   if (nestRactive) {
-    nestingService.setNestRactive(nestRactive as unknown as RactiveInstance<NestViewData>);
+    nestingService.setNestRactive(
+      nestRactive as unknown as RactiveInstance<NestViewData>,
+    );
   }
 
   nestingService.bindEventHandlers();
@@ -701,7 +854,10 @@ function initializeImportButton(): void {
   const importButton = getElement<HTMLElement>("#import");
   if (importButton) {
     importButton.onclick = async () => {
-      if (importButton.className.includes("disabled") || importButton.className.includes("spinner")) {
+      if (
+        importButton.className.includes("disabled") ||
+        importButton.className.includes("spinner")
+      ) {
         return false;
       }
 
@@ -780,7 +936,8 @@ async function initialize(): Promise<void> {
   FormData = require("form-data") as typeof FormData;
   axios = require("axios") as typeof axios;
   path = require("path") as typeof path;
-  svgPreProcessor = require("@deepnest/svg-preprocessor") as typeof svgPreProcessor;
+  svgPreProcessor =
+    require("@deepnest/svg-preprocessor") as typeof svgPreProcessor;
 
   // Disable Ractive debug mode
   Ractive.DEBUG = false;
@@ -809,7 +966,13 @@ async function initialize(): Promise<void> {
   await loadInitialFiles();
 
   // Set up loginWindow reference
-  (window as unknown as { config: unknown; nest: unknown; loginWindow: unknown }).loginWindow = null;
+  (
+    window as unknown as {
+      config: unknown;
+      nest: unknown;
+      loginWindow: unknown;
+    }
+  ).loginWindow = null;
 }
 
 // Start initialization when DOM is ready
