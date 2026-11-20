@@ -42,15 +42,12 @@ interface NestViewRactiveInstance {
   /** Set a value in the data context */
   set<K extends keyof NestViewData>(
     keypath: K,
-    value: NestViewData[K]
+    value: NestViewData[K],
   ): Promise<void>;
   /** Register an event handler with Ractive-specific event signature */
   on(
     eventName: string,
-    handler: (
-      event: RactiveEvent,
-      ...args: unknown[]
-    ) => boolean | void
+    handler: (event: RactiveEvent, ...args: unknown[]) => boolean | void,
   ): void;
 }
 
@@ -150,6 +147,12 @@ export class NestViewService {
   /** Flag to track if service has been initialized */
   private initialized = false;
 
+  /** Extent of the whole layout, in SVG units */
+  private fullView = { x: 0, y: 0, w: 0, h: 0 };
+
+  /** viewBox after the user zoomed or dragged; null = fit the whole layout */
+  private view: { x: number; y: number; w: number; h: number } | null = null;
+
   /**
    * Create a new NestViewService instance
    * @param options - Configuration options
@@ -176,6 +179,7 @@ export class NestViewService {
         setInnerHtml(nestDisplay, serializeSvg(newSvg));
       }
       svg = getElement<SVGSVGElement>(SELECTORS.NEST_SVG);
+      this.view = null;
     }
 
     if (!svg) {
@@ -230,12 +234,15 @@ export class NestViewService {
       }
 
       // Reset class (make visible)
-      groupElement.setAttribute("class", `${CSS_CLASSES.SHEET} ${CSS_CLASSES.ACTIVE}`);
+      groupElement.setAttribute(
+        "class",
+        `${CSS_CLASSES.SHEET} ${CSS_CLASSES.ACTIVE}`,
+      );
 
       const sheetBounds: Bounds = this.deepNest.parts[s.sheet].bounds;
       groupElement.setAttribute(
         "transform",
-        createTranslate(-sheetBounds.x, svgHeight - sheetBounds.y)
+        createTranslate(-sheetBounds.x, svgHeight - sheetBounds.y),
       );
       if (svgWidth < sheetBounds.width) {
         svgWidth = sheetBounds.width;
@@ -270,7 +277,7 @@ export class NestViewService {
             pattern.setAttribute("patternUnits", "userSpaceOnUse");
 
             let psize = parseInt(
-              String(this.deepNest.parts[s.sheet].bounds.width / 120)
+              String(this.deepNest.parts[s.sheet].bounds.width / 120),
             );
             psize = psize || 10;
 
@@ -280,12 +287,12 @@ export class NestViewService {
             const path = createSvgElement("path");
             path.setAttribute(
               "d",
-              `M-1,1 l2,-2 M0,${psize} l${psize},-${psize} M${psize - 1},${psize + 1} l2,-2`
+              `M-1,1 l2,-2 M0,${psize} l${psize},-${psize} M${psize - 1},${psize + 1} l2,-2`,
             );
             const hue = 360 * (p.source / this.deepNest.parts.length);
             path.setAttribute(
               "style",
-              `stroke: hsl(${hue}, 100%, 80%) !important; stroke-width:1`
+              `stroke: hsl(${hue}, 100%, 80%) !important; stroke-width:1`,
             );
             pattern.appendChild(path);
 
@@ -302,7 +309,7 @@ export class NestViewService {
           // Reset class (make visible)
           partElement.setAttribute(
             "class",
-            `${CSS_CLASSES.PART} ${CSS_CLASSES.ACTIVE}`
+            `${CSS_CLASSES.PART} ${CSS_CLASSES.ACTIVE}`,
           );
 
           // Position part with CSS transform
@@ -311,8 +318,8 @@ export class NestViewService {
             `transform: ${createCssTransform(
               p.x - sheetBounds.x,
               p.y + svgHeight - sheetBounds.y,
-              p.rotation
-            )}`
+              p.rotation,
+            )}`,
           );
 
           // Add merge lines if present
@@ -344,12 +351,103 @@ export class NestViewService {
       });
     }, 1500);
 
-    // Set SVG viewBox
-    setAttributes(svg, {
-      width: "100%",
-      height: "100%",
-      viewBox: `0 0 ${svgWidth} ${svgHeight}`,
+    // Fit the whole layout unless the user zoomed or dragged
+    setAttributes(svg, { width: "100%", height: "100%" });
+    this.fullView = { x: 0, y: 0, w: svgWidth, h: svgHeight };
+    this.applyView();
+  }
+
+  private applyView(): void {
+    const v = this.view ?? this.fullView;
+    getElement<SVGSVGElement>(SELECTORS.NEST_SVG)?.setAttribute(
+      "viewBox",
+      `${v.x} ${v.y} ${v.w} ${v.h}`,
+    );
+  }
+
+  /**
+   * Zoom the nest view around a screen point (default: its centre)
+   * @param factor - viewBox scale; below 1 zooms in
+   */
+  private zoom(factor: number, clientX?: number, clientY?: number): void {
+    const svg = getElement<SVGSVGElement>(SELECTORS.NEST_SVG);
+    const m = svg?.getScreenCTM();
+    if (!svg || !m) return;
+    const v = this.view ?? this.fullView;
+    const w = v.w * factor;
+    if (w < this.fullView.w / 500 || w > this.fullView.w * 20) return;
+    const r = svg.getBoundingClientRect();
+    const p = new DOMPoint(
+      clientX ?? r.x + r.width / 2,
+      clientY ?? r.y + r.height / 2,
+    ).matrixTransform(m.inverse());
+    this.view = {
+      x: p.x - (p.x - v.x) * factor,
+      y: p.y - (p.y - v.y) * factor,
+      w,
+      h: v.h * factor,
+    };
+    this.applyView();
+  }
+
+  /**
+   * Wheel zoom, drag to pan, double-click and the zoom buttons for the nest view
+   */
+  private bindZoomEvents(): void {
+    const display = getElement<HTMLElement>(SELECTORS.NEST_DISPLAY);
+    if (!display) return;
+
+    display.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        this.zoom(Math.exp(e.deltaY * 0.002), e.clientX, e.clientY);
+      },
+      { passive: false },
+    );
+
+    let drag: { x: number; y: number; scale: number } | null = null;
+    display.addEventListener("pointerdown", (e) => {
+      const m = getElement<SVGSVGElement>(SELECTORS.NEST_SVG)?.getScreenCTM();
+      if (e.button !== 0 || !m) return;
+      drag = { x: e.clientX, y: e.clientY, scale: m.a };
+      this.view = this.view ?? { ...this.fullView };
+      display.setPointerCapture(e.pointerId);
     });
+    display.addEventListener("pointermove", (e) => {
+      if (!drag || !this.view) return;
+      this.view.x -= (e.clientX - drag.x) / drag.scale;
+      this.view.y -= (e.clientY - drag.y) / drag.scale;
+      drag.x = e.clientX;
+      drag.y = e.clientY;
+      this.applyView();
+    });
+    const endDrag = () => {
+      drag = null;
+    };
+    display.addEventListener("pointerup", endDrag);
+    display.addEventListener("pointercancel", endDrag);
+
+    const reset = () => {
+      this.view = null;
+      this.applyView();
+    };
+    display.addEventListener("dblclick", reset);
+
+    const buttons: Record<string, () => void> = {
+      zoomin: () => this.zoom(0.8),
+      zoomout: () => this.zoom(1.25),
+      zoomreset: reset,
+    };
+    for (const [cls, fn] of Object.entries(buttons)) {
+      getElement<HTMLElement>(`#nestzoom .${cls}`)?.addEventListener(
+        "click",
+        (e) => {
+          e.preventDefault();
+          fn();
+        },
+      );
+    }
   }
 
   /**
@@ -389,7 +487,7 @@ export class NestViewService {
         }): string {
           const ne = this.get("nests");
           const selected = ne.filter(
-            (n: SelectableNestingResult) => n.selected
+            (n: SelectableNestingResult) => n.selected,
           );
 
           if (selected.length === 0) {
@@ -426,7 +524,7 @@ export class NestViewService {
         }): string {
           const ne = this.get("nests");
           const selected = ne.filter(
-            (n: SelectableNestingResult) => n.selected
+            (n: SelectableNestingResult) => n.selected,
           );
 
           if (selected.length === 0) {
@@ -474,7 +572,7 @@ export class NestViewService {
         // Update UI
         this.update();
         this.displayNest(n);
-      }
+      },
     );
   }
 
@@ -498,6 +596,7 @@ export class NestViewService {
 
     this.initializeRactive();
     this.bindRactiveEvents();
+    this.bindZoomEvents();
 
     this.initialized = true;
   }
@@ -534,7 +633,9 @@ export class NestViewService {
  * @param options - Configuration options
  * @returns New NestViewService instance
  */
-export function createNestViewService(options: NestViewOptions): NestViewService {
+export function createNestViewService(
+  options: NestViewOptions,
+): NestViewService {
   return NestViewService.create(options);
 }
 
@@ -555,7 +656,7 @@ export function createNestViewService(options: NestViewOptions): NestViewService
  */
 export function initializeNestView(
   deepNest: DeepNestInstance,
-  config: ConfigObject
+  config: ConfigObject,
 ): NestViewService {
   const service = new NestViewService({ deepNest, config });
   service.initialize();

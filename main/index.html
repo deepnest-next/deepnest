@@ -91,6 +91,11 @@
 
       <div id="nestcontent"></div>
       <div id="nestdisplay"></div>
+      <div id="nestzoom" class="zoomtools">
+        <a href="#" class="zoomreset" title="Fit all"></a>
+        <a href="#" class="zoomin" title="Zoom in"></a>
+        <a href="#" class="zoomout" title="Zoom out"></a>
+      </div>
 
       <script id="nest-template" type="text/ractive">
         <div id="nestinfo" class='{{ nests.length > 0 ? "active" : "" }}'>
@@ -467,8 +472,10 @@
             </dd>
             <dt>
               Show product &amp; update notifications
-              <small><br \ />fetched from deepnest.net; uncheck to stay fully
-              offline</small>
+              <small
+                ><br \ />fetched from deepnest.net; uncheck to stay fully
+                offline</small
+              >
             </dt>
             <dd>
               <input type="checkbox" data-config="showNotifications" />
