@@ -13,6 +13,9 @@ import { devices, defineConfig } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests",
+  // The workspace window has its own config (playwright.workspace.config.ts) and needs a
+  // running rust-api-server; see workspace/README.md.
+  testIgnore: ["workspace/**"],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

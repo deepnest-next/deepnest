@@ -6,6 +6,9 @@ const os = require("os");
 const url = require("url");
 const { loadPresets, savePreset, deletePreset } = require("./presets");
 const NotificationService = require('./notification-service');
+// Workspace window (beta): the shared workspace UI, opened with `--workspace`.
+const workspace = require("./workspace");
+workspace.registerWorkspace();
 require("events").EventEmitter.defaultMaxListeners = 30;
 
 app.on('render-process-gone', (event, webContents, details) => { console.error('Render process gone:', event, webContents, details); });
@@ -301,6 +304,10 @@ function createBackgroundWindows() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
+  if (workspace.workspaceRequested()) {
+    workspace.openWorkspaceWindow();
+    return;
+  }
   createMainWindow();
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
@@ -328,7 +335,7 @@ app.on("window-all-closed", function () {
 app.on("activate", function () {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
+  if (mainWindow === null && !workspace.workspaceRequested()) {
     createMainWindow();
   }
 });

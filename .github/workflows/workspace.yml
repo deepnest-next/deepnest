@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: MIT
+# End-to-end tests of the workspace window (Electron shell of the shared workspace UI)
+# against a real rust-api-server. Needs the secret DEEPNEST_REPOS_TOKEN (read access to
+# deepnest-next/rust-api-server, rust-nesting-lib and workspace-ui releases).
+name: Workspace window
+on:
+  pull_request:
+    paths: ["workspace/**", "main.js", "workspace-ui.lock", "tests/workspace/**", ".github/workflows/workspace.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.DEEPNEST_REPOS_TOKEN }}
+      GH_TOKEN: ${{ secrets.DEEPNEST_REPOS_TOKEN }}
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: deepnest-next/rust-api-server
+          token: ${{ secrets.DEEPNEST_REPOS_TOKEN }}
+          path: rust-api-server
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Start rust-api-server
+        run: |
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          cd rust-api-server && cargo build --release
+          ./target/release/rust-api-server &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/v1/health && break; sleep 1; done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts && node node_modules/electron/install.js
+      - run: npm run workspace:ui
+      - run: xvfb-run -a npm run test:workspace
