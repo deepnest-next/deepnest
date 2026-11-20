@@ -7,8 +7,6 @@ on:
 
 jobs:
   build-and-release-linux:
-    env:
-      BUILD_FOR_OS: linux
     strategy:
       matrix:
         node-version: [24.x]
@@ -30,17 +28,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Set architecture
-        id: set_arch
-        run: |
-          # Check if the runner OS includes "arm" and set the ARCH environment variable accordingly
-          if [[ "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then
-            echo "ARCH=arm64" >> $GITHUB_ENV
-          else
-            echo "ARCH=x64" >> $GITHUB_ENV
-          fi
-          echo "Architecture set to: $ARCH"
-
       - name: Get latest release
         id: get_release
         uses: actions/github-script@v6
@@ -62,49 +49,17 @@ jobs:
           npm install
           npm run build
 
-      - name: Package build
-        run: |
-          # Retrieve the release tag from the previous step
-          TAG=${{ steps.get_release.outputs.tag }}
-          # Set the build directory name using the release tag and architecture
-          BUILD_DIR="deepnest-${TAG}-${BUILD_FOR_OS}-${ARCH}"
-          echo "Creating build in: $BUILD_DIR"
-          # Run Electron Packager to package the application into the specified build directory
-          npx @electron/packager . "deepnest-${TAG}" --overwrite
-          # Zip the build directory with the same name
-          zip -r "${BUILD_DIR}.zip" "$BUILD_DIR"
-      - name: Artefakt an letztes Release anhängen
-        uses: actions/upload-release-asset@v1
+      - name: Package
+        run: npx electron-builder build --linux --publish never
+
+      - name: Attach to latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
-          asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
-          asset_content_type: application/zip
-
-      - name: Build Linux installers (.deb and .rpm)
-        # electron-builder reads the build.linux config in package.json and emits
-        # both a Debian .deb and a Fedora/RHEL .rpm. The `rpm` tool installed above
-        # provides rpmbuild, which is required for the .rpm target.
-        run: npx electron-builder build --linux deb rpm --publish never
-
-      - name: Attach .deb and .rpm to latest release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG=${{ steps.get_release.outputs.tag }}
-          # electron-builder writes installers into the configured output directory;
-          # collect every produced .deb/.rpm and attach them to the release.
-          mapfile -t ASSETS < <(find . -type f \( -name '*.deb' -o -name '*.rpm' \) -not -path './node_modules/*')
-          echo "Found installers: ${ASSETS[*]}"
-          gh release upload "$TAG" "${ASSETS[@]}" --clobber
+        run: gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.zip dist/*.deb dist/*.rpm --clobber
 
 
 
   build-and-release-macos:
-    env:
-      BUILD_FOR_OS: darwin
     strategy:
       matrix:
         node-version: [24.x]
@@ -125,17 +80,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Set architecture
-        id: set_arch
-        run: |
-          # Check if the runner OS includes "arm" and set the ARCH environment variable accordingly
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "ARCH=arm64" >> $GITHUB_ENV
-          else
-            echo "ARCH=x64" >> $GITHUB_ENV
-          fi
-          echo "Architecture set to: $ARCH"
-
       - name: Get latest release
         id: get_release
         uses: actions/github-script@v6
@@ -157,31 +101,17 @@ jobs:
           npm install
           npm run build
 
-      - name: Package build
-        run: |
-          # Retrieve the release tag from the previous step
-          TAG=${{ steps.get_release.outputs.tag }}
-          # Set the build directory name using the release tag and architecture
-          BUILD_DIR="deepnest-${TAG}-${BUILD_FOR_OS}-${ARCH}"
-          echo "Creating build in: $BUILD_DIR"
-          # Run Electron Packager to package the application into the specified build directory
-          npx @electron/packager . "deepnest-${TAG}" --overwrite
-          # Zip the build directory with the same name
-          zip -r "${BUILD_DIR}.zip" "$BUILD_DIR"
+      - name: Package
+        run: npx electron-builder build --mac --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false # no signing certificate in CI
 
-      - name: Artefakt an letztes Release anhängen
-        uses: actions/upload-release-asset@v1
+      - name: Attach to latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
-          asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
-          asset_content_type: application/zip
+        run: gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.dmg dist/*.pkg dist/*.zip --clobber
 
   build-and-release-windows:
-    env:
-      BUILD_FOR_OS: win32
     strategy:
       matrix:
         node-version: [24.x]
@@ -198,13 +128,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Set architecture
-        id: set_arch
-        run: |
-          echo "ARCH=x64" >> $env:GITHUB_ENV
-          echo "Architecture set to: x64"
-        shell: pwsh
-
       - name: Get latest release
         id: get_release
         uses: actions/github-script@v6
@@ -227,25 +150,12 @@ jobs:
           npm run build
         shell: bash
 
-      - name: Package build
-        run: |
-          # Retrieve the release tag from the previous step
-          TAG=${{ steps.get_release.outputs.tag }}
-          # Set the build directory name using the release tag and architecture
-          BUILD_DIR="deepnest-${TAG}-${BUILD_FOR_OS}-${ARCH}"
-          echo "Creating build in: $BUILD_DIR"
-          # Run Electron Packager to package the application into the specified build directory
-          npx @electron/packager . "deepnest-${TAG}" --overwrite
-          # Zip the build directory with the same name
-          7z a "${BUILD_DIR}.zip" "$BUILD_DIR"
+      - name: Package
+        run: npx electron-builder build --win --publish never
         shell: bash
 
-      - name: Artefakt an letztes Release anhängen
-        uses: actions/upload-release-asset@v1
+      - name: Attach to latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
-          asset_name: deepnest-${{ steps.get_release.outputs.tag }}-${{ env.BUILD_FOR_OS}}-${{ env.ARCH }}.zip
-          asset_content_type: application/zip
+        run: gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.zip --clobber
+        shell: bash

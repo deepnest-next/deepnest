@@ -41,4 +41,4 @@ jobs:
           npm run build
       - name: Package
         run: |
-          npm run dist
+          npm run dist:dir
