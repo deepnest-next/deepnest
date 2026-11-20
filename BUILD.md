@@ -5,7 +5,7 @@
 
 ### General
 
-- **Node 20+:** [Node.js](https://nodejs.org). You can use the Node Version Manager (nvm):
+- **Node 24:** [Node.js](https://nodejs.org) 24.x, the same major Electron 45 ships and the only version CI uses. You can use the Node Version Manager (nvm):
   - [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) to download Node and change versions.
 - **Python 3.7.9 and up** You can use the Python Version Manager (pyenv):
   - [pyenv-win](https://github.com/pyenv-win/pyenv-win) to download and change versions.
