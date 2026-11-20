@@ -1,6 +1,7 @@
 /*eslint no-empty-pattern: ["error", { "allowObjectPatternsAsParameters": true }]*/
 import {
   ConsoleMessage,
+  ElectronApplication,
   _electron as electron,
   expect,
   test,
@@ -21,6 +22,9 @@ import path from "path";
 import { DeepNestConfig, NestingResult } from "../index";
 
 // !process.env.CI && test.use({ launchOptions: { slowMo: 500 } });
+
+// Closed in afterAll, so the recorded videos are complete before they are attached.
+let launchedApp: ElectronApplication | undefined;
 
 test("Nest", async ({}, testInfo) => {
   // Flaky-test mitigation: the nester uses a non-deterministic genetic
@@ -43,11 +47,9 @@ test("Nest", async ({}, testInfo) => {
   );
   const electronApp = await electron.launch({
     args: ["main.js", `--user-data-dir=${userData}`],
-    // No `recordVideo`: with Playwright 1.65 + Electron 45 the main window then never
-    // fires `ready-to-show`, so it stays hidden, the background window is never created
-    // and the test times out (1.57 + Electron 40 showed a blank window). Traces still
-    // record on retry.
+    recordVideo: { dir: testInfo.outputDir },
   });
+  launchedApp = electronApp;
 
   const mainWindow = await electronApp.firstWindow();
   // The tabs exist in the static HTML at once, but their click handlers are bound only
@@ -253,6 +255,7 @@ test("Nest", async ({}, testInfo) => {
 });
 
 test.afterAll(async ({}, testInfo) => {
+  await launchedApp?.close();
   const { outputDir } = testInfo;
   await Promise.all(
     (await readdir(outputDir)).map((file) => {
