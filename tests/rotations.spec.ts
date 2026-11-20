@@ -68,14 +68,21 @@ test("Nest with 360 rotations", async () => {
         ),
       ).toPass({ timeout: 150_000 }));
 
-    // 1° steps: some placement must land off the 90° grid that 4 rotations allow.
-    const rotations = await win.evaluate(() =>
-      (window.DeepNest.nests as NestingResult[]).flatMap((n) =>
-        n.placements.flatMap((p) => p.sheetplacements.map((s) => s.rotation)),
-      ),
-    );
-    expect(rotations.length).toBeGreaterThan(0);
-    expect(rotations.some((r) => r % 90 !== 0)).toBe(true);
+    // 1° steps: some result must land off the 90° grid that 4 rotations allow. The GA
+    // starts at 0°, so wait for the mutants that try other angles.
+    await expect
+      .poll(
+        () =>
+          win.evaluate(() =>
+            (window.DeepNest.nests as NestingResult[]).some((n) =>
+              n.placements.some((p) =>
+                p.sheetplacements.some((s) => s.rotation % 90 !== 0),
+              ),
+            ),
+          ),
+        { timeout: 60_000 },
+      )
+      .toBe(true);
 
     await win.locator("#stopnest").click();
     await win.screenshot({ path: test.info().outputPath("nest-360.png") });
