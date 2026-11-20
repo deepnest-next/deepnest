@@ -5,6 +5,8 @@ const os = require('os')
 
 exports.default = async function (config) {
   if (!config?.path) return console.error('Missing config.path'), false
+  // Only `npm run build-dist-signed` sets forceCodeSigning; every other build (CI) stays unsigned.
+  if (!config.options?.forceCodeSigning) return true
 
   const filePath = config.path
   const fileExt = path.extname(filePath).toLowerCase()

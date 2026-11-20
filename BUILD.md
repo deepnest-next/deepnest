@@ -120,9 +120,9 @@ npm run dist
 npm run dist-all
 ```
 
-The resulting files will be located in `.\deepnest-<version>-win32-x64`.
+`npm run dist` uses electron-builder to build the packages for the current OS into `dist/`: a zip on every OS, plus `.deb`/`.rpm` on Linux and `.dmg`/`.pkg` on macOS (see `build` in `package.json`). The unpacked app is in `dist/*-unpacked` (macOS: `dist/mac*/`).
 
-Create a zip file of this folder for a simple distribution.
+For a quick check without archives, use `npm run dist:dir`. To build the signed Windows zip (needs the Certum token), use `npm run build-dist-signed`.
 
 ## Debugging
 
