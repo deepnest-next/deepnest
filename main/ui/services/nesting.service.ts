@@ -35,12 +35,14 @@ interface IpcRenderer {
 /**
  * Display callback function type
  */
-export type DisplayCallback = () => void;
+export type DisplayCallback = (isNewBest?: boolean) => void;
 
 /**
  * Progress callback function type
  */
-export type ProgressCallback = ((progress: { index: number; progress: number }) => void) | null;
+export type ProgressCallback =
+  | ((progress: { index: number; progress: number }) => void)
+  | null;
 
 /**
  * Display nest function type
@@ -383,7 +385,7 @@ export class NestingService {
    * @returns Display callback function bound to this service
    */
   private createDisplayCallback(): DisplayCallback {
-    return () => {
+    return (isNewBest = true) => {
       if (!this.deepNest || !this.nestRactive) {
         return;
       }
@@ -393,9 +395,12 @@ export class NestingService {
 
       // Only change focus if latest nest is selected or none selected
       // This preserves user selection when they're viewing a specific result
+      // A worse result inserted further down must not move the focus.
       if (
         selected.length === 0 ||
-        (this.deepNest.nests.length > 1 && this.deepNest.nests[1].selected)
+        (isNewBest &&
+          this.deepNest.nests.length > 1 &&
+          this.deepNest.nests[1].selected)
       ) {
         // Deselect all nests
         this.deepNest.nests.forEach((n) => {
@@ -671,7 +676,7 @@ export class NestingService {
    * @returns New NestingService instance
    */
   static create(
-    options?: ConstructorParameters<typeof NestingService>[0]
+    options?: ConstructorParameters<typeof NestingService>[0],
   ): NestingService {
     return new NestingService(options);
   }
@@ -683,7 +688,7 @@ export class NestingService {
  * @returns New NestingService instance
  */
 export function createNestingService(
-  options?: ConstructorParameters<typeof NestingService>[0]
+  options?: ConstructorParameters<typeof NestingService>[0],
 ): NestingService {
   return NestingService.create(options);
 }

@@ -1110,57 +1110,23 @@ export class DeepNest {
       this.GA.population[payload.index].processing = false;
       this.GA.population[payload.index].fitness = payload.fitness;
 
-      // render placement
-      if (this.nests.length == 0 || this.nests[0].fitness > payload.fitness) {
-        this.nests.unshift(payload);
-
-        // Check if we should keep a long list (more than 100 results)
-        const keepLongList = process.env.DEEPNEST_LONGLIST;
-
-        if (keepLongList) {
-          // Keep up to 100 results without sorting
-          if (this.nests.length > 100) {
-            this.nests.pop();
-          }
-        } else {
-          // Original behavior - keep only top 10 by fitness
-          if (this.nests.length > 10) {
-            this.nests.pop();
-          }
-        }
-
-        if (this.displayCallback) {
-          this.displayCallback();
-        }
-      } else if (process.env.DEEPNEST_LONGLIST) {
-        // With DEEPNEST_LONGLIST, we add the result to the list regardless of fitness
-        // Just make sure it's not worse than the worst result we already have
-        const worstFitness = Math.min(...this.nests.map(item => item.fitness));
-        if (this.nests.length < 100 || payload.fitness > worstFitness) {
-          // Find where to insert this result to maintain insertion order
-          this.nests.push(payload);
-
-          // If we exceeded 100 results, remove the worst one
-          if (this.nests.length > 100) {
-            // Find the worst fitness
-            let worstIndex = 0;
-            let worstFitness = this.nests[0].fitness;
-
-            for (let i = 1; i < this.nests.length; i++) {
-              if (this.nests[i].fitness > worstFitness) {
-                worstIndex = i;
-                worstFitness = this.nests[i].fitness;
-              }
-            }
-
-            // Remove the worst fitness item
-            this.nests.splice(worstIndex, 1);
-          }
-
-          if (this.displayCallback) {
-            this.displayCallback();
-          }
-        }
+      // Keep the best results sorted by fitness (lower is better), not only new bests:
+      // once the best stops improving, the list must still fill with alternatives.
+      if (this.nests.some((n) => n.fitness === payload.fitness)) {
+        return; // the GA re-evaluates equal layouts; list each one once
+      }
+      const limit = process.env.DEEPNEST_LONGLIST ? 100 : 10;
+      let at = this.nests.findIndex((n) => n.fitness > payload.fitness);
+      if (at < 0) at = this.nests.length;
+      if (at >= limit) {
+        return;
+      }
+      this.nests.splice(at, 0, payload);
+      if (this.nests.length > limit) {
+        this.nests.pop();
+      }
+      if (this.displayCallback) {
+        this.displayCallback(at === 0);
       }
     });
   };
@@ -1522,13 +1488,9 @@ export class GeneticAlgorithm {
     };
 
     // population is an array of individuals. Each individual is a object representing the order of insertion and the angle each part is rotated
-    var angles = [];
-    for (var i = 0; i < adam.length; i++) {
-      var angle =
-        Math.floor(Math.random() * this.config.rotations) *
-        (360 / this.config.rotations);
-      angles.push(angle);
-    }
+    // Start from the drawing's own orientation; mutation explores the other angles. A random
+    // start almost never lands near a good angle with many rotations (e.g. 360).
+    var angles = adam.map(() => 0);
 
     this.population = [{ placement: adam, rotation: angles }];
 
