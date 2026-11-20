@@ -117,8 +117,7 @@ test("Nest result fits the view and can be zoomed and dragged (#161)", async () 
       display.y + display.height + 1,
     );
     // ...and keeps a margin to the right window edge.
-    const svgBox = (await win.locator("#nestsvg").boundingBox())!;
-    expect(svgBox.x + svgBox.width).toBeLessThanOrEqual(
+    expect(fit.x + fit.width).toBeLessThanOrEqual(
       display.x + display.width - 16,
     );
 
