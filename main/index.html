@@ -263,7 +263,7 @@
                 value="4"
                 step="1"
                 min="1"
-                max="32"
+                max="360"
                 data-config="rotations"
                 required
               />
@@ -1446,6 +1446,10 @@
           rotations is generally enough, and ensures that common lines are
           easily merged for rectangular parts. Higher rotations may help if you
           have extremely irregular parts.
+          <br /><br />
+          <b>Experimental:</b> values above 32 (up to 360) are allowed, but
+          every extra rotation adds NFP calculations. Nesting gets much slower
+          and uses far more CPU and memory.
         </div>
 
         <div class="config_explain" id="explain_placementType">
