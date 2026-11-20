@@ -259,8 +259,11 @@ export class NestViewService {
           part.svgelements.forEach((e, index) => {
             const node = e.cloneNode(false) as SVGElement;
             if (index === 0) {
-              node.setAttribute("fill", `url(#part${p.source}hatch)`);
-              node.setAttribute("fill-opacity", "0.5");
+              // Translucent fill in the part's list colour: overlapping parts
+              // show up as a brighter area, at any zoom level.
+              const hue = 360 * (p.source / this.deepNest.parts.length);
+              node.setAttribute("fill", `hsl(${hue}, 100%, 80%)`);
+              node.setAttribute("fill-opacity", "0.3");
             } else {
               node.setAttribute("fill", "#404247");
             }
@@ -270,35 +273,6 @@ export class NestViewService {
           });
 
           svg.appendChild(partGroup);
-
-          // Create hatch pattern if it doesn't exist
-          if (!getElement(`#part${p.source}hatch`)) {
-            const pattern = createSvgElement("pattern");
-            pattern.setAttribute("id", `part${p.source}hatch`);
-            pattern.setAttribute("patternUnits", "userSpaceOnUse");
-
-            let psize = parseInt(
-              String(this.deepNest.parts[s.sheet].bounds.width / 120),
-            );
-            psize = psize || 10;
-
-            pattern.setAttribute("width", String(psize));
-            pattern.setAttribute("height", String(psize));
-
-            const path = createSvgElement("path");
-            path.setAttribute(
-              "d",
-              `M-1,1 l2,-2 M0,${psize} l${psize},-${psize} M${psize - 1},${psize + 1} l2,-2`,
-            );
-            const hue = 360 * (p.source / this.deepNest.parts.length);
-            path.setAttribute(
-              "style",
-              `stroke: hsl(${hue}, 100%, 80%) !important; stroke-width:1`,
-            );
-            pattern.appendChild(path);
-
-            groupElement!.appendChild(pattern);
-          }
 
           partElement = getElement<SVGGElement>(`#part${p.id}`);
         } else {
@@ -371,19 +345,6 @@ export class NestViewService {
     if (!svg) return;
     const v = this.view ?? this.fullView;
     svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
-    // Keep the hatch spacing and line width the same on screen at every
-    // zoom level. A non-scaling stroke inside the scaled pattern would get
-    // thinner while zooming in, so the lines get an explicit width of one
-    // screen pixel in pattern units instead.
-    const k = this.fullView.w ? v.w / this.fullView.w : 1;
-    const ctm = svg.getScreenCTM();
-    const lineWidth = ctm && ctm.a ? 1 / (ctm.a * k) : 1;
-    svg.querySelectorAll("pattern").forEach((pattern) => {
-      pattern.setAttribute("patternTransform", `scale(${k})`);
-      const line = pattern.firstElementChild as SVGElement | null;
-      line?.style.setProperty("stroke-width", String(lineWidth), "important");
-      line?.style.setProperty("vector-effect", "none", "important");
-    });
   }
 
   /**
