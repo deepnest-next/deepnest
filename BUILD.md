@@ -124,7 +124,9 @@ npm run dist-all
 
 On Linux the `.rpm` needs `rpmbuild` (`sudo apt-get install rpm`). Without it, build only zip and deb: `npm run dist -- --linux zip deb`.
 
-For a quick check without archives, use `npm run dist:dir`. To build the signed Windows zip (needs the Certum token), use `npm run build-dist-signed`.
+For a quick check without archives, use `npm run dist:dir`.
+
+To publish a release or a pre-release (beta), see [RELEASE.md](RELEASE.md). To build the signed Windows zip (needs the Certum token), use `npm run build-dist-signed`.
 
 ## Debugging
 
