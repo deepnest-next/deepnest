@@ -205,6 +205,7 @@ export class NestViewService {
 
     let svgWidth = 0;
     let svgHeight = 0;
+    let contentHeight = 0; // svgHeight without the gap after the last sheet
 
     // Create elements if they don't exist, show them otherwise
     n.placements.forEach((s: SheetPlacement) => {
@@ -340,6 +341,7 @@ export class NestViewService {
       });
 
       // Put next sheet below
+      contentHeight = svgHeight + sheetBounds.height;
       svgHeight += 1.1 * sheetBounds.height;
     });
 
@@ -353,7 +355,14 @@ export class NestViewService {
 
     // Fit the whole layout unless the user zoomed or dragged
     setAttributes(svg, { width: "100%", height: "100%" });
-    this.fullView = { x: 0, y: 0, w: svgWidth, h: svgHeight };
+    // Fitted view keeps some room around the layout
+    const pad = 0.04 * Math.max(svgWidth, contentHeight);
+    this.fullView = {
+      x: -pad,
+      y: -pad,
+      w: svgWidth + 2 * pad,
+      h: contentHeight + 2 * pad,
+    };
     this.applyView();
   }
 
