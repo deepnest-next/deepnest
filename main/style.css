@@ -1282,8 +1282,8 @@ body.dark-mode #parts table tbody tr td input[type="number"]:focus {
   bottom: 0;
   overflow: hidden;
   height: calc(100% - 2 * (var(--nav-width) - 0.625em));
-  /* keep the fitted layout off the window edge */
-  padding-right: 1.5em;
+  /* same distance from the right edge as #nestinfo has from the left */
+  padding-right: 5%;
   box-sizing: border-box;
   cursor: grab;
   touch-action: none;
