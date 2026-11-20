@@ -60,7 +60,7 @@ interface FileSystem {
   readFile(
     path: string,
     encoding: string,
-    callback: (err: Error | null, data: string) => void
+    callback: (err: Error | null, data: string) => void,
   ): void;
   readdirSync(path: string): string[];
 }
@@ -81,7 +81,11 @@ interface HttpClient {
   post(
     url: string,
     data: Buffer,
-    options: { headers: Record<string, string>; responseType: string }
+    options: {
+      headers: Record<string, string>;
+      responseType: string;
+      timeout?: number;
+    },
   ): Promise<{ data: string }>;
 }
 
@@ -92,7 +96,7 @@ interface FormDataLike {
   append(
     name: string,
     value: Buffer | string,
-    options?: { filename?: string; contentType?: string }
+    options?: { filename?: string; contentType?: string },
   ): void;
   getBuffer(): Buffer;
   getHeaders(): Record<string, string>;
@@ -124,7 +128,9 @@ interface SvgPreProcessor {
  * Config getter interface
  */
 interface ConfigGetter {
-  getSync<K extends keyof UIConfig>(key?: K): K extends keyof UIConfig ? UIConfig[K] : UIConfig;
+  getSync<K extends keyof UIConfig>(
+    key?: K,
+  ): K extends keyof UIConfig ? UIConfig[K] : UIConfig;
 }
 
 /**
@@ -349,7 +355,7 @@ export class ImportService {
   private needsConversion(extension: string): boolean {
     const lowerExt = extension.toLowerCase();
     return SUPPORTED_EXTENSIONS.NEEDS_CONVERSION.some(
-      (ext) => ext === lowerExt
+      (ext) => ext === lowerExt,
     );
   }
 
@@ -378,9 +384,7 @@ export class ImportService {
 
     try {
       const files = this.fs.readdirSync(nestDirectory);
-      const svgFiles = files
-        .filter((file) => file.includes(".svg"))
-        .sort();
+      const svgFiles = files.filter((file) => file.includes(".svg")).sort();
 
       for (const file of svgFiles) {
         await this.processFile(nestDirectory + file);
@@ -470,7 +474,13 @@ export class ImportService {
           const dirpath = this.path!.dirname(filePath);
           this.processSvgData(data, filename, dirpath);
         } catch (e) {
-          message("Could not import " + filePath + ": " + (e instanceof Error ? e.message : String(e)), true);
+          message(
+            "Could not import " +
+              filePath +
+              ": " +
+              (e instanceof Error ? e.message : String(e)),
+            true,
+          );
         } finally {
           resolve();
         }
@@ -487,7 +497,7 @@ export class ImportService {
   private async convertAndImport(
     filePath: string,
     filename: string,
-    ext: string
+    ext: string,
   ): Promise<void> {
     if (!this.fs || !this.httpClient || !this.FormData) {
       message("Required modules not available for conversion", true);
@@ -509,6 +519,9 @@ export class ImportService {
       const response = await this.httpClient.post(url, formData.getBuffer(), {
         headers: formData.getHeaders(),
         responseType: "text",
+        // Without a limit a stalled server keeps isImporting set and blocks
+        // every later import until restart.
+        timeout: 60_000,
       });
 
       const body = response.data;
@@ -523,7 +536,7 @@ export class ImportService {
         const jsonErr = JSON.parse(body) as { error_id: string };
         message(
           `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
+          true,
         );
         return;
       }
@@ -552,12 +565,12 @@ export class ImportService {
         const jsonErr = JSON.parse(errorData) as { error_id: string };
         message(
           `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
+          true,
         );
       } else {
         message(
           `Could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
+          true,
         );
       }
     }
@@ -577,7 +590,7 @@ export class ImportService {
     filename: string,
     dirpath: string | null,
     scalingFactor: number | null = null,
-    dxfFlag = false
+    dxfFlag = false,
   ): void {
     const useSvgPreProcessor = this.config?.getSync("useSvgPreProcessor");
 
@@ -591,7 +604,13 @@ export class ImportService {
           return;
         }
 
-        this.importData(svgResult.result, filename, dirpath, scalingFactor, dxfFlag);
+        this.importData(
+          svgResult.result,
+          filename,
+          dirpath,
+          scalingFactor,
+          dxfFlag,
+        );
       } catch (e) {
         const error = e as Error;
         message("Error processing SVG: " + error.message, true);
@@ -614,7 +633,7 @@ export class ImportService {
     filename: string,
     dirpath: string | null,
     scalingFactor: number | null = null,
-    dxfFlag = false
+    dxfFlag = false,
   ): void {
     if (!this.deepNest) {
       message("DeepNest instance not available", true);
@@ -675,7 +694,7 @@ export class ImportService {
       scalingFactor?: number | null;
       dxfFlag?: boolean;
       usePreProcessor?: boolean;
-    }
+    },
   ): Part[] | null {
     if (!this.deepNest) {
       message("DeepNest instance not available", true);
@@ -712,7 +731,7 @@ export class ImportService {
       dirpath,
       processedData,
       scalingFactor,
-      dxfFlag
+      dxfFlag,
     );
 
     // Deselect all previous imports
@@ -760,7 +779,9 @@ export class ImportService {
    * @param options - Optional configuration options
    * @returns New ImportService instance
    */
-  static create(options?: ConstructorParameters<typeof ImportService>[0]): ImportService {
+  static create(
+    options?: ConstructorParameters<typeof ImportService>[0],
+  ): ImportService {
     return new ImportService(options);
   }
 }
@@ -771,7 +792,7 @@ export class ImportService {
  * @returns New ImportService instance
  */
 export function createImportService(
-  options?: ConstructorParameters<typeof ImportService>[0]
+  options?: ConstructorParameters<typeof ImportService>[0],
 ): ImportService {
   return ImportService.create(options);
 }
