@@ -68,6 +68,10 @@ test("PLT export: a nested part comes out at true size, outlines closed", async 
   await win.waitForFunction(
     () => typeof (window as unknown as { nest?: unknown }).nest === "object",
   );
+  // mm, so the sheet below is a real 1:1 size and not inches.
+  await win.locator("#config_tab").click();
+  await win.locator("#config").getByRole("radio").nth(1).check();
+  await win.locator("#home_tab").click();
   await app.evaluate(({ dialog }, p) => {
     dialog.showOpenDialog = async (): Promise<OpenDialogReturnValue> => ({
       filePaths: [p],
@@ -77,8 +81,8 @@ test("PLT export: a nested part comes out at true size, outlines closed", async 
   await win.click("id=import");
   await expect(win.locator("#importsnav li")).toHaveCount(1);
   await win.click("id=addsheet");
-  await win.fill("id=sheetwidth", "300");
-  await win.fill("id=sheetheight", "200");
+  await win.fill("id=sheetwidth", "160");
+  await win.fill("id=sheetheight", "100");
   await win.click("id=confirmsheet");
   await win.click("id=startnest");
   await expect(() =>
@@ -110,7 +114,7 @@ test("PLT export: a nested part comes out at true size, outlines closed", async 
   // outline (exported in its own <g id="layer-SHEET">, which must survive flattening).
   expect(sizes).toContainEqual([100, 50]);
   expect(paths).toHaveLength(3);
-  expect(Math.max(...sizes.map((s) => s[0]))).toBeGreaterThan(100);
+  expect(sizes).toContainEqual([160, 100]);
   expect(
     sizes.some(([w, h]) => Math.abs(w - 20) < 0.2 && Math.abs(h - 20) < 0.2),
   ).toBe(true);
