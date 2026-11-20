@@ -1,12 +1,80 @@
 name: build release
 
+# Two ways in, both described in RELEASE.md:
+# - run by hand (Actions > build release > Run workflow): bumps the version, tags, builds, then publishes
+# - publish a release on GitHub: builds that release's tag and attaches the files
 on:
   workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version: bump package.json (patch/minor/major, prerelease = next beta number) or custom"
+        type: choice
+        options: [patch, minor, major, prerelease, custom]
+        default: patch
+      version:
+        description: "Only for custom: e.g. 1.6.0 or 1.6.0-beta.1"
+        type: string
+        required: false
+      prerelease:
+        description: "Pre-release (beta): not marked latest, not shown on the website or in the app"
+        type: boolean
+        default: false
   release:
     types: [published]
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Pick the release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          # release published on GitHub: build exactly that release
+          if [ "$GITHUB_EVENT_NAME" = release ]; then
+            echo "tag=$EVENT_TAG" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # manual run: bump, commit, tag, and open a draft release that the publish job makes public
+          [ "$GITHUB_REF_TYPE" = branch ] || { echo "Run the workflow from a branch, not from a tag"; exit 1; }
+          V=$(node helper_scripts/release_version.js "$BUMP" "$VERSION" "$PRERELEASE")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: release v$V"
+          git tag "v$V"
+          git push origin "HEAD:$GITHUB_REF_NAME" "v$V"
+          PRE=(); [[ "$V" == *-* ]] && PRE=(--prerelease)
+          gh release create "v$V" --draft --generate-notes --title "v$V" "${PRE[@]}"
+          echo "tag=v$V" >> "$GITHUB_OUTPUT"
+
   build-and-release-linux:
+    needs: prepare
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     strategy:
       matrix:
         node-version: [24.x]
@@ -16,6 +84,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.prepare.outputs.tag }}
           submodules: recursive
 
       - name: Install Boost and rpm tooling (only for Ubuntu)
@@ -28,11 +97,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Get latest release
-        id: get_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "tag=$(gh release view --json tagName -q .tagName)" >> "$GITHUB_OUTPUT"
+      - name: Set version from tag
+        # a release made on GitHub may not have bumped package.json; asset names and the app version follow the tag
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
 
       - name: Build project
         run: |
@@ -41,19 +108,17 @@ jobs:
           npm run build
 
       - name: Package
-        run: |
-          # asset names come from package.json, so it must match the release tag
-          test "${{ steps.get_release.outputs.tag }}" = "v$(node -p 'require("./package.json").version')"
-          npx electron-builder build --linux --publish never
+        run: npx electron-builder build --linux --publish never
 
-      - name: Attach to latest release
+      - name: Attach to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.zip dist/*.deb dist/*.rpm --clobber
-
-
+        run: gh release upload "$TAG" dist/*.zip dist/*.deb dist/*.rpm --clobber
 
   build-and-release-macos:
+    needs: prepare
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     strategy:
       matrix:
         node-version: [24.x]
@@ -63,6 +128,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.prepare.outputs.tag }}
           submodules: recursive
 
       - name: Setup Node.js ${{ matrix.node-version }}
@@ -70,11 +136,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Get latest release
-        id: get_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "tag=$(gh release view --json tagName -q .tagName)" >> "$GITHUB_OUTPUT"
+      - name: Set version from tag
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
 
       - name: Build project
         run: |
@@ -83,22 +146,22 @@ jobs:
           npm run build
 
       - name: Package
-        run: |
-          # asset names come from package.json, so it must match the release tag
-          test "${{ steps.get_release.outputs.tag }}" = "v$(node -p 'require("./package.json").version')"
-          npx electron-builder build --mac --publish never
+        run: npx electron-builder build --mac --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false # no signing certificate in CI
 
-      - name: Attach to latest release
+      - name: Attach to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # same zip also under the old manual-build name deepnest-v<version>-mac-<arch>.zip
           for f in dist/*-darwin-*.zip; do cp "$f" "${f/-darwin-/-mac-}"; done
-          gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.dmg dist/*.pkg dist/*.zip --clobber
+          gh release upload "$TAG" dist/*.dmg dist/*.pkg dist/*.zip --clobber
 
   build-and-release-windows:
+    needs: prepare
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     strategy:
       matrix:
         node-version: [24.x]
@@ -108,6 +171,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.prepare.outputs.tag }}
           submodules: recursive
 
       - name: Setup Node.js ${{ matrix.node-version }}
@@ -115,11 +179,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Get latest release
-        id: get_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "tag=$(gh release view --json tagName -q .tagName)" >> "$GITHUB_OUTPUT"
+      - name: Set version from tag
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
         shell: bash
 
       - name: Build project
@@ -130,14 +191,23 @@ jobs:
         shell: bash
 
       - name: Package
-        run: |
-          # asset names come from package.json, so it must match the release tag
-          test "${{ steps.get_release.outputs.tag }}" = "v$(node -p 'require("./package.json").version')"
-          npx electron-builder build --win --publish never
+        run: npx electron-builder build --win --publish never
         shell: bash
 
-      - name: Attach to latest release
+      - name: Attach to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.zip --clobber
+        run: gh release upload "$TAG" dist/*.zip --clobber
         shell: bash
+
+  publish:
+    # manual run only: the draft becomes public once every OS has uploaded its files
+    needs: [prepare, build-and-release-linux, build-and-release-macos, build-and-release-windows]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Publish the draft release
+        run: gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
