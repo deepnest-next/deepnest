@@ -302,7 +302,10 @@ function createBackgroundWindows() {
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
   createMainWindow();
-  mainWindow.once("ready-to-show", () => {
+  let started = false;
+  const start = () => {
+    if (started || !mainWindow) return;
+    started = true;
     mainWindow.show();
     createBackgroundWindows();
     
@@ -314,7 +317,11 @@ app.on("ready", () => {
     setInterval(async () => {
       runNotificationCheck();
     }, 30*60*1000); // every 30 minutes
-  });
+  };
+  mainWindow.once("ready-to-show", start);
+  // Fallback: ready-to-show never fires while Playwright records video (its screencast keeps
+  // the hidden window from painting), so start anyway 1 s after the page has loaded.
+  mainWindow.webContents.once("did-finish-load", () => setTimeout(start, 1000));
   mainWindow.on("closed", () => {
     app.quit();
   });
