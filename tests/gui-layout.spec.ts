@@ -144,6 +144,20 @@ test("Nest result fits the view and can be zoomed and dragged (#161)", async () 
       .toBeGreaterThan(fit.width * 1.2);
 
     expect(await hatchTile()).toBeCloseTo(tileFit, 1);
+    // ...and its lines stay one screen pixel wide instead of fading out.
+    const hatchLine = await win.evaluate(() => {
+      const svg = document.querySelector<SVGSVGElement>("#nestsvg")!;
+      const p = svg.querySelector<SVGPatternElement>("pattern")!;
+      const line = p.firstElementChild as SVGElement;
+      const t = p.patternTransform.baseVal.consolidate()!;
+      const css = getComputedStyle(line);
+      return {
+        width: parseFloat(css.strokeWidth) * t.matrix.a * svg.getScreenCTM()!.a,
+        vectorEffect: css.getPropertyValue("vector-effect"),
+      };
+    });
+    expect(hatchLine.vectorEffect).toBe("none");
+    expect(hatchLine.width).toBeCloseTo(1, 1);
 
     // Dragging pans the view.
     const before = await sheetRect();
