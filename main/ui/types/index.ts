@@ -17,7 +17,12 @@ export type {
 } from "../../../index.d.ts";
 
 // Import base types for extension
-import type { DeepNestConfig, NestingResult, PolygonPoint, Part } from "../../../index.d.ts";
+import type {
+  DeepNestConfig,
+  NestingResult,
+  PolygonPoint,
+  Part,
+} from "../../../index.d.ts";
 
 /**
  * Extended configuration with UI-specific properties
@@ -44,7 +49,8 @@ export interface UIConfig extends DeepNestConfig {
 /**
  * Default configuration values
  */
-export const DEFAULT_CONVERSION_SERVER = "https://converter.deepnest.app/convert";
+export const DEFAULT_CONVERSION_SERVER =
+  "https://converter.deepnest.app/convert";
 
 /**
  * SVG Pan/Zoom instance for import view
@@ -84,14 +90,19 @@ export interface ConfigObject extends UIConfig {
    * @param key Optional key to retrieve specific value
    * @returns The value for the key, or entire config if no key provided
    */
-  getSync<K extends keyof UIConfig>(key?: K): K extends keyof UIConfig ? UIConfig[K] : UIConfig;
+  getSync<K extends keyof UIConfig>(
+    key?: K,
+  ): K extends keyof UIConfig ? UIConfig[K] : UIConfig;
 
   /**
    * Set configuration values
    * @param keyOrObject Key to set, or object with multiple values
    * @param value Value to set (when keyOrObject is a string)
    */
-  setSync<K extends keyof UIConfig>(keyOrObject: K | Partial<UIConfig>, value?: UIConfig[K]): void;
+  setSync<K extends keyof UIConfig>(
+    keyOrObject: K | Partial<UIConfig>,
+    value?: UIConfig[K],
+  ): void;
 
   /**
    * Reset all configuration to default values
@@ -146,7 +157,7 @@ export interface DeepNestInstance {
     dirpath: string | null,
     svgstring: string,
     scalingFactor?: number | null,
-    dxfFlag?: boolean
+    dxfFlag?: boolean,
   ): Part[];
 
   /**
@@ -163,7 +174,7 @@ export interface DeepNestInstance {
    */
   start(
     progressCallback: ((progress: NestingProgress) => void) | null,
-    displayCallback: (() => void) | null
+    displayCallback: (() => void) | null,
   ): void;
 
   /**
@@ -213,7 +224,10 @@ export interface RactiveInstance<T = unknown> {
   /** Set a value in the data context */
   set<K extends keyof T>(keypath: K, value: T[K]): Promise<void>;
   /** Register an event handler */
-  on(eventName: string, handler: (event: Event, ...args: unknown[]) => void): void;
+  on(
+    eventName: string,
+    handler: (event: Event, ...args: unknown[]) => void,
+  ): void;
 }
 
 /**
@@ -288,13 +302,20 @@ export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
  * SvgParser interface for window.SvgParser
  */
 export interface SvgParserInstance {
-  load(dirpath: string | null, svgstring: string, scale: number, scalingFactor?: number | null): SVGSVGElement;
+  load(
+    dirpath: string | null,
+    svgstring: string,
+    scale: number,
+    scalingFactor?: number | null,
+  ): SVGSVGElement;
   cleanInput(dxfFlag?: boolean): SVGSVGElement;
   polygonElements: string[];
   isClosed(element: SVGElement, tolerance: number): boolean;
   polygonify(element: SVGElement): PolygonPoint[];
   polygonifyPath(element: SVGPathElement): PolygonPoint[];
-  transformParse(transformString: string): { calc(point: PolygonPoint): PolygonPoint } | null;
+  transformParse(
+    transformString: string,
+  ): { calc(point: PolygonPoint): PolygonPoint } | null;
   applyTransform(svg: SVGSVGElement): void;
   flatten(svg: SVGSVGElement): void;
   splitLines(svg: SVGSVGElement): void;
