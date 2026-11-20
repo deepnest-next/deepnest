@@ -64,8 +64,8 @@
     "typescript-eslint": "^8.32.0"
   },
   "dependencies": {
-    "@deepnest/calculate-nfp": "202503.13.155300",
-    "@deepnest/svg-preprocessor": "0.2.0",
+    "@deepnest/calculate-nfp": "202611.20.202958",
+    "@deepnest/svg-preprocessor": "0.2.2",
     "@electron/remote": "2.1.3",
     "axios": "1.16.0",
     "form-data": "4.0.6",
