@@ -825,7 +825,7 @@ function initializeComponents(): void {
         url: string,
         data: Buffer,
         options: { headers: Record<string, string>; responseType: string },
-      ) => Promise<{ data: string }>;
+      ) => Promise<{ data: string; headers?: Record<string, string> }>;
     },
     FormData: FormData as unknown as new () => {
       append: (
