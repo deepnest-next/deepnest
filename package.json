@@ -22,7 +22,6 @@
     "dist": "electron-builder build --publish never",
     "dist:dir": "electron-builder build --dir --publish never",
     "build-dist-signed": "electron-builder build --win --publish never -c.win.forceCodeSigning=true",
-    "build-dist-linux": "electron-builder build --linux --publish never",
     "dist-all": "npm run clean-all && npm install && npm run build && npm run dist",
     "dist-all-signed": "npm run clean-all && npm install && npm run build && npm run build-dist-signed",
     "prepare": "husky || true",
@@ -84,6 +83,7 @@
   ],
   "build": {
     "appId": "net.deepnest.app",
+    "executableName": "deepnest",
     "copyright": "2026 deepnest-next Community",
     "nodeGypRebuild": false,
     "files": [
@@ -147,6 +147,12 @@
         "zip"
       ],
       "artifactName": "${name}-v${version}-darwin-${arch}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "${name}-v${version}-mac-${arch}.${ext}"
+    },
+    "pkg": {
+      "artifactName": "${name}-v${version}-mac-${arch}.${ext}"
     },
     "linux": {
       "target": [

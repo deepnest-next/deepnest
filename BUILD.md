@@ -122,6 +122,8 @@ npm run dist-all
 
 `npm run dist` uses electron-builder to build the packages for the current OS into `dist/`: a zip on every OS, plus `.deb`/`.rpm` on Linux and `.dmg`/`.pkg` on macOS (see `build` in `package.json`). The unpacked app is in `dist/*-unpacked` (macOS: `dist/mac*/`).
 
+On Linux the `.rpm` needs `rpmbuild` (`sudo apt-get install rpm`). Without it, build only zip and deb: `npm run dist -- --linux zip deb`.
+
 For a quick check without archives, use `npm run dist:dir`. To build the signed Windows zip (needs the Certum token), use `npm run build-dist-signed`.
 
 ## Debugging
