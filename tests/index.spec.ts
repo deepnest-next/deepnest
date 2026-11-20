@@ -163,6 +163,10 @@ test("Nest", async ({}, testInfo) => {
     }, files);
     await mainWindow.click("id=import");
     await expect(mainWindow.locator("#importsnav li")).toHaveCount(2);
+    // The next file dialog starts in this folder (Electron 43+ would open Downloads).
+    expect(
+      await mainWindow.evaluate(() => window.config.getSync("lastDirectory")),
+    ).toBe(inputDir);
   });
 
   await test.step("Add sheet", async () => {
@@ -255,13 +259,16 @@ test("Nest", async ({}, testInfo) => {
 });
 
 test.afterAll(async ({}, testInfo) => {
-  await launchedApp?.close();
   const { outputDir } = testInfo;
-  await Promise.all(
-    (await readdir(outputDir)).map((file) => {
-      return testInfo.attach(file, {
-        path: path.resolve(outputDir, file),
-      });
-    }),
-  );
+  try {
+    await launchedApp?.close();
+  } finally {
+    await Promise.all(
+      (await readdir(outputDir)).map((file) => {
+        return testInfo.attach(file, {
+          path: path.resolve(outputDir, file),
+        });
+      }),
+    );
+  }
 });
