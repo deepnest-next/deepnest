@@ -26,6 +26,8 @@ test("Nest with 360 rotations", async () => {
 
     await test.step("Set rotations to 360", async () => {
       await win.locator("#config_tab").click();
+      // mm, so the sheet below is a real 1:1 size and not inches.
+      await win.locator("#config").getByRole("radio").nth(1).check();
       const rotations = win.locator('#config input[data-config="rotations"]');
       await rotations.fill("360");
       await rotations.blur();
@@ -52,8 +54,9 @@ test("Nest with 360 rotations", async () => {
       await win.click("id=import");
       await expect(win.locator("#importsnav li")).toHaveCount(1);
       await win.click("id=addsheet");
-      await win.fill("id=sheetwidth", "600");
-      await win.fill("id=sheetheight", "400");
+      // Tight enough that the 27 letters need real packing, not just free space.
+      await win.fill("id=sheetwidth", "160");
+      await win.fill("id=sheetheight", "100");
       await win.click("id=confirmsheet");
     });
 
@@ -75,6 +78,7 @@ test("Nest with 360 rotations", async () => {
     expect(rotations.some((r) => r % 90 !== 0)).toBe(true);
 
     await win.locator("#stopnest").click();
+    await win.screenshot({ path: test.info().outputPath("nest-360.png") });
   } finally {
     await app.close();
   }
