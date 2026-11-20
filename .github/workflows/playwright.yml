@@ -48,6 +48,13 @@ jobs:
       # until the job timeout on two runs in a row.
       - name: Install Playwright system dependencies
         run: npx playwright install-deps chromium
+      # Playwright's own ffmpeg build, needed for video recording (not covered by
+      # install-deps). recordVideo is still off (see tests/index.spec.ts), and this comes
+      # from the same CDN that stalled above, so bound it and don't fail the job on it.
+      - name: Install Playwright ffmpeg
+        run: npx playwright install ffmpeg
+        timeout-minutes: 3
+        continue-on-error: true
       - name: Run Playwright tests
         run: xvfb-run npm test
         env:
