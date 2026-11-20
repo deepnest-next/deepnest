@@ -87,9 +87,13 @@ async function importAndNest(
   }, files);
   await win.click("id=import");
   await expect(win.locator("#importsnav li")).toHaveCount(files.length);
+  // mm, so the sheet is a real 160 × 100 mm and not inches (as in rotations.spec.ts).
+  await win.locator("#config_tab").click();
+  await win.locator("#config").getByRole("radio").nth(1).check();
+  await win.locator("#home_tab").click();
   await win.click("id=addsheet");
-  await win.fill("id=sheetwidth", "300");
-  await win.fill("id=sheetheight", "200");
+  await win.fill("id=sheetwidth", "160");
+  await win.fill("id=sheetheight", "100");
   await win.click("id=confirmsheet");
   await win.click("id=startnest");
   const n = `${files.length}/${files.length}`;
