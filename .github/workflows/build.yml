@@ -17,12 +17,12 @@ jobs:
         os: [windows-2022, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
       #    not needed currently, but leaving here for future use
-      #    - uses: actions/setup-python@v4
+      #    - uses: actions/setup-python@v7
       #      with:
       #        python-version: '2.7.18'
 
@@ -31,7 +31,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -yq libboost-dev
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
 
