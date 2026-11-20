@@ -93,7 +93,10 @@ jobs:
       - name: Attach to latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.dmg dist/*.pkg dist/*.zip --clobber
+        run: |
+          # same zip also under the old manual-build name deepnest-v<version>-mac-<arch>.zip
+          for f in dist/*-darwin-*.zip; do cp "$f" "${f/-darwin-/-mac-}"; done
+          gh release upload "${{ steps.get_release.outputs.tag }}" dist/*.dmg dist/*.pkg dist/*.zip --clobber
 
   build-and-release-windows:
     strategy:
