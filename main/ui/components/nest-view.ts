@@ -371,10 +371,18 @@ export class NestViewService {
     if (!svg) return;
     const v = this.view ?? this.fullView;
     svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
-    // Keep the hatch spacing the same on screen at every zoom level
+    // Keep the hatch spacing and line width the same on screen at every
+    // zoom level. A non-scaling stroke inside the scaled pattern would get
+    // thinner while zooming in, so the lines get an explicit width of one
+    // screen pixel in pattern units instead.
     const k = this.fullView.w ? v.w / this.fullView.w : 1;
+    const ctm = svg.getScreenCTM();
+    const lineWidth = ctm && ctm.a ? 1 / (ctm.a * k) : 1;
     svg.querySelectorAll("pattern").forEach((pattern) => {
       pattern.setAttribute("patternTransform", `scale(${k})`);
+      const line = pattern.firstElementChild as SVGElement | null;
+      line?.style.setProperty("stroke-width", String(lineWidth), "important");
+      line?.style.setProperty("vector-effect", "none", "important");
     });
   }
 
