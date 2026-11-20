@@ -60,8 +60,8 @@ interface HttpClient {
   post(
     url: string,
     data: Buffer,
-    options: { headers: Record<string, string>; responseType: string }
-  ): Promise<{ data: string }>;
+    options: { headers: Record<string, string>; responseType: string },
+  ): Promise<{ data: string; headers?: Record<string, string> }>;
 }
 
 /**
@@ -71,7 +71,7 @@ interface FormDataLike {
   append(
     name: string,
     value: Buffer | string,
-    options?: { filename?: string; contentType?: string }
+    options?: { filename?: string; contentType?: string },
   ): void;
   getBuffer(): Buffer;
   getHeaders(): Record<string, string>;
@@ -88,7 +88,9 @@ interface FormDataConstructor {
  * Config getter interface
  */
 interface ConfigGetter {
-  getSync<K extends keyof UIConfig>(key?: K): K extends keyof UIConfig ? UIConfig[K] : UIConfig;
+  getSync<K extends keyof UIConfig>(
+    key?: K,
+  ): K extends keyof UIConfig ? UIConfig[K] : UIConfig;
 }
 
 /**
@@ -135,20 +137,18 @@ export type ExportFormat = "svg" | "dxf" | "json" | "plt";
 /**
  * File filters for export dialogs
  */
-const SVG_FILE_FILTERS: FileFilter[] = [
-  { name: "SVG", extensions: ["svg"] }
-];
+const SVG_FILE_FILTERS: FileFilter[] = [{ name: "SVG", extensions: ["svg"] }];
 
 const DXF_FILE_FILTERS: FileFilter[] = [
-  { name: "DXF/DWG", extensions: ["dxf", "dwg"] }
+  { name: "DXF/DWG", extensions: ["dxf", "dwg"] },
 ];
 
 const PLT_FILE_FILTERS: FileFilter[] = [
-  { name: "PLT (HPGL)", extensions: ["plt"] }
+  { name: "PLT (HPGL)", extensions: ["plt"] },
 ];
 
 const JSON_FILE_FILTERS: FileFilter[] = [
-  { name: "JSON", extensions: ["json"] }
+  { name: "JSON", extensions: ["json"] },
 ];
 
 /**
@@ -428,6 +428,91 @@ export class ExportService {
   }
 
   /**
+   * Convert through the server's /v1 API, which writes the "DXF export units" into the file
+   * ($INSUNITS, so CAD programs know the unit; #96)
+   * @returns The DXF, or null when the server can't do this (then use the legacy route)
+   */
+  private async convertToDxfWithUnits(
+    nest: SelectableNestingResult,
+    url: string,
+  ): Promise<string | null> {
+    if (!/\/convert\/?$/.test(url)) {
+      return null;
+    }
+    const svg = this.buildSvgExport(nest); // true size, no DXF unit scaling
+    // The converter skips outlines without a stroke; deepnest draws parts with CSS
+    svg.setAttribute("stroke", "#000000");
+    const dxfExportScale = Number(this.config?.getSync("dxfExportScale")) || 1; // units per inch
+
+    const formData = new this.FormData!();
+    formData.append(
+      "file",
+      Buffer.from(new XMLSerializer().serializeToString(svg)),
+      {
+        filename: "deepnest.svg",
+        contentType: "image/svg+xml",
+      },
+    );
+    formData.append("to", "dxf");
+    formData.append("version", "r2000"); // R12 has no $INSUNITS
+    formData.append("mm_per_unit", String(25.4 / dxfExportScale));
+
+    try {
+      const response = await this.httpClient!.post(
+        url.replace(/\/convert\/?$/, "/v1/convert"),
+        formData.getBuffer(),
+        { headers: formData.getHeaders(), responseType: "text" },
+      );
+      // Older servers ignore mm_per_unit and write mm; they don't send this header
+      return response.headers?.["x-convert-mm-per-unit"] ? response.data : null;
+    } catch (err) {
+      const data = (err as { response?: { data?: unknown } }).response?.data;
+      let reason: string | undefined;
+      try {
+        const json = JSON.parse(String(data)) as {
+          reason?: string;
+          request_id?: string;
+        };
+        reason = json.reason && `${json.reason} (Ref: ${json.request_id})`;
+      } catch {
+        // not a /v1 error body: no /v1 on this server
+      }
+      if (reason) {
+        throw {
+          response: {
+            data: JSON.stringify({ error: reason, error_id: reason }),
+          },
+        };
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Convert through the legacy /convert API: one SVG inch becomes one DXF unit, unitless
+   * @returns The server's response body
+   */
+  private async convertToDxfLegacy(
+    nest: SelectableNestingResult,
+    url: string,
+  ): Promise<string> {
+    const svgContent = this.generateSvgExport(nest, { forDxfConversion: true });
+
+    const formData = new this.FormData!();
+    formData.append("fileUpload", Buffer.from(svgContent), {
+      filename: "deepnest.svg",
+      contentType: "image/svg+xml",
+    });
+    formData.append("format", "dxf");
+
+    const response = await this.httpClient!.post(url, formData.getBuffer(), {
+      headers: formData.getHeaders(),
+      responseType: "text",
+    });
+    return response.data;
+  }
+
+  /**
    * Show save dialog and export to DXF via conversion server
    * @returns Promise that resolves to true if export was successful
    */
@@ -447,7 +532,10 @@ export class ExportService {
     }
 
     // Ensure .dxf or .dwg extension
-    if (!fileName.toLowerCase().endsWith(".dxf") && !fileName.toLowerCase().endsWith(".dwg")) {
+    if (
+      !fileName.toLowerCase().endsWith(".dxf") &&
+      !fileName.toLowerCase().endsWith(".dwg")
+    ) {
       fileName = fileName + ".dxf";
     }
 
@@ -460,22 +548,9 @@ export class ExportService {
     this.setExportLoading(true);
 
     try {
-      // Generate SVG with DXF scaling
-      const svgContent = this.generateSvgExport(selected, { forDxfConversion: true });
-
-      const formData = new this.FormData();
-      formData.append("fileUpload", Buffer.from(svgContent), {
-        filename: "deepnest.svg",
-        contentType: "image/svg+xml",
-      });
-      formData.append("format", "dxf");
-
-      const response = await this.httpClient.post(url, formData.getBuffer(), {
-        headers: formData.getHeaders(),
-        responseType: "text",
-      });
-
-      const body = response.data;
+      const body =
+        (await this.convertToDxfWithUnits(selected, url)) ??
+        (await this.convertToDxfLegacy(selected, url));
 
       // Check for error responses
       if (body.substring(0, 5) === "error") {
@@ -487,7 +562,7 @@ export class ExportService {
         const jsonErr = JSON.parse(body) as { error_id: string };
         message(
           `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
+          true,
         );
         return false;
       }
@@ -506,12 +581,12 @@ export class ExportService {
         const jsonErr = JSON.parse(errorData) as { error_id: string };
         message(
           `There was an Error while converting: ${jsonErr.error_id}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
+          true,
         );
       } else {
         message(
           `Could not contact file conversion server: ${JSON.stringify(err)}<br>Please use this code to open an issue on github.com/deepnest-next/deepnest`,
-          true
+          true,
         );
       }
       return false;
@@ -574,7 +649,9 @@ export class ExportService {
   private getInchesPerSvgUnit(svg: SVGSVGElement): number | null {
     const widthAttr = svg.getAttribute("width") || "";
     const width = parseFloat(widthAttr);
-    const viewBoxWidth = Number((svg.getAttribute("viewBox") || "").split(/[\s,]+/)[2]);
+    const viewBoxWidth = Number(
+      (svg.getAttribute("viewBox") || "").split(/[\s,]+/)[2],
+    );
 
     if (!(width > 0) || !(viewBoxWidth > 0)) {
       return null;
@@ -592,7 +669,10 @@ export class ExportService {
    * @param inchesPerUnit - Inches per SVG unit
    * @returns Paths ready for generateHpgl
    */
-  private collectHpglPaths(svg: SVGSVGElement, inchesPerUnit: number): HpglPath[] {
+  private collectHpglPaths(
+    svg: SVGSVGElement,
+    inchesPerUnit: number,
+  ): HpglPath[] {
     if (!this.svgParser || !this.config) {
       return [];
     }
@@ -613,7 +693,10 @@ export class ExportService {
           { x: Number(e.getAttribute("x2")), y: Number(e.getAttribute("y2")) },
         ];
         closed = false;
-      } else if (e.tagName !== "svg" && svgParser.polygonElements.includes(e.tagName)) {
+      } else if (
+        e.tagName !== "svg" &&
+        svgParser.polygonElements.includes(e.tagName)
+      ) {
         points = svgParser.polygonify(e);
         closed = svgParser.isClosed(e, closeTolerance);
       } else {
@@ -641,9 +724,11 @@ export class ExportService {
    */
   generateSvgExport(
     nestResult: SelectableNestingResult,
-    options: ExportOptions = {}
+    options: ExportOptions = {},
   ): string {
-    return new XMLSerializer().serializeToString(this.buildSvgExport(nestResult, options));
+    return new XMLSerializer().serializeToString(
+      this.buildSvgExport(nestResult, options),
+    );
   }
 
   /**
@@ -655,7 +740,7 @@ export class ExportService {
    */
   private buildSvgExport(
     nestResult: SelectableNestingResult,
-    options: ExportOptions = {}
+    options: ExportOptions = {},
   ): SVGSVGElement {
     if (!this.deepNest || !this.config) {
       throw new Error("DeepNest or config not available");
@@ -667,9 +752,14 @@ export class ExportService {
     let sheetNumber = 0;
 
     const parts = this.deepNest.parts;
-    const exportWithSheetBoundaries = !!this.config.getSync("exportWithSheetBoundboarders");
-    const exportWithSheetsSpace = !!this.config.getSync("exportWithSheetsSpace");
-    const exportWithSheetsSpaceValue = this.config.getSync("exportWithSheetsSpaceValue") || 0;
+    const exportWithSheetBoundaries = !!this.config.getSync(
+      "exportWithSheetBoundboarders",
+    );
+    const exportWithSheetsSpace = !!this.config.getSync(
+      "exportWithSheetsSpace",
+    );
+    const exportWithSheetsSpaceValue =
+      this.config.getSync("exportWithSheetsSpaceValue") || 0;
 
     // Process each sheet placement
     (nestResult.placements as SheetGroup[]).forEach((s) => {
@@ -688,7 +778,7 @@ export class ExportService {
       // Position the group
       group.setAttribute(
         "transform",
-        `translate(${-sheetBounds.x} ${svgHeight - sheetBounds.y})`
+        `translate(${-sheetBounds.x} ${svgHeight - sheetBounds.y})`,
       );
 
       // Track maximum width
@@ -699,7 +789,10 @@ export class ExportService {
       // Add each part placement
       s.sheetplacements.forEach((p) => {
         const part = parts[p.source];
-        const partGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        const partGroup = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g",
+        );
 
         // Clone all SVG elements from the part
         part.svgelements.forEach((e) => {
@@ -722,7 +815,7 @@ export class ExportService {
         // Position and rotate the part
         partGroup.setAttribute(
           "transform",
-          `translate(${p.x} ${p.y}) rotate(${p.rotation})`
+          `translate(${p.x} ${p.y}) rotate(${p.rotation})`,
         );
         partGroup.setAttribute("id", String(p.id));
       });
@@ -731,7 +824,10 @@ export class ExportService {
       svgHeight += sheetBounds.height;
 
       // Add spacing between sheets (except after last sheet)
-      if (exportWithSheetsSpace && sheetNumber < (nestResult.placements as SheetGroup[]).length) {
+      if (
+        exportWithSheetsSpace &&
+        sheetNumber < (nestResult.placements as SheetGroup[]).length
+      ) {
         svgHeight += exportWithSheetsSpaceValue;
       }
     });
@@ -770,7 +866,7 @@ export class ExportService {
     svg: SVGSVGElement,
     width: number,
     height: number,
-    options: ExportOptions
+    options: ExportOptions,
   ): void {
     if (!this.config) {
       return;
@@ -804,14 +900,15 @@ export class ExportService {
    */
   private applyLineMerging(
     svg: SVGSVGElement,
-    nestResult: SelectableNestingResult
+    nestResult: SelectableNestingResult,
   ): void {
     if (!this.config || !this.svgParser) {
       return;
     }
 
     const mergeLines = this.config.getSync("mergeLines");
-    const mergedLength = (nestResult as unknown as { mergedLength?: number }).mergedLength;
+    const mergedLength = (nestResult as unknown as { mergedLength?: number })
+      .mergedLength;
 
     if (mergeLines && mergedLength && mergedLength > 0) {
       const curveTolerance = this.config.getSync("curveTolerance");
@@ -912,7 +1009,9 @@ export class ExportService {
    * @param options - Optional configuration options
    * @returns New ExportService instance
    */
-  static create(options?: ConstructorParameters<typeof ExportService>[0]): ExportService {
+  static create(
+    options?: ConstructorParameters<typeof ExportService>[0],
+  ): ExportService {
     return new ExportService(options);
   }
 }
@@ -923,7 +1022,7 @@ export class ExportService {
  * @returns New ExportService instance
  */
 export function createExportService(
-  options?: ConstructorParameters<typeof ExportService>[0]
+  options?: ConstructorParameters<typeof ExportService>[0],
 ): ExportService {
   return ExportService.create(options);
 }
