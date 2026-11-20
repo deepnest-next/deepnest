@@ -144,7 +144,8 @@ export class DeepNest {
     var i, j, k;
     var self = this;
 
-    if (config.simplify) {
+    // The hull only grows a shape: fine for a part, but a sheet (inside) would gain its notches.
+    if (config.simplify && !inside) {
       /*
       // use convex hull
       var hull = new ConvexHullGrahamScan();
