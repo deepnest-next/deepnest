@@ -121,6 +121,18 @@ test("Nest result fits the view and can be zoomed and dragged (#161)", async () 
       display.x + display.width - 16,
     );
 
+    // On-screen size of one hatch tile; it must not change with the zoom.
+    const hatchTile = () =>
+      win.evaluate(() => {
+        const svg = document.querySelector<SVGSVGElement>("#nestsvg")!;
+        const p = svg.querySelector<SVGPatternElement>("pattern")!;
+        const t = p.patternTransform.baseVal.consolidate();
+        return (
+          p.width.baseVal.value * (t ? t.matrix.a : 1) * svg.getScreenCTM()!.a
+        );
+      });
+    const tileFit = await hatchTile();
+
     // Wheel up zooms in.
     await win.mouse.move(
       display.x + display.width / 2,
@@ -130,6 +142,8 @@ test("Nest result fits the view and can be zoomed and dragged (#161)", async () 
     await expect
       .poll(async () => (await sheetRect()).width)
       .toBeGreaterThan(fit.width * 1.2);
+
+    expect(await hatchTile()).toBeCloseTo(tileFit, 1);
 
     // Dragging pans the view.
     const before = await sheetRect();
