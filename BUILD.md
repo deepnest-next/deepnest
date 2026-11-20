@@ -75,13 +75,17 @@ npm run clean-all && npm install && npm run build
 
 ### Running the tests
 
-First, one-time setup:
+The tests drive the Electron app itself, so Playwright's own Chromium is not needed. One-time setup:
 
 ```sh
-npx playwright install chromium
+# Playwright's ffmpeg build, used to record the test video
+npx playwright install ffmpeg
+
+# Linux only: the system libraries Electron needs (uses sudo)
+npx playwright install-deps chromium
 ```
 
-Without this, you may encounter tests timing out after 30000 milliseconds.
+Without ffmpeg, the test fails at launch with an error asking you to install it.
 
 Then, simply run `npm run test`.
 
