@@ -32,6 +32,8 @@ export interface UIConfig extends DeepNestConfig {
   access_token?: string;
   /** OAuth ID token for user identification */
   id_token?: string;
+  /** Folder of the last file opened or saved, the start folder of the next file dialog */
+  lastDirectory?: string;
   /** Enable SVG pre-processor for cleaning input files */
   useSvgPreProcessor: boolean;
   /** Extract part quantity from filename (e.g., part.3.svg = 3 copies) */

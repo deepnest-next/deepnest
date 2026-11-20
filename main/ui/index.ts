@@ -655,6 +655,40 @@ function initializeVersionInfo(): void {
 }
 
 /**
+ * Wrap the file dialogs so they start in the last used folder. Since Electron 43 they
+ * always open in Downloads and the OS no longer remembers the folder.
+ */
+function createRememberingDialog() {
+  const dialog = electronRemote.dialog as {
+    showOpenDialog: (
+      options: object,
+    ) => Promise<{ canceled: boolean; filePaths: string[] }>;
+    showSaveDialogSync: (options: object) => string | undefined;
+  };
+  const withLastDirectory = <T extends object>(options: T): T => {
+    const dir = configService.getSync("lastDirectory");
+    return dir && (fs as { existsSync: (p: string) => boolean }).existsSync(dir)
+      ? { defaultPath: dir, ...options }
+      : options;
+  };
+  const remember = (file?: string) => {
+    if (file) configService.setSync("lastDirectory", path.dirname(file));
+  };
+  return {
+    showOpenDialog: async (options: object) => {
+      const result = await dialog.showOpenDialog(withLastDirectory(options));
+      if (!result.canceled) remember(result.filePaths[0]);
+      return result;
+    },
+    showSaveDialogSync: (options: object) => {
+      const file = dialog.showSaveDialogSync(withLastDirectory(options));
+      remember(file);
+      return file;
+    },
+  };
+}
+
+/**
  * Initialize all services
  */
 async function initializeServices(): Promise<void> {
@@ -719,9 +753,11 @@ function initializeComponents(): void {
   });
   sheetDialogService.initialize();
 
+  const dialog = createRememberingDialog();
+
   // Initialize import service
   importService = createImportService({
-    dialog: electronRemote.dialog as unknown as {
+    dialog: dialog as unknown as {
       showOpenDialog: (
         options: unknown,
       ) => Promise<{ canceled: boolean; filePaths: string[] }>;
@@ -771,7 +807,7 @@ function initializeComponents(): void {
 
   // Initialize export service
   exportService = createExportService({
-    dialog: electronRemote.dialog as unknown as {
+    dialog: dialog as unknown as {
       showSaveDialogSync: (options: {
         title: string;
         filters: { name: string; extensions: string[] }[];
