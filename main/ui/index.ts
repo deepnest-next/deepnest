@@ -158,6 +158,7 @@ let ipcRenderer: IpcRenderer;
 let electronRemote: {
   dialog: { showOpenDialog: unknown; showSaveDialogSync: unknown };
   getGlobal: (name: string) => string | undefined;
+  getCurrentWindow: () => unknown;
 };
 let fs: unknown;
 let FormData: new () => unknown;
@@ -661,10 +662,18 @@ function initializeVersionInfo(): void {
 function createRememberingDialog() {
   const dialog = electronRemote.dialog as {
     showOpenDialog: (
+      parent: unknown,
       options: object,
     ) => Promise<{ canceled: boolean; filePaths: string[] }>;
-    showSaveDialogSync: (options: object) => string | undefined;
+    showSaveDialogSync: (
+      parent: unknown,
+      options: object,
+    ) => string | undefined;
   };
+  // Attach the dialogs to the main window. Without a parent, one click on the
+  // window hides the dialog behind it (GNOME/Wayland), and the import waits
+  // for a dialog the user can no longer see.
+  const parent = electronRemote.getCurrentWindow();
   const withLastDirectory = <T extends object>(options: T): T => {
     const dir = configService.getSync("lastDirectory");
     return dir && (fs as { existsSync: (p: string) => boolean }).existsSync(dir)
@@ -676,12 +685,18 @@ function createRememberingDialog() {
   };
   return {
     showOpenDialog: async (options: object) => {
-      const result = await dialog.showOpenDialog(withLastDirectory(options));
+      const result = await dialog.showOpenDialog(
+        parent,
+        withLastDirectory(options),
+      );
       if (!result.canceled) remember(result.filePaths[0]);
       return result;
     },
     showSaveDialogSync: (options: object) => {
-      const file = dialog.showSaveDialogSync(withLastDirectory(options));
+      const file = dialog.showSaveDialogSync(
+        parent,
+        withLastDirectory(options),
+      );
       remember(file);
       return file;
     },
