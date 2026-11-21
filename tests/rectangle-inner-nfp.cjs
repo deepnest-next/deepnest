@@ -44,8 +44,19 @@ const answer = vm.runInContext(`
     var copies = [];
     for (var n = 0; n < c[4]; n++) copies.push(poly([[0,0],[c[2],0],[c[2],c[3]],[0,c[3]]], n, n, c[5]));
     var r = placeParts([poly([[0,0],[c[0],0],[c[0],c[1]],[0,c[1]]],'stock',-1,0)], copies, cfg, 0);
-    return r.placements.length ? r.placements[0].sheetplacements.length : 0;
+    if (!r.placements.length) return 0;
+    // How far any placed part sticks out of the sheet, relative to the allowed half tolerance.
+    var sheetBox = poly([[0,0],[c[0],0],[c[0],c[1]],[0,c[1]]],'stock',-1,0);
+    var worst = 0;
+    r.placements[0].sheetplacements.forEach(function (pl) {
+      var b = GeometryUtil.getPolygonBounds(rotatePolygon(copies[pl.id], pl.rotation));
+      var out = Math.max(-(b.x + pl.x), -(b.y + pl.y), b.x + pl.x + b.width - c[0], b.y + pl.y + b.height - c[1]);
+      worst = Math.max(worst, out / (sheetTolerance(sheetBox) / 2));
+    });
+    exactOverhang = Math.max(exactOverhang, worst);
+    return r.placements[0].sheetplacements.length;
   }
+  var exactOverhang = 0;
   var exactCases = [[1000,1000,1000,1000,1,0],[1000,1000,1000,1000,1,90],[1000,1000,500,1000,2,0],
     [1000,1000,1000,500,2,90],[1000,110,100,100,10,0],[2834.645669291339,2834.645669291339,1417.3228346456694,2834.645669291339,2,0],
     [2834.6456693,2834.6456693,2834.645752,2834.645752,1,0]];
@@ -60,9 +71,26 @@ const answer = vm.runInContext(`
   var sheet1000 = poly([[0,0],[1000,0],[1000,1000],[0,1000]],'stock',-1,0);
   var needleOut = hasMaterialOutsideSheet(poly([[900,100],[1000.5,100.02],[900,100.04]],0,0,0), sheet1000, cfg);
   var float32In = !hasMaterialOutsideSheet(poly([[0,0],[1000.0001,0],[1000.0001,1000.0001],[0,1000.0001]],0,0,0), sheet1000, cfg);
-  ({ result, skipped, fallbackControls, exact, tooBig, needleOut, float32In });
+  // Known limit: non-rectangular sheets and sheets with holes use the native inner NFP, where
+  // an exact fit has a zero-area region and stays unplaced. Pinned so a fix shows up here.
+  function nativeExactFit(sheet, holes, partsPts) {
+    window.db = new NfpCache();
+    var s = poly(sheet,'stock',-1,0);
+    if (holes) s.children = holes.map(function (h, i) { return poly(h,'hole'+i,-2-i,0); });
+    var r = placeParts([s], partsPts.map(function (p, i) { return poly(p,i,i,0); }), cfg, 0);
+    return r.placements.length ? r.placements[0].sheetplacements.length : 0;
+  }
+  var L = [[0,0],[1000,0],[1000,400],[400,400],[400,1000],[0,1000]];
+  var knownLimit = [
+    nativeExactFit(L, null, [L]),
+    nativeExactFit(L, null, [[[0,0],[1000,0],[1000,400],[0,400]], [[0,0],[400,0],[400,600],[0,600]]]),
+    nativeExactFit([[0,0],[1000,0],[1000,1000],[0,1000]], [[[600,100],[900,100],[900,900],[600,900]]], [[[0,0],[600,0],[600,1000],[0,1000]]])
+  ];
+  ({ result, skipped, fallbackControls, exact, tooBig, needleOut, float32In, exactOverhang, knownLimit });
 `, context);
 for (const [c, placed] of answer.exact) assert.equal(placed, c[4], `#137 exact fit ${c.join(' ')}: ${placed}/${c[4]} placed`);
+assert(answer.exactOverhang <= 1 + 1e-6, `#137 exact fits may stick out by at most half the sheet tolerance, got ${answer.exactOverhang}x`);
+assert.deepEqual([...answer.knownLimit], [0, 0, 0], 'known limit changed: exact fits on non-rectangular sheets or sheets with holes are placed now; update this test and REASON_Issue137.md');
 assert(answer.needleOut, 'a needle poking 0.5 out of the sheet is outside, however small its area');
 assert(answer.float32In, 'a part 1e-7 of the sheet size too big (float32 import) is inside');
 assert.equal(answer.tooBig, 0, 'a part 0.002 (2e-6) or 0.01 wider than a 1000 sheet must not be placed, whatever the curve tolerance');
@@ -106,4 +134,4 @@ if (vm.runInContext("typeof rectangularInnerNfp === 'function'", context)) {
   assert(vm.runInContext('rectangularInnerNfp(A,B,cfg)',context)===null);
 }
 
-console.log('PASS: both copies placed, exact fits placed (#137), unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');
+console.log('PASS: both copies placed, exact fits placed (#137) within half the tolerance, known non-rectangular limit unchanged, unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');
