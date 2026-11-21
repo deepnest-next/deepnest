@@ -150,6 +150,9 @@ export class SvgParser {
 	// use the utility functions in this class to prepare the svg for CAD-CAM/nest related operations
 	cleanInput(dxfFlag){
 
+		// polygon/polyline points are float32 in Chromium's SVGPointList: keep float64 paths
+		this.polygonsToPaths(this.svgRoot);
+
 		// apply any transformations, so that all path positions etc will be in the same coordinate space
 		this.applyTransform(this.svgRoot, '', false, dxfFlag);
 
@@ -195,6 +198,33 @@ export class SvgParser {
 		return this.svgRoot;
 	}
 
+
+	// Chromium stores polygon/polyline points (SVGPointList) as float32: a 1000 mm box came
+	// back 2834.645752 units wide instead of 2834.6456693 (#137). Path segments (pathseg
+	// polyfill) keep JS numbers, so read the points attribute ourselves and draw a path.
+	polygonsToPaths(root){
+		var polys = root.querySelectorAll('polygon, polyline');
+		for(var i=0; i<polys.length; i++){
+			var poly = polys[i];
+			var nums = (poly.getAttribute('points') || '').match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g) || [];
+			var path = this.svg.createElementNS(poly.namespaceURI, 'path');
+			for(var j=0; j+1<nums.length; j+=2){
+				var x = Number(nums[j]);
+				var y = Number(nums[j+1]);
+				path.pathSegList.appendItem(j == 0 ? path.createSVGPathSegMovetoAbs(x, y) : path.createSVGPathSegLinetoAbs(x, y));
+			}
+			if(poly.tagName == 'polygon' && nums.length >= 2){
+				path.pathSegList.appendItem(path.createSVGPathSegClosePath());
+			}
+			for(var j=0; j<poly.attributes.length; j++){
+				var attr = poly.attributes[j];
+				if(attr.name != 'points'){
+					path.setAttribute(attr.name, attr.value);
+				}
+			}
+			poly.parentNode.replaceChild(path, poly);
+		}
+	}
 
 	imagePaths(svg){
 		if(!this.dirPath){
@@ -1237,39 +1267,22 @@ export class SvgParser {
 						this.applyTransform(rounded, globalTransform, skipClosed, dxfFlag);
 						return;
 					}
-					// similar to the ellipse, we'll replace rect with polygon
-					var polygon = this.svg.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+					// similar to the ellipse, we'll replace rect with a path (polygon points would be float32)
+					var path = this.svg.createElementNS('http://www.w3.org/2000/svg', 'path');
+					var x = parseFloat(element.getAttribute('x')) || 0;
+					var y = parseFloat(element.getAttribute('y')) || 0;
+					var w = parseFloat(element.getAttribute('width'));
+					var h = parseFloat(element.getAttribute('height'));
+					path.pathSegList.appendItem(path.createSVGPathSegMovetoAbs(x, y));
+					path.pathSegList.appendItem(path.createSVGPathSegLinetoAbs(x + w, y));
+					path.pathSegList.appendItem(path.createSVGPathSegLinetoAbs(x + w, y + h));
+					path.pathSegList.appendItem(path.createSVGPathSegLinetoAbs(x, y + h));
+					path.pathSegList.appendItem(path.createSVGPathSegClosePath());
 
-
-					var p1 = this.svgRoot.createSVGPoint();
-					var p2 = this.svgRoot.createSVGPoint();
-					var p3 = this.svgRoot.createSVGPoint();
-					var p4 = this.svgRoot.createSVGPoint();
-
-					p1.x = parseFloat(element.getAttribute('x')) || 0;
-					p1.y = parseFloat(element.getAttribute('y')) || 0;
-
-					p2.x = p1.x + parseFloat(element.getAttribute('width'));
-					p2.y = p1.y;
-
-					p3.x = p2.x;
-					p3.y = p1.y + parseFloat(element.getAttribute('height'));
-
-					p4.x = p1.x;
-					p4.y = p3.y;
-
-					polygon.points.appendItem(p1);
-					polygon.points.appendItem(p2);
-					polygon.points.appendItem(p3);
-					polygon.points.appendItem(p4);
-
-					var transformProperty = element.getAttribute('transform');
-					if(transformProperty){
-						polygon.setAttribute('transform', transformProperty);
-					}
-
-					element.parentElement.replaceChild(polygon, element);
-					element = polygon;
+					element.parentElement.replaceChild(path, element);
+					// transformString already holds the rect's own transform
+					this.applyTransform(path, transformString, skipClosed, dxfFlag);
+				break;
 
 				case 'polygon':
 				case 'polyline':
