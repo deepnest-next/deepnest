@@ -156,6 +156,12 @@ export class SvgParser {
 		// remove any g elements and bring all elements to the top level
 		this.flatten(this.svgRoot);
 
+		// rounded rects without a transform are still <rect>s; as paths, the nesting
+		// geometry follows their corners instead of the larger sharp rectangle (#160)
+		Array.prototype.slice.call(this.svgRoot.children).forEach((e) => {
+			if(e.tagName == 'rect') this.roundedRectToPath(e);
+		});
+
 		// remove any non-geometric elements like text
 		this.filter(this.allowedElements);
 
