@@ -182,6 +182,79 @@ test("DXF export sends rounded rect corners to the converter", async ({}, testIn
   }
 });
 
+/** Total arc angle (degrees) in a DXF: polyline bulges (4·atan|b|) plus ARC entities. */
+function dxfArcDegrees(dxf: string): number {
+  const lines = dxf.split(/\r?\n/).map((l) => l.trim());
+  let degrees = 0;
+  let entity = "";
+  let arcStart: number | null = null;
+  for (let i = 0; i + 1 < lines.length; i += 2) {
+    const [code, value] = [lines[i], lines[i + 1]];
+    if (code === "0") entity = value;
+    // Code 42 is a bulge only on polyline vertices (the header uses it for other things).
+    else if (code === "42" && (entity === "LWPOLYLINE" || entity === "VERTEX"))
+      degrees += (4 * Math.atan(Math.abs(Number(value))) * 180) / Math.PI;
+    else if (entity === "ARC" && code === "50") arcStart = Number(value);
+    else if (entity === "ARC" && code === "51" && arcStart !== null) {
+      degrees += (((Number(value) - arcStart) % 360) + 360) % 360;
+      arcStart = null;
+    }
+  }
+  return degrees;
+}
+
+// The real DXF, made by the online conversion server the app uses by default.
+// Skipped only when that server can't be reached at all; a wrong DXF still fails.
+test("DXF export through the online converter keeps rounded corners", async ({}, testInfo) => {
+  test.setTimeout(180_000);
+  const { app, win } = await launch();
+  try {
+    await win.waitForFunction(
+      () =>
+        typeof (window as unknown as { config?: { getSync?: unknown } }).config
+          ?.getSync === "function",
+    );
+    const url = await win.evaluate(() =>
+      (
+        window as unknown as {
+          config: { getSync(key: string): string };
+        }
+      ).config.getSync("conversionServer"),
+    );
+    const reachable = await fetch(url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(15_000),
+    }).then(
+      () => true,
+      () => false,
+    );
+    test.skip(!reachable, `conversion server ${url} not reachable`);
+
+    await importPart(app, win);
+    await nestThree(win, true);
+    const out = testInfo.outputPath("nest.dxf");
+    await app.evaluate(({ dialog }, p) => {
+      dialog.showSaveDialogSync = () => p;
+    }, out);
+    await win.click("id=export");
+    await win.click("id=exportdxf");
+    await expect
+      .poll(async () => (await readFile(out).catch(() => "")).toString(), {
+        timeout: 90_000,
+      })
+      .not.toBe("");
+    const dxf = (await readFile(out)).toString();
+    await testInfo.attach("nest.dxf", {
+      body: dxf,
+      contentType: "image/vnd.dxf",
+    });
+    // 240 rounded corners of 90 degrees each.
+    expect(dxfArcDegrees(dxf) / 90).toBeCloseTo(240, 0);
+  } finally {
+    await app.close();
+  }
+});
+
 // The nesting geometry of a rounded hole must follow its corners. A sharp 4-point
 // rectangle is larger than the real hole, so a part nested into the hole could cut
 // into the corner material.
