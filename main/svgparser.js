@@ -513,6 +513,10 @@ export class SvgParser {
 
 		for(var i=0; i<paths.length; i++){
 			var path = paths[i];
+			if(path.tagName == 'rect'){
+				// a rounded rect becomes a path, whose arcs survive the split (#160)
+				path = this.roundedRectToPath(path) || path;
+			}
 			if(path.tagName == 'polyline' || path.tagName == 'polygon'){
 				if(path.points.length < 2){
 					continue;
@@ -553,6 +557,42 @@ export class SvgParser {
 				});
 			}
 		}
+	}
+
+	// Replace a <rect> with rounded corners (rx/ry) by an equivalent <path>, so
+	// code that turns rects into straight lines keeps the arcs (#160).
+	// Returns the new path, or null for a rect without rounded corners.
+	roundedRectToPath(rect){
+		var rx = parseFloat(rect.getAttribute('rx'));
+		var ry = parseFloat(rect.getAttribute('ry'));
+		if(!(rx > 0)) rx = ry;
+		if(!(ry > 0)) ry = rx;
+		if(!(rx > 0)){
+			return null;
+		}
+		var x = parseFloat(rect.getAttribute('x')) || 0;
+		var y = parseFloat(rect.getAttribute('y')) || 0;
+		var w = parseFloat(rect.getAttribute('width'));
+		var h = parseFloat(rect.getAttribute('height'));
+		rx = Math.min(rx, w/2);
+		ry = Math.min(ry, h/2);
+		var arc = ' A ' + rx + ' ' + ry + ' 0 0 1 ';
+
+		var path = rect.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'path');
+		path.setAttribute('d',
+			'M ' + (x+rx) + ' ' + y + ' L ' + (x+w-rx) + ' ' + y +
+			arc + (x+w) + ' ' + (y+ry) + ' L ' + (x+w) + ' ' + (y+h-ry) +
+			arc + (x+w-rx) + ' ' + (y+h) + ' L ' + (x+rx) + ' ' + (y+h) +
+			arc + x + ' ' + (y+h-ry) + ' L ' + x + ' ' + (y+ry) +
+			arc + (x+rx) + ' ' + y + ' Z');
+		for(var i=0; i<rect.attributes.length; i++){
+			var name = rect.attributes[i].name;
+			if(['x','y','width','height','rx','ry'].indexOf(name) == -1){
+				path.setAttribute(name, rect.attributes[i].value);
+			}
+		}
+		rect.parentElement.replaceChild(path, rect);
+		return path;
 	}
 
 	// turn one path into individual segments
@@ -1184,6 +1224,11 @@ export class SvgParser {
 				case 'rect':
 					if(skipClosed){
 						element.setAttribute('transform', transformString);
+						return;
+					}
+					var rounded = this.roundedRectToPath(element);
+					if(rounded){
+						this.applyTransform(rounded, globalTransform, skipClosed, dxfFlag);
 						return;
 					}
 					// similar to the ellipse, we'll replace rect with polygon
