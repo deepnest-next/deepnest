@@ -8,12 +8,8 @@ import path from "path";
 // A 1000 mm box must import exactly as large as a 1000 mm sheet typed in (#137).
 for (const useSvgPreProcessor of [false, true]) {
   test(`SVG import keeps mm sizes exact (svg pre-processor ${useSvgPreProcessor})`, async () => {
-    // @deepnest/svg-preprocessor <= 0.2.2 parses with usvg, which stores float32
-    // (2834.6457 units). Drop this once deepnest uses the release with the f64 import.
-    test.fail(
-      useSvgPreProcessor,
-      "svg-preprocessor 0.2.2 imports float32 coordinates",
-    );
+    // With the pre-processor on this needs @deepnest/svg-preprocessor >= 0.2.3 (f64 import;
+    // 0.2.2 used usvg, which stores float32: 2834.6457 units).
     const userData = await mkdtemp(path.join(tmpdir(), "deepnest-test-"));
     await writeFile(
       path.join(userData, "settings.json"),
