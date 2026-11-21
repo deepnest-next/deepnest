@@ -10,11 +10,19 @@ import { NestingResult } from "../index";
 // Issue #137: parts that fill a 1000 x 1000 mm sheet exactly must be placed. With
 // `imported`, the sheet is the largest shape in the file: an L sheet that two rectangles
 // tile, and a sheet with a hole whose strip next to the hole a part fills.
+// `everyResult`: every GA result must place all parts. Not for the L sheet: its two parts
+// differ, and an order that places the 400x600 part first can leave no room for the
+// 1000x400 one in any rotation; only the best result must place both there.
 const cases = [
-  { file: "box-1000x1000.svg", parts: 1, imported: false },
-  { file: "two-500x1000.svg", parts: 2, imported: false },
-  { file: "l-sheet-two-parts.svg", parts: 2, imported: true },
-  { file: "hole-sheet-strip.svg", parts: 1, imported: true },
+  { file: "box-1000x1000.svg", parts: 1, imported: false, everyResult: true },
+  { file: "two-500x1000.svg", parts: 2, imported: false, everyResult: true },
+  {
+    file: "l-sheet-two-parts.svg",
+    parts: 2,
+    imported: true,
+    everyResult: false,
+  },
+  { file: "hole-sheet-strip.svg", parts: 1, imported: true, everyResult: true },
 ];
 test("the placement engine's exact-fit checks pass", () => {
   // tests/rectangle-inner-nfp.cjs was not part of `npm test`; run it here so CI does.
@@ -28,7 +36,7 @@ test("the placement engine's exact-fit checks pass", () => {
   );
 });
 
-for (const { file, parts, imported } of cases)
+for (const { file, parts, imported, everyResult } of cases)
   for (const simplify of [false, true])
     for (const rotations of [4, 360]) {
       test(`Exact fit ${file} on ${imported ? "its own sheet" : "1000 x 1000 mm"} (simplify ${simplify}, ${rotations} rotations)`, async () => {
@@ -111,8 +119,9 @@ for (const { file, parts, imported } of cases)
           ).toPass({ timeout: 60_000 });
           await win.locator("#stopnest").click();
 
-          // The best result places all parts; no result has a part outside the sheet.
-          // (A GA individual with one part turned 90 degrees places fewer, as with any fit.)
+          // All parts placed (in every result where part order can't matter), and no result
+          // has a part outside the sheet. Since #226 a part with no room at its GA rotation
+          // tries the other rotations, so a part turned 90 degrees no longer places fewer.
           const results = await win.evaluate(() => {
             const w = window as unknown as {
               ClipperLib: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -163,9 +172,23 @@ for (const { file, parts, imported } of cases)
                     );
                     for (const d of both) out += Math.abs(C.Clipper.Area(d));
                   }
+                  // Allowed: a band of the sheet tolerance (1e-6 of the sheet's larger
+                  // side, background.js sheetTolerance) along the part's outline.
+                  const xs = all[s.sheet].polygontree.map((v) => v.x);
+                  const ys = all[s.sheet].polygontree.map((v) => v.y);
+                  const tolerance =
+                    1e-6 *
+                    Math.max(
+                      Math.max(...xs) - Math.min(...xs),
+                      Math.max(...ys) - Math.min(...ys),
+                    );
+                  const perimeter = poly.reduce((sum, v, i) => {
+                    const n = poly[(i + 1) % poly.length];
+                    return sum + Math.hypot(n.x - v.x, n.y - v.y);
+                  }, 0);
                   outside = Math.max(
                     outside,
-                    out / Math.abs(C.Clipper.Area(toPath(poly))),
+                    out / (tolerance * scale * perimeter * scale),
                   );
                 }
               }
@@ -174,7 +197,11 @@ for (const { file, parts, imported } of cases)
           });
           expect(results.length).toBeGreaterThan(0);
           expect(results[0].placed).toBe(parts);
-          for (const r of results) expect(r.outside).toBeLessThan(1e-6);
+          for (const r of results) {
+            if (everyResult) expect(r.placed).toBe(parts);
+            // At most the tolerance band outside the sheet or inside its holes.
+            expect(r.outside).toBeLessThanOrEqual(1);
+          }
         } finally {
           await app.close();
         }
