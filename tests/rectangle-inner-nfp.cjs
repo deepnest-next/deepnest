@@ -38,8 +38,34 @@ const answer = vm.runInContext(`
     var sloped = poly([[1,1],[139,2],[139,199],[1,199]],'stock',-1,0);
     fallbackControls = [rectangularInnerNfp(holeSheet,parts[0],cfg),rectangularInnerNfp(sloped,parts[0],cfg)];
   }
-  ({ result, skipped, fallbackControls });
+  // #137: exact fits and rows of touching parts, [sheet w, h, part w, h, copies, rotation].
+  function exactFit(c) {
+    window.db = new NfpCache();
+    var copies = [];
+    for (var n = 0; n < c[4]; n++) copies.push(poly([[0,0],[c[2],0],[c[2],c[3]],[0,c[3]]], n, n, c[5]));
+    var r = placeParts([poly([[0,0],[c[0],0],[c[0],c[1]],[0,c[1]]],'stock',-1,0)], copies, cfg, 0);
+    return r.placements.length ? r.placements[0].sheetplacements.length : 0;
+  }
+  var exactCases = [[1000,1000,1000,1000,1,0],[1000,1000,1000,1000,1,90],[1000,1000,500,1000,2,0],
+    [1000,1000,1000,500,2,90],[1000,110,100,100,10,0],[2834.645669291339,2834.645669291339,1417.3228346456694,2834.645669291339,2,0],
+    [2834.6456693,2834.6456693,2834.645752,2834.645752,1,0]];
+  var exact = exactCases.map(c => [c, exactFit(c)]);
+  // Clearly too big must still not fit, also with a coarse curve tolerance:
+  // the sheet tolerance must not grow with user settings.
+  cfg.curveTolerance = 100;
+  var tooBig = exactFit([1000,1000,1000.01,1000,1,0]) + exactFit([1000,1000,1000.002,1000,1,0]);
+  cfg.curveTolerance = 0.3;
+  // A needle whose tip pokes 0.5 out of a 1000 sheet: tiny area outside, but 500x deeper than
+  // the tolerance. A part 1e-7 of the sheet size too big (float32 import) is accepted.
+  var sheet1000 = poly([[0,0],[1000,0],[1000,1000],[0,1000]],'stock',-1,0);
+  var needleOut = hasMaterialOutsideSheet(poly([[900,100],[1000.5,100.02],[900,100.04]],0,0,0), sheet1000, cfg);
+  var float32In = !hasMaterialOutsideSheet(poly([[0,0],[1000.0001,0],[1000.0001,1000.0001],[0,1000.0001]],0,0,0), sheet1000, cfg);
+  ({ result, skipped, fallbackControls, exact, tooBig, needleOut, float32In });
 `, context);
+for (const [c, placed] of answer.exact) assert.equal(placed, c[4], `#137 exact fit ${c.join(' ')}: ${placed}/${c[4]} placed`);
+assert(answer.needleOut, 'a needle poking 0.5 out of the sheet is outside, however small its area');
+assert(answer.float32In, 'a part 1e-7 of the sheet size too big (float32 import) is inside');
+assert.equal(answer.tooBig, 0, 'a part 0.002 (2e-6) or 0.01 wider than a 1000 sheet must not be placed, whatever the curve tolerance');
 assert(Number.isFinite(answer.result.fitness), 'fitness must remain finite');
 assert.equal(answer.result.placements.length, 1);
 assert.equal(answer.result.placements[0].sheetplacements.length, 2, 'both fitting copies must be placed');
@@ -61,14 +87,16 @@ if (vm.runInContext("typeof rectangularInnerNfp === 'function'", context)) {
       const rotated=B.map(p=>({x:p.x*Math.cos(r)-p.y*Math.sin(r),y:p.x*Math.sin(r)+p.y*Math.cos(r)}));
       for(const container of [A,[...A].reverse()]) {
         context.A=container;context.B=rotated;
+        const slack=vm.runInContext('sheetTolerance(A)/2',context);
         const nf=vm.runInContext('rectangularInnerNfp(A,B,cfg)',context);
         assert(nf);
         const xs=container.map(p=>p.x),ys=container.map(p=>p.y);
         for(const p of nf[0]) {
           const dx=p.x-rotated[0].x,dy=p.y-rotated[0].y;
           for(const q of rotated) {
-            assert(q.x+dx>=Math.min(...xs)-1e-12 && q.x+dx<=Math.max(...xs)+1e-12);
-            assert(q.y+dy>=Math.min(...ys)-1e-12 && q.y+dy<=Math.max(...ys)+1e-12);
+            // The far edges may overhang by half the sheet tolerance (#137).
+            assert(q.x+dx>=Math.min(...xs)-1e-12 && q.x+dx<=Math.max(...xs)+slack+1e-12);
+            assert(q.y+dy>=Math.min(...ys)-1e-12 && q.y+dy<=Math.max(...ys)+slack+1e-12);
           }
         }
       }
@@ -78,4 +106,4 @@ if (vm.runInContext("typeof rectangularInnerNfp === 'function'", context)) {
   assert(vm.runInContext('rectangularInnerNfp(A,B,cfg)',context)===null);
 }
 
-console.log('PASS: both copies placed, unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');
+console.log('PASS: both copies placed, exact fits placed (#137), unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');
