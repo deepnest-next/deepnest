@@ -698,11 +698,17 @@ function hasMaterialOverlap(A, B, config) {
 function hasMaterialOutsideSheet(part, sheet, config) {
   var clipperPart = outerPathToClipperCoordinates(part, config);
   var clipperSheet = outerPathToClipperCoordinates(sheet, config);
+  // Grow the sheet by the tolerance, so no point of the part may lie further
+  // outside than that, however small the area (#137).
+  var grownSheet = new ClipperLib.Paths();
+  var offset = new ClipperLib.ClipperOffset();
+  offset.AddPath(clipperSheet, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+  offset.Execute(grownSheet, sheetTolerance(sheet) * config.clipperScale);
   var outside = new ClipperLib.Paths();
   var clipper = new ClipperLib.Clipper();
 
   clipper.AddPath(clipperPart, ClipperLib.PolyType.ptSubject, true);
-  clipper.AddPath(clipperSheet, ClipperLib.PolyType.ptClip, true);
+  clipper.AddPaths(grownSheet, ClipperLib.PolyType.ptClip, true);
 
   if (!clipper.Execute(ClipperLib.ClipType.ctDifference, outside,
     ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
@@ -722,6 +728,20 @@ function hasMaterialOutsideSheet(part, sheet, config) {
   }
 
   return false;
+}
+
+// Parts may stick out of the sheet by this much. An exact fit (#137) has a
+// zero-area feasible region, which Clipper drops, so placement needs some slack.
+// 1e-6 of the sheet's larger side (1 um on a 1 m sheet), independent of user
+// settings.
+// Known precision limit (not JS Number, which is float64): SVG import goes
+// through @deepnest/svg-preprocessor, whose usvg stores geometry as float32
+// (about 1.2e-7 relative). A 1000 mm box imports as 2834.645752 units while a
+// 1000 mm sheet is 2834.6456693, so an exact fit is 8e-5 units too big.
+// shortcut: drop this slack once the import keeps float64 coordinates.
+function sheetTolerance(sheet) {
+  var bounds = GeometryUtil.getPolygonBounds(sheet);
+  return Math.max(bounds.width, bounds.height) * 1e-6;
 }
 
 function hasNonZeroClipperArea(paths) {
@@ -1044,13 +1064,14 @@ function rectangularInnerNfp(A, B, config) {
   if (corners.size !== 4) return null;
   var bb = GeometryUtil.getPolygonBounds(B);
   var scale = config.clipperScale;
-  // One Clipper grid unit of slack avoids floating-point cancellation when the
-  // caller subtracts B's reference point. It never enlarges the feasible region.
-  var x0 = (Math.ceil((bounds.x - bb.x) * scale) + 1) / scale;
-  var y0 = (Math.ceil((bounds.y - bb.y) * scale) + 1) / scale;
-  var x1 = (Math.floor((xmax - (bb.x + bb.width)) * scale) - 1) / scale;
-  var y1 = (Math.floor((ymax - (bb.y + bb.height)) * scale) - 1) / scale;
-  // Preserve the existing general path for exact-fit or narrower-than-grid regions.
+  // The far edges reach half the sheet tolerance past the exact limit, so an
+  // exact fit or a row of touching parts keeps a non-zero region (#137).
+  // hasMaterialOutsideSheet accepts that overhang and any rounding noise.
+  var slack = sheetTolerance(A) / 2;
+  var x0 = Math.ceil((bounds.x - bb.x) * scale) / scale;
+  var y0 = Math.ceil((bounds.y - bb.y) * scale) / scale;
+  var x1 = Math.floor((xmax - (bb.x + bb.width) + slack) * scale) / scale;
+  var y1 = Math.floor((ymax - (bb.y + bb.height) + slack) * scale) / scale;
   if (x0 > x1 || y0 > y1) return null;
   return [[
     { x: x0 + B[0].x, y: y0 + B[0].y },
