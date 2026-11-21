@@ -71,28 +71,81 @@ const answer = vm.runInContext(`
   var sheet1000 = poly([[0,0],[1000,0],[1000,1000],[0,1000]],'stock',-1,0);
   var needleOut = hasMaterialOutsideSheet(poly([[900,100],[1000.5,100.02],[900,100.04]],0,0,0), sheet1000, cfg);
   var float32In = !hasMaterialOutsideSheet(poly([[0,0],[1000.0001,0],[1000.0001,1000.0001],[0,1000.0001]],0,0,0), sheet1000, cfg);
-  // Known limit: non-rectangular sheets and sheets with holes use the native inner NFP, where
-  // an exact fit has a zero-area region and stays unplaced. Pinned so a fix shows up here.
-  function nativeExactFit(sheet, holes, partsPts) {
-    window.db = new NfpCache();
-    var s = poly(sheet,'stock',-1,0);
-    if (holes) s.children = holes.map(function (h, i) { return poly(h,'hole'+i,-2-i,0); });
-    var r = placeParts([s], partsPts.map(function (p, i) { return poly(p,i,i,0); }), cfg, 0);
-    return r.placements.length ? r.placements[0].sheetplacements.length : 0;
+  // The same for a hole in the sheet; a part whose own hole encloses the sheet's hole is inside.
+  var holed1000 = poly([[0,0],[1000,0],[1000,1000],[0,1000]],'stock',-1,0);
+  holed1000.children = [poly([[400,400],[600,400],[600,600],[400,600]],'hole',-2,0)];
+  var holeNeedle = hasMaterialOutsideSheet(poly([[300,500],[400.5,500.02],[300,500.04]],0,0,0), holed1000, cfg);
+  var holeFloat32 = !hasMaterialOutsideSheet(poly([[0,0],[400.0001,0],[400.0001,1000],[0,1000]],0,0,0), holed1000, cfg);
+  var ring = poly([[300,300],[700,300],[700,700],[300,700]],0,0,0); ring.children = [poly([[350,350],[650,350],[650,650],[350,650]],0,0,0)];
+  var ringIn = !hasMaterialOutsideSheet(ring, holed1000, cfg);
+  // Exact fits on non-rectangular sheets and sheets with holes (native inner NFP): the plain
+  // inner NFP has zero area there, so only those parts may use the tolerance band.
+  // [sheet, holes, parts, at most this share of the sheet tolerance outside, placement type].
+  function within(part, s, d) {
+    var paths = [outerPathToClipperCoordinates(s, cfg)].concat(childPathsToClipperCoordinates(s, cfg));
+    var grownSheet = new ClipperLib.Paths(), offset = new ClipperLib.ClipperOffset(), out = new ClipperLib.Paths();
+    offset.AddPaths(paths, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    offset.Execute(grownSheet, d * cfg.clipperScale);
+    var clipper = new ClipperLib.Clipper();
+    clipper.AddPath(outerPathToClipperCoordinates(part, cfg), ClipperLib.PolyType.ptSubject, true);
+    clipper.AddPaths(grownSheet, ClipperLib.PolyType.ptClip, true);
+    clipper.Execute(ClipperLib.ClipType.ctDifference, out, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+    return !hasNonZeroClipperArea(out);
   }
+  function nativeFit(c) {
+    window.db = new NfpCache();
+    var s = poly(c[0],'stock',-1,0);
+    if (c[1]) s.children = c[1].map(function (h, i) { return poly(h,'hole'+i,-2-i,0); });
+    var copies = c[2].map(function (p, i) { return poly(p,i,i,0); });
+    cfg.placementType = c[4] || 'gravity';
+    var r = placeParts([s], copies, cfg, 0);
+    cfg.placementType = 'gravity';
+    if (!r.placements.length) return [0, true];
+    var inside = r.placements[0].sheetplacements.every(function (pl) {
+      return within(shiftPolygon(rotatePolygon(copies[pl.id], pl.rotation), pl), s, c[3] * sheetTolerance(s));
+    });
+    return [r.placements[0].sheetplacements.length, inside];
+  }
+  function rect(x, y, w, h) { return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]]; }
+  function scaled(pts, f) { return pts.map(function (v) { return [f(v[0]), f(v[1])]; }); }
   var L = [[0,0],[1000,0],[1000,400],[400,400],[400,1000],[0,1000]];
-  var knownLimit = [
-    nativeExactFit(L, null, [L]),
-    nativeExactFit(L, null, [[[0,0],[1000,0],[1000,400],[0,400]], [[0,0],[400,0],[400,600],[0,600]]]),
-    nativeExactFit([[0,0],[1000,0],[1000,1000],[0,1000]], [[[600,100],[900,100],[900,900],[600,900]]], [[[0,0],[600,0],[600,1000],[0,1000]]])
+  var square = rect(0,0,1000,1000), hole = [rect(600,100,300,800)];
+  // 1 mm in SVG units, and what the float32 import makes of a size (#137).
+  var mm = 72 / 25.4, f32 = function (v) { return Math.fround(v * mm); };
+  var irregular = [
+    [L, null, [L], 0.51],                                         // L part on an identical L sheet
+    [L, null, [rect(0,0,1000,400), rect(0,0,400,600)], 0.51],     // two rectangles tiling the L
+    [square, hole, [rect(0,0,600,1000)], 0.51],                   // filling the strip next to a hole
+    [L, null, [rect(0,0,200,600), rect(0,0,200,600)], 0.51],      // a row of two filling the 400 leg
+    [square, hole, [rect(0,0,200,1000), rect(0,0,200,1000), rect(0,0,200,1000)], 0.51], // a row of three next to the hole
+    [scaled(L, function (v) { return v * mm; }), null, [scaled(L, f32)], 0.51],           // float32: a hair too big
+    [scaled(square, function (v) { return v * mm; }), [scaled(rect(400,100,500,800), function (v) { return v * mm; })], [scaled(rect(0,0,400,1000), f32)], 0.51],
+    // Parts with room stay off the tolerance band (only native NFP rounding, 2e-6 of 1000 here).
+    [L, null, [rect(0,0,500,300), rect(0,0,300,300)], 0.01],
+    [square, hole, [rect(0,0,500,900), rect(0,0,50,50)], 0.01],
+    // Without the plain inner NFP these put the last part into the band although it has room.
+    [L, null, [rect(0,0,400,1000), rect(0,0,600,200)], 0.01, 'box'],
+    [L, null, [rect(0,0,100,200), rect(0,0,200,1000), rect(0,0,350,380)], 0.01],
+    [L, null, [rect(0,0,240,290), rect(0,0,310,440), rect(0,0,100,100), rect(0,0,160,370)], 0.01, 'convexhull'],
+    [L.slice().reverse(), null, [L], 0.51]                                 // the sheet's orientation does not matter
+  ].map(nativeFit);
+  // Too big by twice the tolerance (2e-6 of the sheet): never placed.
+  var irregularTooBig = [
+    nativeFit([L, null, [scaled(L, function (v) { return v * (1 + 2e-6); })], 1])[0],
+    nativeFit([square, hole, [rect(0,0,600.002,1000)], 1])[0]
   ];
-  ({ result, skipped, fallbackControls, exact, tooBig, needleOut, float32In, exactOverhang, knownLimit });
+  ({ result, skipped, fallbackControls, exact, tooBig, needleOut, float32In, holeNeedle, holeFloat32, ringIn, exactOverhang, irregular, irregularTooBig });
 `, context);
 for (const [c, placed] of answer.exact) assert.equal(placed, c[4], `#137 exact fit ${c.join(' ')}: ${placed}/${c[4]} placed`);
 assert(answer.exactOverhang <= 1 + 1e-6, `#137 exact fits may stick out by at most half the sheet tolerance, got ${answer.exactOverhang}x`);
-assert.deepEqual([...answer.knownLimit], [0, 0, 0], 'known limit changed: exact fits on non-rectangular sheets or sheets with holes are placed now; update this test and REASON_Issue137.md');
+assert.deepEqual(Array.from(answer.irregular, r => r[0]), [1, 2, 1, 2, 3, 1, 1, 2, 2, 2, 3, 4, 1], '#137 exact fits on non-rectangular sheets and sheets with holes: parts placed per case');
+answer.irregular.forEach((r, i) => assert(r[1], `#137 irregular case ${i}: a part sticks out of the sheet further than allowed`));
+assert.deepEqual([...answer.irregularTooBig], [0, 0], 'a part 2e-6 of the sheet too big must not be placed on an irregular sheet or one with holes');
 assert(answer.needleOut, 'a needle poking 0.5 out of the sheet is outside, however small its area');
 assert(answer.float32In, 'a part 1e-7 of the sheet size too big (float32 import) is inside');
+assert(answer.holeNeedle, 'a needle poking 0.5 into a hole of the sheet is outside');
+assert(answer.holeFloat32, 'a part reaching 1e-7 of the sheet size into a hole (float32 import) is inside');
+assert(answer.ringIn, 'a part whose own hole encloses a hole of the sheet is inside');
 assert.equal(answer.tooBig, 0, 'a part 0.002 (2e-6) or 0.01 wider than a 1000 sheet must not be placed, whatever the curve tolerance');
 assert(Number.isFinite(answer.result.fitness), 'fitness must remain finite');
 assert.equal(answer.result.placements.length, 1);
@@ -134,4 +187,4 @@ if (vm.runInContext("typeof rectangularInnerNfp === 'function'", context)) {
   assert(vm.runInContext('rectangularInnerNfp(A,B,cfg)',context)===null);
 }
 
-console.log('PASS: both copies placed, exact fits placed (#137) within half the tolerance, known non-rectangular limit unchanged, unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');
+console.log('PASS: both copies placed, exact fits placed (#137) within half the tolerance, exact fits on non-rectangular sheets and sheets with holes placed, unusable first sheet skipped, finite fitness, nonrectangular/hole fallback preserved');

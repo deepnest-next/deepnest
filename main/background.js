@@ -696,18 +696,19 @@ function hasMaterialOverlap(A, B, config) {
 }
 
 function hasMaterialOutsideSheet(part, sheet, config) {
-  var clipperPart = outerPathToClipperCoordinates(part, config);
-  var clipperSheet = outerPathToClipperCoordinates(sheet, config);
-  // Grow the sheet by the tolerance, so no point of the part may lie further
-  // outside than that, however small the area (#137).
+  // The part's material: a hole in the part may enclose a hole of the sheet.
+  var clipperPart = [outerPathToClipperCoordinates(part, config)].concat(childPathsToClipperCoordinates(part, config));
+  var clipperSheet = [outerPathToClipperCoordinates(sheet, config)].concat(childPathsToClipperCoordinates(sheet, config));
+  // Grow the sheet by the tolerance and shrink its holes by as much, so no point of
+  // the part may lie further outside than that, however small the area (#137).
   var grownSheet = new ClipperLib.Paths();
   var offset = new ClipperLib.ClipperOffset();
-  offset.AddPath(clipperSheet, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+  offset.AddPaths(clipperSheet, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
   offset.Execute(grownSheet, sheetTolerance(sheet) * config.clipperScale);
   var outside = new ClipperLib.Paths();
   var clipper = new ClipperLib.Clipper();
 
-  clipper.AddPath(clipperPart, ClipperLib.PolyType.ptSubject, true);
+  clipper.AddPaths(clipperPart, ClipperLib.PolyType.ptSubject, true);
   clipper.AddPaths(grownSheet, ClipperLib.PolyType.ptClip, true);
 
   if (!clipper.Execute(ClipperLib.ClipType.ctDifference, outside,
@@ -715,19 +716,7 @@ function hasMaterialOutsideSheet(part, sheet, config) {
     return true;
   }
 
-  if (hasNonZeroClipperArea(outside)) {
-    return true;
-  }
-
-  if (sheet.children && sheet.children.length > 0) {
-    for (let i = 0; i < sheet.children.length; i++) {
-      if (hasMaterialOverlap(part, sheet.children[i], config)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return hasNonZeroClipperArea(outside);
 }
 
 // Parts may stick out of the sheet by this much. An exact fit (#137) has a
@@ -1044,24 +1033,31 @@ function getFrame(A) {
  */
 // Exact rectangular-sheet inner NFP: avoid native integer-rescaling errors at stock boundaries.
 // A is a hole-free axis-aligned rectangle; B is already rotated in local coordinates.
-function rectangularInnerNfp(A, B, config) {
-  if (A.children && A.children.length) return null;
+function isRectangularSheet(A) {
+  if (A.children && A.children.length) return false;
   var count = A.length;
   if (count === 5 && A[0].x === A[4].x && A[0].y === A[4].y) count = 4;
-  if (count !== 4) return null;
+  if (count !== 4) return false;
   var bounds = GeometryUtil.getPolygonBounds(A);
   var xmax = bounds.x + bounds.width;
   var ymax = bounds.y + bounds.height;
   var corners = new Set();
   for (var i = 0; i < count; i++) {
     if ((A[i].x !== bounds.x && A[i].x !== xmax) ||
-        (A[i].y !== bounds.y && A[i].y !== ymax)) return null;
+        (A[i].y !== bounds.y && A[i].y !== ymax)) return false;
     var next = A[(i + 1) % count];
     if ((A[i].x !== next.x && A[i].y !== next.y) ||
-        (A[i].x === next.x && A[i].y === next.y)) return null;
+        (A[i].x === next.x && A[i].y === next.y)) return false;
     corners.add(A[i].x + ',' + A[i].y);
   }
-  if (corners.size !== 4) return null;
+  return corners.size === 4;
+}
+
+function rectangularInnerNfp(A, B, config) {
+  if (!isRectangularSheet(A)) return null;
+  var bounds = GeometryUtil.getPolygonBounds(A);
+  var xmax = bounds.x + bounds.width;
+  var ymax = bounds.y + bounds.height;
   var bb = GeometryUtil.getPolygonBounds(B);
   var scale = config.clipperScale;
   // The far edges reach half the sheet tolerance past the exact limit, so an
@@ -1082,16 +1078,55 @@ function rectangularInnerNfp(A, B, config) {
   ]];
 }
 
-function getInnerNfp(A, B, config) {
-  var rectangular = rectangularInnerNfp(A, B, config);
-  if (rectangular) return rectangular;
-  if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
-    var doc = window.db.find({ A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation }, true);
+// The sheet with its far sides (facing +x or +y) moved out by half its tolerance, like the
+// far edges in rectangularInnerNfp: the union of the sheet shifted by (0|d, 0|d), which also
+// shrinks holes from their near sides. An exact fit (#137) then keeps a non-zero inner NFP,
+// while the sides parts are pushed against stay exact. hasMaterialOutsideSheet still checks
+// the real sheet.
+function growSheet(A, config) {
+  var d = Math.round(sheetTolerance(A) / 2 * config.clipperScale);
+  var paths = [outerPathToClipperCoordinates(A, config)].concat(childPathsToClipperCoordinates(A, config));
+  var clipper = new ClipperLib.Clipper();
+  [[0, 0], [d, 0], [0, d], [d, d]].forEach(function (s) {
+    clipper.AddPaths(paths.map(function (path) {
+      return path.map(function (p) { return new ClipperLib.IntPoint(p.X + s[0], p.Y + s[1]); });
+    }), ClipperLib.PolyType.ptSubject, true);
+  });
+  // Each shifted copy adds winding 1 on its material and 0 in its holes, so nonzero is their union.
+  var grown = new ClipperLib.Paths();
+  if (!clipper.Execute(ClipperLib.ClipType.ctUnion, grown,
+    ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero) || grown.length == 0) {
+    return null;
+  }
+  // The outline is the largest path, the rest are the shrunk holes.
+  grown.sort(function (a, b) { return Math.abs(ClipperLib.Clipper.Area(b)) - Math.abs(ClipperLib.Clipper.Area(a)); });
+  var G = toNestCoordinates(grown[0], config.clipperScale);
+  if ((GeometryUtil.polygonArea(G) > 0) != (GeometryUtil.polygonArea(A) > 0)) G.reverse();
+  G.children = grown.slice(1).map(function (p) { return toNestCoordinates(p, config.clipperScale); });
+  return G;
+}
+
+// grow: the inner NFP on the sheet with its far sides moved out (growSheet), cached under its
+// own key so it never mixes with the plain one.
+function getInnerNfp(A, B, config, grow) {
+  var source = grow && typeof A.source !== 'undefined' ? A.source + '+tolerance' : A.source;
+  if (!grow) {
+    var rectangular = rectangularInnerNfp(A, B, config);
+    if (rectangular) return rectangular;
+  }
+  if (typeof source !== 'undefined' && typeof B.source !== 'undefined') {
+    var doc = window.db.find({ A: source, B: B.source, Arotation: 0, Brotation: B.rotation }, true);
 
     if (doc) {
       //console.log('fetch inner', A.source, B.source, doc);
       return doc;
     }
+  }
+
+  if (grow) {
+    A = growSheet(A, config);
+    if (!A) return null;
+    A.source = source;
   }
 
   var frame = getFrame(A);
@@ -1113,7 +1148,7 @@ function getInnerNfp(A, B, config) {
   }
 
   if (holes.length == 0) {
-    return nfp.children;
+    return cacheInnerNfp(A, B, nfp.children);
   }
 
   var clipperNfp = innerNfpToClipperCoordinates(nfp.children, config);
@@ -1138,20 +1173,15 @@ function getInnerNfp(A, B, config) {
     f.push(toNestCoordinates(finalNfp[i], config.clipperScale));
   }
 
-  if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
-    // insert into db
-    // console.log('inserting inner: ', A.source, B.source, B.rotation, f);
-    var doc = {
-      A: A.source,
-      B: B.source,
-      Arotation: 0,
-      Brotation: B.rotation,
-      nfp: f
-    };
-    window.db.insert(doc, true);
-  }
+  return cacheInnerNfp(A, B, f);
+}
 
-  return f;
+// Sheets without holes are cached too: placeParts asks for the plain and the grown inner NFP.
+function cacheInnerNfp(A, B, nfp) {
+  if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
+    window.db.insert({ A: A.source, B: B.source, Arotation: 0, Brotation: B.rotation, nfp: nfp }, true);
+  }
+  return nfp;
 }
 
 /**
@@ -1288,6 +1318,7 @@ function placeParts(sheets, parts, config, nestindex) {
 
     // open a new sheet
     var sheet = sheets.shift();
+    var rectangularSheet = isRectangularSheet(sheet);
     var sheetarea = Math.abs(GeometryUtil.polygonArea(sheet));
     totalsheetarea += sheetarea;
     totalusablesheetarea += polygonMaterialArea(sheet);
@@ -1327,9 +1358,15 @@ function placeParts(sheets, parts, config, nestindex) {
       // try all possible rotations until it fits
       // (only do this for the first part of each sheet, to ensure that all parts that can be placed are, even if we have to to open a lot of sheets)
       for (let j = 0; j < config.rotations; j++) {
-        sheetNfp = getInnerNfp(sheet, part, config);
+        // An exact fit (#137) has a zero-area inner NFP, which Clipper drops. On the sheet
+        // with its far sides moved out by half the tolerance (growSheet) it keeps one; parts
+        // use that band only where they have no position on the sheet itself. Rectangular
+        // sheets have the band built in (rectangularInnerNfp). The grown region contains the
+        // plain one, so a part that misses it does not fit at all.
+        var grownNfp = rectangularSheet ? null : getInnerNfp(sheet, part, config, true);
+        sheetNfp = rectangularSheet || grownNfp ? getInnerNfp(sheet, part, config) : null;
 
-        if (sheetNfp) {
+        if (sheetNfp || grownNfp) {
           break;
         }
 
@@ -1351,19 +1388,20 @@ function placeParts(sheets, parts, config, nestindex) {
         }
       }
       // part unplaceable, skip
-      if (!sheetNfp || sheetNfp.length == 0) {
+      if (!sheetNfp && !grownNfp) {
         continue;
       }
 
       var position = null;
 
       if (placed.length == 0) {
+        var firstNfp = sheetNfp || grownNfp;
         // first placement, put it on the top left corner
-        for (let j = 0; j < sheetNfp.length; j++) {
-          for (let k = 0; k < sheetNfp[j].length; k++) {
+        for (let j = 0; j < firstNfp.length; j++) {
+          for (let k = 0; k < firstNfp[j].length; k++) {
             var firstPosition = {
-              x: sheetNfp[j][k].x - part[0].x,
-              y: sheetNfp[j][k].y - part[0].y,
+              x: firstNfp[j][k].x - part[0].x,
+              y: firstNfp[j][k].y - part[0].y,
               id: part.id,
               rotation: part.rotation,
               source: part.source,
@@ -1395,7 +1433,7 @@ function placeParts(sheets, parts, config, nestindex) {
         continue;
       }
 
-      var clipperSheetNfp = innerNfpToClipperCoordinates(sheetNfp, config);
+      var clipperSheetNfp = innerNfpToClipperCoordinates(grownNfp || sheetNfp, config);
       var finalNfp = clipperSheetNfp;
       var error = false;
 
@@ -1449,6 +1487,19 @@ function placeParts(sheets, parts, config, nestindex) {
         }
 
         finalNfp = nextNfp;
+      }
+
+      // Between touching parts (#137) only the band may be left; otherwise stay on the sheet:
+      // (grown - placed) * sheet = sheet - placed.
+      if (!error && grownNfp && sheetNfp && finalNfp.length > 0) {
+        var onSheet = new ClipperLib.Paths();
+        var clipper = new ClipperLib.Clipper();
+        clipper.AddPaths(finalNfp, ClipperLib.PolyType.ptSubject, true);
+        clipper.AddPaths(innerNfpToClipperCoordinates(sheetNfp, config), ClipperLib.PolyType.ptClip, true);
+        if (clipper.Execute(ClipperLib.ClipType.ctIntersection, onSheet,
+          ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero) && onSheet.length > 0) {
+          finalNfp = onSheet;
+        }
       }
 
       if (error || !finalNfp || finalNfp.length == 0) {
