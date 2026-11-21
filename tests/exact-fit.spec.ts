@@ -1,20 +1,37 @@
 /*eslint no-empty-pattern: ["error", { "allowObjectPatternsAsParameters": true }]*/
 import { _electron as electron, expect, test } from "@playwright/test";
 import { OpenDialogReturnValue } from "electron";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "path";
 import { NestingResult } from "../index";
 
-// Issue #137: parts that fill a 1000 x 1000 mm sheet exactly must be placed.
+// Issue #137: parts that fill a 1000 x 1000 mm sheet exactly must be placed. With
+// `imported`, the sheet is the largest shape in the file: an L sheet that two rectangles
+// tile, and a sheet with a hole whose strip next to the hole a part fills.
 const cases = [
-  { file: "box-1000x1000.svg", parts: 1 },
-  { file: "two-500x1000.svg", parts: 2 },
+  { file: "box-1000x1000.svg", parts: 1, imported: false },
+  { file: "two-500x1000.svg", parts: 2, imported: false },
+  { file: "l-sheet-two-parts.svg", parts: 2, imported: true },
+  { file: "hole-sheet-strip.svg", parts: 1, imported: true },
 ];
-for (const { file, parts } of cases)
+test("the placement engine's exact-fit checks pass", () => {
+  // tests/rectangle-inner-nfp.cjs was not part of `npm test`; run it here so CI does.
+  execFileSync(
+    process.execPath,
+    [path.join(__dirname, "rectangle-inner-nfp.cjs")],
+    {
+      cwd: path.join(__dirname, ".."),
+      stdio: "pipe",
+    },
+  );
+});
+
+for (const { file, parts, imported } of cases)
   for (const simplify of [false, true])
     for (const rotations of [4, 360]) {
-      test(`Exact fit ${file} on 1000 x 1000 mm (simplify ${simplify}, ${rotations} rotations)`, async () => {
+      test(`Exact fit ${file} on ${imported ? "its own sheet" : "1000 x 1000 mm"} (simplify ${simplify}, ${rotations} rotations)`, async () => {
         test.setTimeout(120_000);
         const userData = await mkdtemp(path.join(tmpdir(), "deepnest-test-"));
         await writeFile(
@@ -60,13 +77,31 @@ for (const { file, parts } of cases)
             [svg],
           );
           await win.click("id=import");
-          await expect(win.locator("#parts tbody tr")).toHaveCount(parts);
-
-          await win.click("id=addsheet");
-          await win.fill("id=sheetwidth", "1000");
-          await win.fill("id=sheetheight", "1000");
-          await win.click("id=confirmsheet");
-          await expect(win.locator("#parts tbody tr")).toHaveCount(parts + 1);
+          if (imported) {
+            await expect(win.locator("#parts tbody tr")).toHaveCount(parts + 1);
+            const sheetRow = await win.evaluate(() => {
+              const all = window.DeepNest.parts;
+              const area = (i: number) =>
+                all[i].bounds.width * all[i].bounds.height;
+              let best = 0;
+              all.forEach((_, i) => {
+                if (area(i) > area(best)) best = i;
+              });
+              return best;
+            });
+            await win
+              .locator("#parts tbody tr")
+              .nth(sheetRow)
+              .locator('input[type="checkbox"]')
+              .check();
+          } else {
+            await expect(win.locator("#parts tbody tr")).toHaveCount(parts);
+            await win.click("id=addsheet");
+            await win.fill("id=sheetwidth", "1000");
+            await win.fill("id=sheetheight", "1000");
+            await win.click("id=confirmsheet");
+            await expect(win.locator("#parts tbody tr")).toHaveCount(parts + 1);
+          }
 
           await win.click("id=startnest");
           await expect(() =>
@@ -109,11 +144,25 @@ for (const { file, parts } of cases)
                     C.PolyFillType.pftNonZero,
                     C.PolyFillType.pftNonZero,
                   );
-                  const out = diff.reduce(
+                  let out = diff.reduce(
                     (sum: number, d: unknown) =>
                       sum + Math.abs(C.Clipper.Area(d)),
                     0,
                   );
+                  // ... and inside the sheet's holes
+                  for (const hole of all[s.sheet].polygontree.children || []) {
+                    const h = new C.Clipper();
+                    h.AddPath(toPath(poly), C.PolyType.ptSubject, true);
+                    h.AddPath(toPath(hole), C.PolyType.ptClip, true);
+                    const both = new C.Paths();
+                    h.Execute(
+                      C.ClipType.ctIntersection,
+                      both,
+                      C.PolyFillType.pftNonZero,
+                      C.PolyFillType.pftNonZero,
+                    );
+                    for (const d of both) out += Math.abs(C.Clipper.Area(d));
+                  }
                   outside = Math.max(
                     outside,
                     out / Math.abs(C.Clipper.Area(toPath(poly))),
