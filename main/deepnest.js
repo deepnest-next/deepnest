@@ -705,6 +705,20 @@ export class DeepNest {
     // root level nodes of the tree are parts
     toTree(polygons);
 
+    // An outline inside a hole is a part of its own (even depth = part, odd = hole), e.g.
+    // parts drawn in another part's cut-out. Lift it to the top level; otherwise it stays
+    // with the outer part, is never nested, and its area counts as free hole space.
+    // The loop also visits the lifted parts, so deeper nesting is handled too.
+    for (var i = 0; i < polygons.length; i++) {
+      (polygons[i].children || []).forEach(function (hole) {
+        (hole.children || []).forEach(function (island) {
+          delete island.parent;
+          polygons.push(island);
+        });
+        delete hole.children;
+      });
+    }
+
     function toTree(list, idstart) {
       function svgToClipper(polygon) {
         var clip = [];
@@ -866,7 +880,9 @@ export class DeepNest {
       return false;
     }
 
-    for (var i = 0; i < parts.length; i++) {
+    // Last part first: parts lifted out of a hole come after the part around them, and
+    // pointInPolygon only tests the outer outline, which contains them.
+    for (var i = parts.length - 1; i >= 0; i--) {
       var part = parts[i];
       // the elements left are either erroneous or open
       // we want to include open segments that also lie within the part boundaries
