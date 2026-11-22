@@ -1373,8 +1373,8 @@ function placeParts(sheets, parts, config, nestindex) {
           part = r;
           parts[i] = r;
 
-          // Normalize rotation to 0-360° range using modulo to prevent overflow
-          if (part.rotation > 360) {
+          // Keep the rotation in [0, 360): a full turn is 0, also as the key of the NFP cache
+          if (part.rotation >= 360) {
             part.rotation = part.rotation % 360;
           }
         }
