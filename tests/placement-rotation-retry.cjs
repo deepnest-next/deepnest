@@ -27,7 +27,8 @@ const results = vm.runInContext(`
   }
   var tall = [[0,0],[490,0],[490,990],[0,990]];
   // GA individuals: [0, 0] fits side by side; at [0, 90] the second part is 990 wide.
-  [[0, 0], [0, 90], [90, 0], [90, 90]].map(function (rot) {
+  // At [0, 270] the retry steps on to 360, which must be reported (and cached) as 0.
+  [[0, 0], [0, 90], [90, 0], [90, 90], [0, 270]].map(function (rot) {
     var sheet = poly([[0,0],[1000,0],[1000,1000],[0,1000]], 'sheet', -1, 0);
     var r = placeParts([sheet], [poly(tall, 0, 0, rot[0]), poly(tall, 1, 0, rot[1])], cfg, 0);
     return { rot: rot, placements: r.placements, fitness: r.fitness };
@@ -40,7 +41,7 @@ for (const { rot, placements, fitness } of results) {
   assert(Number.isFinite(fitness), `rotations [${rot}]: fitness must be finite`);
   // Placed at the reported rotation, each part must lie inside the sheet and not overlap the other.
   const boxes = placed.map((p) => {
-    assert([0, 90, 180, 270, 360].includes(p.rotation), `rotations [${rot}]: rotation ${p.rotation} is not an allowed step`);
+    assert([0, 90, 180, 270].includes(p.rotation), `rotations [${rot}]: rotation ${p.rotation} is not an allowed step`);
     const r = (p.rotation * Math.PI) / 180;
     const pts = [[0, 0], [490, 0], [490, 990], [0, 990]].map(([x, y]) => [
       x * Math.cos(r) - y * Math.sin(r) + p.x,
