@@ -32,9 +32,17 @@ export class NfpCache {
     return (nfp as Nfp[]).map((n) => this.clone(n));
   }
 
-  private makeKey(doc: NfpDoc, _inner?: boolean): string {
-    const Arotation = parseInt(doc.Arotation as string);
-    const Brotation = parseInt(doc.Brotation as string);
+  // A rotation as part of a key: whole millionths of a degree, a full turn is 0. parseInt cut
+  // angles to whole degrees and read a rest like 3.4e-13 (left after a retry wraps past 360
+  // with a non-integer step) as 3: the key, and so the NFP, of another rotation.
+  private rotationKey(rotation: number | string): number {
+    const turn = 360e6;
+    return ((Math.round(Number(rotation) * 1e6) % turn) + turn) % turn;
+  }
+
+  private makeKey(doc: NfpDoc): string {
+    const Arotation = this.rotationKey(doc.Arotation);
+    const Brotation = this.rotationKey(doc.Brotation);
     const Aflipped = doc.Aflipped ? "1" : "0";
     const Bflipped = doc.Bflipped ? "1" : "0";
     return `${doc.A}-${doc.B}-${Arotation}-${Brotation}-${Aflipped}-${Bflipped}`;
@@ -46,7 +54,7 @@ export class NfpCache {
   }
 
   find(obj: NfpDoc, inner?: boolean): Nfp | Nfp[] | null {
-    const key = this.makeKey(obj, inner);
+    const key = this.makeKey(obj);
     if (this.db[key]) {
       return this.cloneNfp(this.db[key], inner);
     }
@@ -54,7 +62,7 @@ export class NfpCache {
   }
 
   insert(obj: NfpDoc, inner?: boolean): void {
-    const key = this.makeKey(obj, inner);
+    const key = this.makeKey(obj);
     this.db[key] = this.cloneNfp(obj.nfp, inner);
   }
 
