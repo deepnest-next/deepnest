@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A plate with one hole. One edge of the hole is an arc (radius 100) that bulges into the
+     hole, drawn as 30 short segments: material that the simplification must not cut off. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect x="0" y="0" width="200" height="200" fill="none" stroke="black"/>
+  <polygon points="40,160 40,40 43.486,42.5 47.076,44.847 50.764,47.039 54.542,49.071 58.404,50.938 62.342,52.638 66.35,54.168 70.419,55.525 74.543,56.706 78.714,57.708 82.924,58.531 87.165,59.173 91.431,59.632 95.711,59.908 100,60 104.289,59.908 108.569,59.632 112.835,59.173 117.076,58.531 121.286,57.708 125.457,56.706 129.581,55.525 133.65,54.168 137.658,52.638 141.596,50.938 145.458,49.071 149.236,47.039 152.924,44.847 156.514,42.5 160,40 160,160" fill="none" stroke="black"/>
+</svg>

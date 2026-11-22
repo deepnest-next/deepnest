@@ -341,15 +341,22 @@ export class DeepNest {
     clipper.AddPath(Ac, ClipperLib.PolyType.ptSubject, true);
     clipper.AddPath(Bc, ClipperLib.PolyType.ptSubject, true);
 
-    // the line straightening may have made the offset smaller than the simplified
+    // The result must be safe to nest with: an outline has to cover the real one (union with
+    // it; the line straightening may also have made the offset smaller than the simplified).
+    // A hole or a sheet (inside) is free space and must not exceed the real one (intersection).
+    // The union was used for both, so a simplified hole could reach into the part's material.
     if (
       clipper.Execute(
-        ClipperLib.ClipType.ctUnion,
+        inside ? ClipperLib.ClipType.ctIntersection : ClipperLib.ClipType.ctUnion,
         combined,
         ClipperLib.PolyFillType.pftNonZero,
         ClipperLib.PolyFillType.pftNonZero
       )
     ) {
+      if (inside && combined.length == 0) {
+        // nothing in common with the real shape: keep the real one
+        offset = polygon;
+      }
       var largestArea = null;
       for (var i = 0; i < combined.length; i++) {
         var n = toNestCoordinates(combined[i], 10000000);
